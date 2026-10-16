@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import logo from "@/assets/logo.png";
-import gedung from "@/assets/gedung-nobu.jpg.asset.json";
+import gedungUrl from "@/assets/gedung-nobu.jpg";
+const gedung = { url: gedungUrl };
 import { CookieBanner } from "@/components/CookieBanner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
