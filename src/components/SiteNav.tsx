@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 import logo from "@/assets/logo.png";
@@ -9,6 +9,7 @@ export function SiteNav({ items, right }: { items: NavItem[]; right?: React.Reac
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [activeAnchor, setActiveAnchor] = useState<string | null>(null);
+  const pathname = useLocation().pathname;
 
   useEffect(() => {
     const on = () => setScrolled(window.scrollY > 8);
