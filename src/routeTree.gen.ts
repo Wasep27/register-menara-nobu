@@ -9,9 +9,9 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as PanduanRouteImport } from './routes/panduan'
+import { Route as RegistrasiRouteImport } from './routes/registrasi'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminKaryawanRouteImport } from './routes/admin.karyawan'
@@ -20,11 +20,6 @@ import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminTamuRouteImport } from './routes/admin.tamu'
 import { Route as AdminTujuanRouteImport } from './routes/admin.tujuan'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -33,6 +28,11 @@ const AdminRoute = AdminRouteImport.update({
 const PanduanRoute = PanduanRouteImport.update({
   id: '/panduan',
   path: '/panduan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegistrasiRoute = RegistrasiRouteImport.update({
+  id: '/registrasi',
+  path: '/registrasi',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -72,9 +72,9 @@ const AdminTujuanRoute = AdminTujuanRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/panduan': typeof PanduanRoute
+  '/registrasi': typeof RegistrasiRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin/karyawan': typeof AdminKaryawanRoute
   '/admin/laporan': typeof AdminLaporanRoute
@@ -84,8 +84,8 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
   '/panduan': typeof PanduanRoute
+  '/registrasi': typeof RegistrasiRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin/karyawan': typeof AdminKaryawanRoute
   '/admin/laporan': typeof AdminLaporanRoute
@@ -96,9 +96,9 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/panduan': typeof PanduanRoute
+  '/registrasi': typeof RegistrasiRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin/karyawan': typeof AdminKaryawanRoute
   '/admin/laporan': typeof AdminLaporanRoute
@@ -110,9 +110,9 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
     | '/admin'
     | '/panduan'
+    | '/registrasi'
     | '/reset-password'
     | '/admin/karyawan'
     | '/admin/laporan'
@@ -122,8 +122,8 @@ export interface FileRouteTypes {
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
     | '/panduan'
+    | '/registrasi'
     | '/reset-password'
     | '/admin/karyawan'
     | '/admin/laporan'
@@ -133,9 +133,9 @@ export interface FileRouteTypes {
     | '/admin'
   id:
     | '__root__'
-    | '/'
     | '/admin'
     | '/panduan'
+    | '/registrasi'
     | '/reset-password'
     | '/admin/karyawan'
     | '/admin/laporan'
@@ -146,21 +146,14 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   PanduanRoute: typeof PanduanRoute
+  RegistrasiRoute: typeof RegistrasiRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -173,6 +166,13 @@ declare module '@tanstack/react-router' {
       path: '/panduan'
       fullPath: '/panduan'
       preLoaderRoute: typeof PanduanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/registrasi': {
+      id: '/registrasi'
+      path: '/registrasi'
+      fullPath: '/registrasi'
+      preLoaderRoute: typeof RegistrasiRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -248,9 +248,9 @@ const AdminRouteChildren: AdminRouteChildren = {
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   PanduanRoute: PanduanRoute,
+  RegistrasiRoute: RegistrasiRoute,
   ResetPasswordRoute: ResetPasswordRoute,
 }
 export const routeTree = rootRouteImport
