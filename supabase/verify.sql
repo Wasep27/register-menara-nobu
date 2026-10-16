@@ -50,8 +50,8 @@ checks as (
     'Profil & peran admin tidak dibuat otomatis'
   union all
   select 6, 'Akses tamu (anon)', 'execute submit_guest',
-    case when to_regprocedure('public.submit_guest(jsonb,uuid)') is not null
-      and has_function_privilege('anon', 'public.submit_guest(jsonb,uuid)', 'execute') then 'OK' else 'KURANG' end,
+    case when to_regprocedure('public.submit_guest(jsonb,uuid)') is null then 'KURANG'
+      when has_function_privilege('anon', to_regprocedure('public.submit_guest(jsonb,uuid)'), 'execute') then 'OK' else 'KURANG' end,
     'Tamu tidak bisa mengirim formulir'
   union all
   select 7, 'Realtime', 'notifications di supabase_realtime',
