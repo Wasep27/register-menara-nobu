@@ -163,7 +163,12 @@
 @theme inline {
   --color-brand: var(--brand);
   --color-brand-soft: var(--brand-soft);
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Nunito", ui-rounded, system-ui, sans-serif;
 }
+body { font-family: var(--font-sans); }
+h1, h2, h3, button, .font-display { font-family: var(--font-display); letter-spacing: -0.01em; }
+h1 { font-weight: 800; }
 @utility shadow-soft { box-shadow: var(--shadow-soft); }
 @utility fade-up { animation: fadeUp .5s cubic-bezier(.2,.8,.2,1) both; }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
