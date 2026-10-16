@@ -144,17 +144,28 @@
 }
 
 :root {
-  --background: #F7F8FA;
-  --foreground: #1F2933;
+  --background: #F4FBF8;
+  --foreground: #10241E;
   --card: #FFFFFF;
-  --primary: #0A6B73;
+  --primary: #07936E;
   --primary-foreground: #FFFFFF;
-  --accent: #B07A00;
-  --muted: #EEF1F4;
-  --muted-foreground: #5B6670;
-  --border: #DDE2E7;
-  --input: #CBD2D9;
-  --ring: #0A6B73;
+  --brand: #10D5A0;
+  --brand-soft: #E3FAF3;
+  --accent: #07936E;
+  --muted: #EAF3EF;
+  --muted-foreground: #4F625C;
+  --border: #D6E7E0;
+  --input: #C3D9D0;
+  --ring: #10D5A0;
   --destructive: #C62828;
+  --shadow-soft: 0 10px 30px -12px color-mix(in oklab, #07936E 35%, transparent);
 }
-@media print { nav { display: none; } }
+@theme inline {
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+}
+@utility shadow-soft { box-shadow: var(--shadow-soft); }
+@utility fade-up { animation: fadeUp .5s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+@media print { nav, header.app-header { display: none; } }
