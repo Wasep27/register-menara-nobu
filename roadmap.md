@@ -1,2 +1,5 @@
 - [x] Logo, warna brand, menu responsif beranimasi
 - [x] Huruf mengikuti gaya Bank Nobu
+- [x] Filter data tamu (nama, rentang tanggal, tujuan)
+- [x] Batas login + lupa password
+- [x] Halaman panduan Vercel + cek koneksi

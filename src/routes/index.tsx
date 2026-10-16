@@ -4,7 +4,7 @@ import { z } from "zod";
 import { supabase, type Employee, type Purpose } from "@/lib/supabase";
 import { SiteNav } from "@/components/SiteNav";
 
-const navItems = [{ to: "/", label: "Registrasi Tamu" }, { to: "/admin/login", label: "Admin" }];
+const navItems = [{ to: "/", label: "Registrasi Tamu" }, { to: "/panduan", label: "Panduan" }, { to: "/admin/login", label: "Admin" }];
 
 export const Route = createFileRoute("/")({
   head: () => ({
