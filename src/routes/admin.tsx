@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { signOutLocal, startIdleLogout, supabase } from "@/lib/supabase";
 import { SiteNav } from "@/components/SiteNav";
 
 export const Route = createFileRoute("/admin")({
@@ -25,6 +25,7 @@ const links = [
   { to: "/admin/tujuan", label: "Tujuan" },
   { to: "/admin/laporan", label: "Laporan" },
   { to: "/admin/email-admin", label: "Email Admin" },
+  { to: "/admin/pengguna", label: "Pengguna" },
   { to: "/panduan", label: "Panduan" },
 ] as const;
 
@@ -32,8 +33,10 @@ function AdminLayout() {
   const loc = useLocation();
   const nav = useNavigate();
   const [state, setState] = useState<"loading" | "ok" | "noadmin" | "out">("loading");
+  const [idle, setIdle] = useState(false);
   const isLogin = loc.pathname === "/admin/login";
 
+  // Periksa ulang akses ke server (getUser memvalidasi token, bukan hanya membaca lokal)
   useEffect(() => {
     if (isLogin || !loc.pathname.startsWith("/admin")) return;
     supabase.auth.getUser().then(async ({ data }) => {
@@ -43,19 +46,37 @@ function AdminLayout() {
     });
   }, [isLogin, loc.pathname, nav]);
 
+  // Satu pendengar perubahan sesi: keluar di tab lain / token habis -> ke halaman login
+  useEffect(() => {
+    if (isLogin) return;
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") { setState("out"); nav({ to: "/admin/login" }); }
+    });
+    return () => data.subscription.unsubscribe();
+  }, [isLogin, nav]);
+
+  // Keluar otomatis setelah 30 menit tanpa aktivitas
+  useEffect(() => {
+    if (state !== "ok") return;
+    return startIdleLogout(() => { setIdle(true); void signOutLocal(); });
+  }, [state]);
+
+  const logout = () => signOutLocal().then(() => nav({ to: "/admin/login" }));
+
   if (isLogin) return <Outlet />;
+  if (idle) return <p className="p-8 text-muted-foreground">Sesi berakhir karena tidak ada aktivitas. Silakan masuk lagi.</p>;
   if (state === "loading" || state === "out") return <p className="p-8 text-muted-foreground">Memuat…</p>;
   if (state === "noadmin")
     return (
       <div className="p-8">
         <p className="text-foreground">Akun ini belum memiliki akses admin.</p>
-        <button className="mt-4 rounded-lg border border-input px-4 py-2" onClick={() => supabase.auth.signOut().then(() => nav({ to: "/admin/login" }))}>Keluar</button>
+        <button className="mt-4 rounded-lg border border-input px-4 py-2" onClick={logout}>Keluar</button>
       </div>
     );
 
   return (
     <div className="min-h-screen bg-background">
-      <SiteNav items={[...links]} right={<button className="min-h-11 w-full rounded-full px-4 text-left text-sm font-medium text-muted-foreground hover:bg-brand-soft hover:text-primary md:w-auto" onClick={() => supabase.auth.signOut().then(() => nav({ to: "/admin/login" }))}>Keluar</button>} />
+      <SiteNav items={[...links]} right={<button className="min-h-11 w-full rounded-full px-4 text-left text-sm font-medium text-muted-foreground hover:bg-brand-soft hover:text-primary md:w-auto" onClick={logout}>Keluar</button>} />
       <div key={loc.pathname} className="fade-up mx-auto max-w-6xl p-4 md:p-6"><Outlet /></div>
     </div>
   );
