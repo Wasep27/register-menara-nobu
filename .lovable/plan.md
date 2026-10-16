@@ -1,18 +1,22 @@
 # Registrasi Tamu Digital Menara Nobu — Rencana Pembangunan
 
-Mengikuti PRD dan Design Spec yang diunggah, dengan satu perubahan: backend Laravel + MySQL diganti **serverless memakai Lovable Cloud (berbasis Supabase)**, dan frontend disiapkan agar bisa di-hosting di **Vercel**.
+Mengikuti PRD dan Design Spec yang diunggah, dengan satu perubahan: backend Laravel + MySQL diganti **serverless memakai project Supabase milik Anda sendiri** (bukan Lovable Cloud), dan frontend disiapkan agar bisa di-hosting di **Vercel**.
+
+## Langkah awal (dari Anda)
+
+- Hubungkan project Supabase Anda: buka Connectors → Supabase di editor Lovable, lalu pilih project Anda. Setelah terhubung, saya buat tabel, aturan akses, dan fungsi langsung di project tersebut.
 
 ## Arsitektur
 
 ```text
-[Browser: SPA React]  -- HTTPS / JSON -->  [Lovable Cloud]
+[Browser: SPA React]  -- HTTPS / JSON -->  [Supabase Anda]
   localStorage (draft)                       - Database Postgres + aturan akses (RLS)
                                              - Fungsi database (RPC) untuk submit & draft
                                              - Login admin (email + password)
 ```
 
-- Semua logika backend ada di database (aturan akses + fungsi RPC). Tidak ada server khusus di sisi frontend, jadi aplikasi cukup di-deploy sebagai frontend di Vercel dengan 2 variabel lingkungan (URL dan publishable key).
-- Istilah "AJAX" di skripsi tetap berlaku: implementasi pakai Fetch API melalui klien Cloud + TanStack Query.
+- Semua logika backend ada di database Supabase (aturan akses + fungsi RPC). Tidak ada server khusus di sisi frontend, jadi aplikasi cukup di-deploy di Vercel dengan 2 variabel lingkungan (URL dan publishable/anon key dari dashboard Supabase → Project Settings → API).
+- Istilah "AJAX" di skripsi tetap berlaku: implementasi pakai Fetch API melalui klien Supabase + TanStack Query.
 
 ## Halaman
 
