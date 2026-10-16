@@ -65,17 +65,17 @@ checks as (
   union all
   select 9, 'Data', 'admin terdaftar (admin_emails)',
     case when to_regclass('public.admin_emails') is null then 'KURANG'
-      when exists (select 1 from public.admin_emails) then 'OK' else 'PERINGATAN' end,
+      when (xpath('/row/c/text()', query_to_xml('select count(*) as c from public.admin_emails', false, true, '')))[1]::text::int > 0 then 'OK' else 'PERINGATAN' end,
     'Tambahkan minimal satu email admin'
   union all
   select 9, 'Data', 'karyawan aktif',
     case when to_regclass('public.employees') is null then 'KURANG'
-      when exists (select 1 from public.employees where is_active) then 'OK' else 'PERINGATAN' end,
+      when (xpath('/row/c/text()', query_to_xml('select count(*) as c from public.employees where is_active', false, true, '')))[1]::text::int > 0 then 'OK' else 'PERINGATAN' end,
     'Tamu tidak bisa memilih karyawan'
   union all
   select 9, 'Data', 'tujuan kunjungan aktif',
     case when to_regclass('public.visit_purposes') is null then 'KURANG'
-      when exists (select 1 from public.visit_purposes where is_active) then 'OK' else 'PERINGATAN' end,
+      when (xpath('/row/c/text()', query_to_xml('select count(*) as c from public.visit_purposes where is_active', false, true, '')))[1]::text::int > 0 then 'OK' else 'PERINGATAN' end,
     'Tamu tidak bisa memilih tujuan'
 )
 select kategori, item, status, case when status='OK' then '' else saran end as saran
