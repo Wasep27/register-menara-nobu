@@ -21,6 +21,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminEmailAdminRouteImport } from './routes/admin.email-admin'
 import { Route as AdminKaryawanRouteImport } from './routes/admin.karyawan'
 import { Route as AdminLaporanRouteImport } from './routes/admin.laporan'
+import { Route as AdminPenggunaRouteImport } from './routes/admin.pengguna'
 import { Route as AdminTamuRouteImport } from './routes/admin.tamu'
 import { Route as AdminTujuanRouteImport } from './routes/admin.tujuan'
 import { Route as AdminLoginRouteImport } from './routes/admin_.login'
@@ -85,6 +86,11 @@ const AdminLaporanRoute = AdminLaporanRouteImport.update({
   path: '/laporan',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminPenggunaRoute = AdminPenggunaRouteImport.update({
+  id: '/pengguna',
+  path: '/pengguna',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminTamuRoute = AdminTamuRouteImport.update({
   id: '/tamu',
   path: '/tamu',
@@ -113,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/admin/email-admin': typeof AdminEmailAdminRoute
   '/admin/karyawan': typeof AdminKaryawanRoute
   '/admin/laporan': typeof AdminLaporanRoute
+  '/admin/pengguna': typeof AdminPenggunaRoute
   '/admin/tamu': typeof AdminTamuRoute
   '/admin/tujuan': typeof AdminTujuanRoute
   '/admin/login': typeof AdminLoginRoute
@@ -129,6 +136,7 @@ export interface FileRoutesByTo {
   '/admin/email-admin': typeof AdminEmailAdminRoute
   '/admin/karyawan': typeof AdminKaryawanRoute
   '/admin/laporan': typeof AdminLaporanRoute
+  '/admin/pengguna': typeof AdminPenggunaRoute
   '/admin/tamu': typeof AdminTamuRoute
   '/admin/tujuan': typeof AdminTujuanRoute
   '/admin/login': typeof AdminLoginRoute
@@ -147,6 +155,7 @@ export interface FileRoutesById {
   '/admin/email-admin': typeof AdminEmailAdminRoute
   '/admin/karyawan': typeof AdminKaryawanRoute
   '/admin/laporan': typeof AdminLaporanRoute
+  '/admin/pengguna': typeof AdminPenggunaRoute
   '/admin/tamu': typeof AdminTamuRoute
   '/admin/tujuan': typeof AdminTujuanRoute
   '/admin_/login': typeof AdminLoginRoute
@@ -166,6 +175,7 @@ export interface FileRouteTypes {
     | '/admin/email-admin'
     | '/admin/karyawan'
     | '/admin/laporan'
+    | '/admin/pengguna'
     | '/admin/tamu'
     | '/admin/tujuan'
     | '/admin/login'
@@ -182,6 +192,7 @@ export interface FileRouteTypes {
     | '/admin/email-admin'
     | '/admin/karyawan'
     | '/admin/laporan'
+    | '/admin/pengguna'
     | '/admin/tamu'
     | '/admin/tujuan'
     | '/admin/login'
@@ -199,6 +210,7 @@ export interface FileRouteTypes {
     | '/admin/email-admin'
     | '/admin/karyawan'
     | '/admin/laporan'
+    | '/admin/pengguna'
     | '/admin/tamu'
     | '/admin/tujuan'
     | '/admin_/login'
@@ -303,6 +315,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLaporanRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/pengguna': {
+      id: '/admin/pengguna'
+      path: '/pengguna'
+      fullPath: '/admin/pengguna'
+      preLoaderRoute: typeof AdminPenggunaRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/tamu': {
       id: '/admin/tamu'
       path: '/tamu'
@@ -331,6 +350,7 @@ interface AdminRouteChildren {
   AdminEmailAdminRoute: typeof AdminEmailAdminRoute
   AdminKaryawanRoute: typeof AdminKaryawanRoute
   AdminLaporanRoute: typeof AdminLaporanRoute
+  AdminPenggunaRoute: typeof AdminPenggunaRoute
   AdminTamuRoute: typeof AdminTamuRoute
   AdminTujuanRoute: typeof AdminTujuanRoute
   AdminIndexRoute: typeof AdminIndexRoute
@@ -340,6 +360,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminEmailAdminRoute: AdminEmailAdminRoute,
   AdminKaryawanRoute: AdminKaryawanRoute,
   AdminLaporanRoute: AdminLaporanRoute,
+  AdminPenggunaRoute: AdminPenggunaRoute,
   AdminTamuRoute: AdminTamuRoute,
   AdminTujuanRoute: AdminTujuanRoute,
   AdminIndexRoute: AdminIndexRoute,
