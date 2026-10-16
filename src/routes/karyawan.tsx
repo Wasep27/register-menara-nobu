@@ -59,7 +59,7 @@ function StaffLogin() {
         <p className="text-center text-sm text-muted-foreground">Masuk untuk melihat notifikasi tamu Anda.</p>
         <label className="block text-sm">Email<input className={f} type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
         <label className="block text-sm">Password<input className={f} type="password" value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
-        {err && <p className="text-sm text-destructive">{err}</p>}
+        {err && <p role="alert" className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"><span aria-hidden>⚠</span>{err}</p>}
         <button disabled={loading} className="min-h-11 w-full rounded-full bg-primary font-semibold text-primary-foreground transition-all hover:brightness-110 active:scale-95">{loading ? "Masuk…" : "Masuk"}</button>
       </form>
     </main>

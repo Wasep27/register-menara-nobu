@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import { employeeSchema, purposeSchema, fieldErrors } from "@/lib/validation";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
@@ -14,6 +15,7 @@ export function MasterCrud({ table, title, withDept }: { table: "employees" | "v
   const [editId, setEditId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [errs, setErrs] = useState<Record<string, string>>({});
   const [toDelete, setToDelete] = useState<Row | null>(null);
   const label = table === "employees" ? "karyawan" : "tujuan kunjungan";
 
@@ -25,13 +27,17 @@ export function MasterCrud({ table, title, withDept }: { table: "employees" | "v
   useEffect(() => { load(); }, [load]);
 
   const openForm = (r?: Row) => {
-    setEditId(r?.id ?? null); setName(r?.name ?? ""); setDept(r?.department ?? ""); setEmail(r?.email ?? "");
+    setEditId(r?.id ?? null); setName(r?.name ?? ""); setDept(r?.department ?? ""); setEmail(r?.email ?? ""); setErrs({});
     setFormOpen(true);
   };
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (name.trim().length < 2) { toast.error("Nama minimal 2 huruf"); return; }
+    const r = withDept ? employeeSchema.safeParse({ name, department: dept, email }) : purposeSchema.safeParse({ name });
+    if (!r.success) { setErrs(fieldErrors(r.error.issues)); toast.error("Periksa kembali isian yang ditandai merah"); return; }
+    setErrs({});
+    const dup = rows.find((x) => x.id !== editId && x.name.trim().toLowerCase() === name.trim().toLowerCase());
+    if (dup) { setErrs({ name: `"${dup.name}" sudah ada di daftar` }); return; }
     const payload: Record<string, unknown> = { name: name.trim() };
     if (withDept) { payload["department"] = dept.trim() || null; payload["email"] = email.trim().toLowerCase() || null; }
     setSaving(true);
@@ -39,7 +45,7 @@ export function MasterCrud({ table, title, withDept }: { table: "employees" | "v
       ? await supabase.from(table).update(payload).eq("id", editId)
       : await supabase.from(table).insert(payload);
     setSaving(false);
-    if (error) { toast.error(error.code === "23505" ? "Data sudah ada" : "Gagal menyimpan"); return; }
+    if (error) { toast.error(error.code === "23505" ? (withDept ? "Email ini sudah dipakai karyawan lain" : "Data sudah ada") : error.code === "23514" ? "Isian tidak sesuai aturan, periksa kembali" : "Gagal menyimpan. Periksa koneksi lalu coba lagi."); return; }
     toast.success(editId ? `Data ${label} diperbarui` : `Data ${label} ditambahkan`);
     setFormOpen(false); load();
   };
@@ -59,6 +65,7 @@ export function MasterCrud({ table, title, withDept }: { table: "employees" | "v
     load();
   };
 
+  const ic = (k: string) => errs[k] ? i + " border-destructive bg-destructive/5" : i;
   const i = "min-h-11 w-full rounded-lg border border-input bg-card px-3 py-2 text-sm";
   return (
     <div className="space-y-4">
@@ -80,14 +87,20 @@ export function MasterCrud({ table, title, withDept }: { table: "employees" | "v
 
       <Dialog open={formOpen} onOpenChange={(o) => !saving && setFormOpen(o)}>
         <DialogContent className="rounded-2xl">
-          <form onSubmit={save} className="space-y-3">
+          <form onSubmit={save} noValidate className="space-y-3">
             <DialogHeader>
               <DialogTitle>{editId ? `Edit ${label}` : `Tambah ${label}`}</DialogTitle>
               <DialogDescription>Isi data lalu tekan Simpan.</DialogDescription>
             </DialogHeader>
-            <input autoFocus className={i} placeholder="Nama" value={name} onChange={(e) => setName(e.target.value)} />
-            {withDept && <input className={i} placeholder="Departemen" value={dept} onChange={(e) => setDept(e.target.value)} />}
-            {withDept && <input className={i} type="email" placeholder="Email login (untuk notifikasi)" value={email} onChange={(e) => setEmail(e.target.value)} />}
+            <Field label="Nama" required err={errs.name}>
+              <input autoFocus className={ic("name")} aria-invalid={!!errs.name} maxLength={100} placeholder={withDept ? "Contoh: Budi Santoso" : "Contoh: Rapat bisnis"} value={name} onChange={(e) => { setName(e.target.value); setErrs((x) => ({ ...x, name: "" })); }} />
+            </Field>
+            {withDept && <Field label="Departemen (opsional)" err={errs.department}>
+              <input className={ic("department")} aria-invalid={!!errs.department} maxLength={100} placeholder="Contoh: Keuangan" value={dept} onChange={(e) => setDept(e.target.value)} />
+            </Field>}
+            {withDept && <Field label="Email login (opsional, untuk notifikasi)" err={errs.email}>
+              <input className={ic("email")} aria-invalid={!!errs.email} type="email" maxLength={255} placeholder="nama@nobu.id" value={email} onChange={(e) => { setEmail(e.target.value); setErrs((x) => ({ ...x, email: "" })); }} />
+            </Field>}
             <DialogFooter className="gap-2">
               <button type="button" className="min-h-11 rounded-lg border border-input px-4 text-sm" onClick={() => setFormOpen(false)} disabled={saving}>Batal</button>
               <button className="min-h-11 rounded-lg bg-primary px-4 text-sm text-primary-foreground" disabled={saving}>{saving ? "Menyimpan…" : "Simpan"}</button>
@@ -104,5 +117,15 @@ export function MasterCrud({ table, title, withDept }: { table: "employees" | "v
         onConfirm={remove}
       />
     </div>
+  );
+}
+
+function Field({ label, required, err, children }: { label: string; required?: boolean; err?: string; children: React.ReactNode }) {
+  return (
+    <label className="block text-sm">
+      <span className="font-medium text-foreground">{label}{required && <span className="text-destructive" aria-hidden> *</span>}</span>
+      <div className="mt-1">{children}</div>
+      {err && <span role="alert" className="mt-1 flex items-center gap-1 text-xs text-destructive"><span aria-hidden>⚠</span>{err}</span>}
+    </label>
   );
 }

@@ -96,6 +96,7 @@ function GuestForm() {
     dirty.current = true;
     syncPending.current = true;
     setForm((f) => ({ ...f, [k]: v }));
+    if (errors[k]) setErrors((e) => ({ ...e, [k]: "" }));
   };
 
   const validateField = (k: keyof Form) => {
@@ -223,7 +224,7 @@ function GuestForm() {
             <span className="text-sm text-foreground">Tandai sebagai kunjungan penting</span>
           </label>
           <F label="Catatan (opsional)" err={errors.notes} hint={`${form.notes.length}/500 karakter`}>
-            <textarea className={fc("notes")} name="notes" aria-invalid={!!errors.notes} rows={3} value={form.notes} onChange={(e) => update("notes", e.target.value)} />
+            <textarea className={fc("notes")} name="notes" aria-invalid={!!errors.notes} maxLength={500} rows={3} value={form.notes} onChange={(e) => update("notes", e.target.value)} />
           </F>
 
           {submitErr && <p role="alert" className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"><span aria-hidden>⚠</span>{submitErr}</p>}
