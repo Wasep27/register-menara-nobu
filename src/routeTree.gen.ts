@@ -19,9 +19,9 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminEmailAdminRouteImport } from './routes/admin.email-admin'
 import { Route as AdminKaryawanRouteImport } from './routes/admin.karyawan'
 import { Route as AdminLaporanRouteImport } from './routes/admin.laporan'
-import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminTamuRouteImport } from './routes/admin.tamu'
 import { Route as AdminTujuanRouteImport } from './routes/admin.tujuan'
+import { Route as AdminLoginRouteImport } from './routes/admin_.login'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -73,11 +73,6 @@ const AdminLaporanRoute = AdminLaporanRouteImport.update({
   path: '/laporan',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminLoginRoute = AdminLoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminTamuRoute = AdminTamuRouteImport.update({
   id: '/tamu',
   path: '/tamu',
@@ -87,6 +82,11 @@ const AdminTujuanRoute = AdminTujuanRouteImport.update({
   id: '/tujuan',
   path: '/tujuan',
   getParentRoute: () => AdminRoute,
+} as any)
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/admin_/login',
+  path: '/admin/login',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -99,9 +99,9 @@ export interface FileRoutesByFullPath {
   '/admin/email-admin': typeof AdminEmailAdminRoute
   '/admin/karyawan': typeof AdminKaryawanRoute
   '/admin/laporan': typeof AdminLaporanRoute
-  '/admin/login': typeof AdminLoginRoute
   '/admin/tamu': typeof AdminTamuRoute
   '/admin/tujuan': typeof AdminTujuanRoute
+  '/admin/login': typeof AdminLoginRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
@@ -113,9 +113,9 @@ export interface FileRoutesByTo {
   '/admin/email-admin': typeof AdminEmailAdminRoute
   '/admin/karyawan': typeof AdminKaryawanRoute
   '/admin/laporan': typeof AdminLaporanRoute
-  '/admin/login': typeof AdminLoginRoute
   '/admin/tamu': typeof AdminTamuRoute
   '/admin/tujuan': typeof AdminTujuanRoute
+  '/admin/login': typeof AdminLoginRoute
   '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
@@ -129,9 +129,9 @@ export interface FileRoutesById {
   '/admin/email-admin': typeof AdminEmailAdminRoute
   '/admin/karyawan': typeof AdminKaryawanRoute
   '/admin/laporan': typeof AdminLaporanRoute
-  '/admin/login': typeof AdminLoginRoute
   '/admin/tamu': typeof AdminTamuRoute
   '/admin/tujuan': typeof AdminTujuanRoute
+  '/admin_/login': typeof AdminLoginRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
@@ -146,9 +146,9 @@ export interface FileRouteTypes {
     | '/admin/email-admin'
     | '/admin/karyawan'
     | '/admin/laporan'
-    | '/admin/login'
     | '/admin/tamu'
     | '/admin/tujuan'
+    | '/admin/login'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -160,9 +160,9 @@ export interface FileRouteTypes {
     | '/admin/email-admin'
     | '/admin/karyawan'
     | '/admin/laporan'
-    | '/admin/login'
     | '/admin/tamu'
     | '/admin/tujuan'
+    | '/admin/login'
     | '/admin'
   id:
     | '__root__'
@@ -175,9 +175,9 @@ export interface FileRouteTypes {
     | '/admin/email-admin'
     | '/admin/karyawan'
     | '/admin/laporan'
-    | '/admin/login'
     | '/admin/tamu'
     | '/admin/tujuan'
+    | '/admin_/login'
     | '/admin/'
   fileRoutesById: FileRoutesById
 }
@@ -188,6 +188,7 @@ export interface RootRouteChildren {
   PanduanRoute: typeof PanduanRoute
   RegistrasiRoute: typeof RegistrasiRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  AdminLoginRoute: typeof AdminLoginRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -262,13 +263,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLaporanRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/login': {
-      id: '/admin/login'
-      path: '/login'
-      fullPath: '/admin/login'
-      preLoaderRoute: typeof AdminLoginRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/admin/tamu': {
       id: '/admin/tamu'
       path: '/tamu'
@@ -283,6 +277,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminTujuanRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin_/login': {
+      id: '/admin_/login'
+      path: '/admin/login'
+      fullPath: '/admin/login'
+      preLoaderRoute: typeof AdminLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -290,7 +291,6 @@ interface AdminRouteChildren {
   AdminEmailAdminRoute: typeof AdminEmailAdminRoute
   AdminKaryawanRoute: typeof AdminKaryawanRoute
   AdminLaporanRoute: typeof AdminLaporanRoute
-  AdminLoginRoute: typeof AdminLoginRoute
   AdminTamuRoute: typeof AdminTamuRoute
   AdminTujuanRoute: typeof AdminTujuanRoute
   AdminIndexRoute: typeof AdminIndexRoute
@@ -300,7 +300,6 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminEmailAdminRoute: AdminEmailAdminRoute,
   AdminKaryawanRoute: AdminKaryawanRoute,
   AdminLaporanRoute: AdminLaporanRoute,
-  AdminLoginRoute: AdminLoginRoute,
   AdminTamuRoute: AdminTamuRoute,
   AdminTujuanRoute: AdminTujuanRoute,
   AdminIndexRoute: AdminIndexRoute,
@@ -315,6 +314,7 @@ const rootRouteChildren: RootRouteChildren = {
   PanduanRoute: PanduanRoute,
   RegistrasiRoute: RegistrasiRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  AdminLoginRoute: AdminLoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
