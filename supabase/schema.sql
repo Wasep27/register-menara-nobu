@@ -341,3 +341,38 @@ end $$;
 drop trigger if exists admin_emails_sync on public.admin_emails;
 create trigger admin_emails_sync after insert or delete on public.admin_emails
 for each row execute function public.sync_admin_email();
+
+-- ============================================================
+-- PENGINGAT KUNJUNGAN PENTING (30 menit sebelum & tepat waktu)
+-- ============================================================
+create unique index if not exists notifications_guest_kind_uniq on public.notifications(guest_id, kind) where guest_id is not null;
+
+create or replace function public.generate_visit_reminders()
+returns integer language plpgsql security definer set search_path = public as $$
+declare n integer := 0; c integer;
+begin
+  insert into notifications(employee_id, guest_id, kind, title, body)
+  select g.employee_id, g.id, 'reminder_30', '⏰ 30 menit lagi: kunjungan penting ' || g.name,
+         g.institution || ' · ' || to_char(g.scheduled_at at time zone 'Asia/Jakarta','HH24:MI') || ' WIB'
+  from guests g
+  where g.is_important and g.employee_id is not null
+    and g.scheduled_at > now() and g.scheduled_at <= now() + interval '30 minutes'
+  on conflict do nothing;
+  get diagnostics c = row_count; n := n + c;
+  insert into notifications(employee_id, guest_id, kind, title, body)
+  select g.employee_id, g.id, 'reminder_now', '🔔 Sekarang: ' || g.name || ' dijadwalkan tiba',
+         g.institution || ' · ' || to_char(g.scheduled_at at time zone 'Asia/Jakarta','HH24:MI') || ' WIB'
+  from guests g
+  where g.is_important and g.employee_id is not null
+    and g.scheduled_at <= now() and g.scheduled_at > now() - interval '2 hours'
+  on conflict do nothing;
+  get diagnostics c = row_count; n := n + c;
+  return n;
+end $$;
+grant execute on function public.generate_visit_reminders() to authenticated;
+
+-- Jalankan otomatis tiap menit bila pg_cron aktif (Database -> Extensions -> pg_cron)
+do $$ begin
+  perform cron.schedule('nobu-visit-reminders', '* * * * *', 'select public.generate_visit_reminders()');
+exception when others then raise notice 'pg_cron belum aktif; pengingat tetap dibuat saat portal karyawan terbuka';
+end $$;

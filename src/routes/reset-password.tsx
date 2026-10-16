@@ -40,7 +40,7 @@ function Reset() {
   const f = "mt-1 w-full rounded-lg border border-input bg-card px-3 py-3 text-foreground";
   return (
     <main className="relative flex min-h-screen items-center justify-center bg-background p-4">
-      <Link to="/" className="absolute left-4 top-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-card px-4 text-sm font-medium text-primary shadow-soft transition-transform hover:-translate-x-0.5">← Kembali ke beranda</Link>
+      <Link to="/" className="absolute left-4 top-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-card px-4 text-sm font-medium text-primary shadow-soft transition-transform hover:-translate-x-0.5">← Kembali</Link>
       <form onSubmit={submit} className="fade-up w-full max-w-sm space-y-4 rounded-3xl bg-card p-8 shadow-soft">
         <h1 className="text-center text-xl font-bold text-foreground">Atur Ulang Password</h1>
         {!ready ? <p className="text-sm text-muted-foreground">Buka halaman ini dari tautan di email Anda.</p> : (
