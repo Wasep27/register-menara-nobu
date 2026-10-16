@@ -35,7 +35,7 @@ type Status = "idle" | "saving" | "saved" | "offline" | "error";
 
 function GuestForm() {
   const [form, setForm] = useState<Form>(empty);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof Form, string>>>({});
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [purposes, setPurposes] = useState<Purpose[]>([]);
   const [status, setStatus] = useState<Status>("idle");
@@ -119,7 +119,7 @@ function GuestForm() {
     if (!r.success) {
       const errs: Record<string, string> = {};
       r.error.issues.forEach((i) => { errs[String(i.path[0])] = i.message; });
-      setErrors(errs);
+      setErrors(errs as Partial<Record<keyof Form, string>>);
       return;
     }
     setSubmitting(true);
@@ -227,7 +227,7 @@ function GuestForm() {
   );
 }
 
-function F({ label, err, children }: { label: string; err?: string; children: React.ReactNode }) {
+function F({ label, err, children }: { label: string; err?: string | undefined; children: React.ReactNode }) {
   return (
     <label className="block">
       <span className="text-sm font-medium text-foreground">{label}</span>

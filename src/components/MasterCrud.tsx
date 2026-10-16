@@ -18,7 +18,7 @@ export function MasterCrud({ table, title, withDept }: { table: "employees" | "v
     e.preventDefault();
     if (name.trim().length < 2) return;
     const payload: Record<string, unknown> = { name: name.trim() };
-    if (withDept) payload.department = dept.trim() || null;
+    if (withDept) payload["department"] = dept.trim() || null;
     if (editId) await supabase.from(table).update(payload).eq("id", editId);
     else await supabase.from(table).insert(payload);
     setName(""); setDept(""); setEditId(null); load();
