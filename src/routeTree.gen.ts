@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as PanduanRouteImport } from './routes/panduan'
 import { Route as RegistrasiRouteImport } from './routes/registrasi'
@@ -20,6 +21,11 @@ import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminTamuRouteImport } from './routes/admin.tamu'
 import { Route as AdminTujuanRouteImport } from './routes/admin.tujuan'
 
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -72,6 +78,7 @@ const AdminTujuanRoute = AdminTujuanRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/panduan': typeof PanduanRoute
   '/registrasi': typeof RegistrasiRoute
@@ -84,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof IndexRoute
   '/panduan': typeof PanduanRoute
   '/registrasi': typeof RegistrasiRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -96,6 +104,7 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/panduan': typeof PanduanRoute
   '/registrasi': typeof RegistrasiRoute
@@ -110,6 +119,7 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/'
     | '/admin'
     | '/panduan'
     | '/registrasi'
@@ -122,6 +132,7 @@ export interface FileRouteTypes {
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/'
     | '/panduan'
     | '/registrasi'
     | '/reset-password'
@@ -133,6 +144,7 @@ export interface FileRouteTypes {
     | '/admin'
   id:
     | '__root__'
+    | '/'
     | '/admin'
     | '/panduan'
     | '/registrasi'
@@ -146,6 +158,7 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   PanduanRoute: typeof PanduanRoute
   RegistrasiRoute: typeof RegistrasiRoute
@@ -154,6 +167,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -248,6 +268,7 @@ const AdminRouteChildren: AdminRouteChildren = {
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   PanduanRoute: PanduanRoute,
   RegistrasiRoute: RegistrasiRoute,
