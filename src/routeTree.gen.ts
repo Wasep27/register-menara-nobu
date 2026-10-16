@@ -11,10 +11,12 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as KaryawanRouteImport } from './routes/karyawan'
 import { Route as PanduanRouteImport } from './routes/panduan'
 import { Route as RegistrasiRouteImport } from './routes/registrasi'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminEmailAdminRouteImport } from './routes/admin.email-admin'
 import { Route as AdminKaryawanRouteImport } from './routes/admin.karyawan'
 import { Route as AdminLaporanRouteImport } from './routes/admin.laporan'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
@@ -29,6 +31,11 @@ const IndexRoute = IndexRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KaryawanRoute = KaryawanRouteImport.update({
+  id: '/karyawan',
+  path: '/karyawan',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PanduanRoute = PanduanRouteImport.update({
@@ -49,6 +56,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminEmailAdminRoute = AdminEmailAdminRouteImport.update({
+  id: '/email-admin',
+  path: '/email-admin',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminKaryawanRoute = AdminKaryawanRouteImport.update({
@@ -80,9 +92,11 @@ const AdminTujuanRoute = AdminTujuanRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/karyawan': typeof KaryawanRoute
   '/panduan': typeof PanduanRoute
   '/registrasi': typeof RegistrasiRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/admin/email-admin': typeof AdminEmailAdminRoute
   '/admin/karyawan': typeof AdminKaryawanRoute
   '/admin/laporan': typeof AdminLaporanRoute
   '/admin/login': typeof AdminLoginRoute
@@ -92,9 +106,11 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/karyawan': typeof KaryawanRoute
   '/panduan': typeof PanduanRoute
   '/registrasi': typeof RegistrasiRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/admin/email-admin': typeof AdminEmailAdminRoute
   '/admin/karyawan': typeof AdminKaryawanRoute
   '/admin/laporan': typeof AdminLaporanRoute
   '/admin/login': typeof AdminLoginRoute
@@ -106,9 +122,11 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/karyawan': typeof KaryawanRoute
   '/panduan': typeof PanduanRoute
   '/registrasi': typeof RegistrasiRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/admin/email-admin': typeof AdminEmailAdminRoute
   '/admin/karyawan': typeof AdminKaryawanRoute
   '/admin/laporan': typeof AdminLaporanRoute
   '/admin/login': typeof AdminLoginRoute
@@ -121,9 +139,11 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/karyawan'
     | '/panduan'
     | '/registrasi'
     | '/reset-password'
+    | '/admin/email-admin'
     | '/admin/karyawan'
     | '/admin/laporan'
     | '/admin/login'
@@ -133,9 +153,11 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/karyawan'
     | '/panduan'
     | '/registrasi'
     | '/reset-password'
+    | '/admin/email-admin'
     | '/admin/karyawan'
     | '/admin/laporan'
     | '/admin/login'
@@ -146,9 +168,11 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/karyawan'
     | '/panduan'
     | '/registrasi'
     | '/reset-password'
+    | '/admin/email-admin'
     | '/admin/karyawan'
     | '/admin/laporan'
     | '/admin/login'
@@ -160,6 +184,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
+  KaryawanRoute: typeof KaryawanRoute
   PanduanRoute: typeof PanduanRoute
   RegistrasiRoute: typeof RegistrasiRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -179,6 +204,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/karyawan': {
+      id: '/karyawan'
+      path: '/karyawan'
+      fullPath: '/karyawan'
+      preLoaderRoute: typeof KaryawanRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/panduan': {
@@ -207,6 +239,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/email-admin': {
+      id: '/admin/email-admin'
+      path: '/email-admin'
+      fullPath: '/admin/email-admin'
+      preLoaderRoute: typeof AdminEmailAdminRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/karyawan': {
@@ -248,6 +287,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminEmailAdminRoute: typeof AdminEmailAdminRoute
   AdminKaryawanRoute: typeof AdminKaryawanRoute
   AdminLaporanRoute: typeof AdminLaporanRoute
   AdminLoginRoute: typeof AdminLoginRoute
@@ -257,6 +297,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminEmailAdminRoute: AdminEmailAdminRoute,
   AdminKaryawanRoute: AdminKaryawanRoute,
   AdminLaporanRoute: AdminLaporanRoute,
   AdminLoginRoute: AdminLoginRoute,
@@ -270,6 +311,7 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
+  KaryawanRoute: KaryawanRoute,
   PanduanRoute: PanduanRoute,
   RegistrasiRoute: RegistrasiRoute,
   ResetPasswordRoute: ResetPasswordRoute,

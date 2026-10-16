@@ -4,7 +4,7 @@ import { z } from "zod";
 import { supabase, type Employee, type Purpose } from "@/lib/supabase";
 import { SiteNav } from "@/components/SiteNav";
 
-const navItems = [{ to: "/", label: "Beranda" }, { to: "/registrasi", label: "Registrasi Tamu" }, { to: "/panduan", label: "Panduan" }, { to: "/admin/login", label: "Admin" }];
+const navItems = [{ to: "/", label: "Beranda" }, { to: "/registrasi", label: "Registrasi Tamu" }, { to: "/panduan", label: "Panduan" }, { to: "/karyawan", label: "Karyawan" }, { to: "/admin/login", label: "Admin" }];
 
 export const Route = createFileRoute("/registrasi")({
   head: () => ({
@@ -27,9 +27,11 @@ const schema = z.object({
   visit_purpose_id: z.string().min(1, "Pilih tujuan kunjungan"),
   employee_id: z.string().min(1, "Pilih nama yang dituju"),
   notes: z.string().max(500).optional(),
+  scheduled_at: z.string().optional().refine((v) => !v || new Date(v).getTime() > Date.now() - 300000, "Jadwal harus di masa depan"),
+  is_important: z.string().optional(),
 });
-type Form = z.infer<typeof schema> & { notes: string };
-const empty: Form = { name: "", institution: "", phone: "", visit_purpose_id: "", employee_id: "", notes: "" };
+type Form = z.infer<typeof schema> & { notes: string; scheduled_at: string; is_important: string };
+const empty: Form = { name: "", institution: "", phone: "", visit_purpose_id: "", employee_id: "", notes: "", scheduled_at: "", is_important: "" };
 const LS_DRAFT = "nobu_draft";
 const LS_TOKEN = "nobu_token";
 const LS_OPENED = "nobu_opened";
@@ -128,7 +130,7 @@ function GuestForm() {
     setSubmitting(true);
     setSubmitErr("");
     const { error } = await supabase.rpc("submit_guest", {
-      _payload: { ...r.data, form_opened_at: localStorage.getItem(LS_OPENED) },
+      _payload: { ...r.data, scheduled_at: r.data.scheduled_at ? new Date(r.data.scheduled_at).toISOString() : null, is_important: r.data.is_important === "1", form_opened_at: localStorage.getItem(LS_OPENED) },
       _token: token.current,
     });
     setSubmitting(false);
@@ -216,6 +218,13 @@ function GuestForm() {
               {filteredEmp.map((p) => <option key={p.id} value={p.id}>{p.name}{p.department ? ` (${p.department})` : ""}</option>)}
             </select>
           </F>
+          <F label="Jadwal kunjungan (opsional — isi jika datang di lain waktu)" err={errors.scheduled_at}>
+            <input type="datetime-local" className={field} value={form.scheduled_at} onChange={(e) => update("scheduled_at", e.target.value)} onBlur={() => validateField("scheduled_at")} />
+          </F>
+          <label className="flex min-h-11 items-center gap-3 rounded-xl border border-input px-4">
+            <input type="checkbox" className="h-5 w-5 accent-primary" checked={form.is_important === "1"} onChange={(e) => update("is_important", e.target.checked ? "1" : "")} />
+            <span className="text-sm text-foreground">Tandai sebagai kunjungan penting</span>
+          </label>
           <F label="Catatan (opsional)">
             <textarea className={field} rows={3} value={form.notes} onChange={(e) => update("notes", e.target.value)} />
           </F>

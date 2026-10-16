@@ -209,3 +209,135 @@ begin
 end $$;
 
 grant execute on function public.login_lock_seconds(text), public.record_login_attempt(text, boolean) to anon, authenticated;
+
+-- ============================================================
+-- NOTIFIKASI KARYAWAN & KUNJUNGAN TERJADWAL
+-- Karyawan login dengan email yang sama dengan email di data Karyawan.
+-- ============================================================
+alter table public.employees add column if not exists email text;
+alter table public.employees add column if not exists user_id uuid references auth.users(id) on delete set null;
+create unique index if not exists employees_email_uniq on public.employees(lower(email)) where email is not null;
+alter table public.guests add column if not exists scheduled_at timestamptz;
+alter table public.guests add column if not exists is_important boolean not null default false;
+
+-- hubungkan karyawan dengan akun login berdasarkan email
+create or replace function public.link_employee_user()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.email is null then new.user_id := null;
+  else new.user_id := (select id from auth.users where lower(email)=lower(new.email) limit 1);
+  end if;
+  return new;
+end $$;
+drop trigger if exists employees_link_user on public.employees;
+create trigger employees_link_user before insert or update of email on public.employees
+for each row execute function public.link_employee_user();
+
+create or replace function public.link_user_employee()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  update public.employees set user_id = new.id where lower(email)=lower(new.email);
+  return new;
+end $$;
+drop trigger if exists on_auth_user_link_employee on auth.users;
+create trigger on_auth_user_link_employee after insert on auth.users
+for each row execute function public.link_user_employee();
+update public.employees e set user_id = u.id from auth.users u where e.email is not null and lower(u.email)=lower(e.email);
+
+-- karyawan boleh melihat tamu yang menuju dirinya
+drop policy if exists "employee read own guests" on public.guests;
+create policy "employee read own guests" on public.guests for select to authenticated
+using (employee_id in (select id from public.employees where user_id = auth.uid()));
+
+create table if not exists public.notifications (
+  id uuid primary key default gen_random_uuid(),
+  employee_id uuid not null references public.employees(id) on delete cascade,
+  guest_id uuid references public.guests(id) on delete cascade,
+  kind text not null,
+  title text not null,
+  body text,
+  read_at timestamptz,
+  created_at timestamptz not null default now()
+);
+create index if not exists notifications_emp on public.notifications(employee_id, created_at desc);
+grant select, update on public.notifications to authenticated;
+grant all on public.notifications to service_role;
+alter table public.notifications enable row level security;
+drop policy if exists "own notif read" on public.notifications;
+create policy "own notif read" on public.notifications for select to authenticated
+using (employee_id in (select id from public.employees where user_id = auth.uid()) or public.has_role(auth.uid(),'admin'));
+drop policy if exists "own notif update" on public.notifications;
+create policy "own notif update" on public.notifications for update to authenticated
+using (employee_id in (select id from public.employees where user_id = auth.uid()))
+with check (employee_id in (select id from public.employees where user_id = auth.uid()));
+
+create or replace function public.notify_new_guest()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.employee_id is null then return new; end if;
+  insert into notifications(employee_id, guest_id, kind, title, body) values (
+    new.employee_id, new.id,
+    case when new.scheduled_at is not null then 'scheduled' else 'new_guest' end,
+    case when new.scheduled_at is not null then
+      (case when new.is_important then '⭐ Kunjungan penting dijadwalkan: ' else 'Kunjungan dijadwalkan: ' end) || new.name
+    else 'Tamu baru tiba: ' || new.name end,
+    new.institution || coalesce(' · ' || to_char(new.scheduled_at at time zone 'Asia/Jakarta','DD Mon YYYY HH24:MI') || ' WIB','')
+  );
+  return new;
+end $$;
+drop trigger if exists guests_notify on public.guests;
+create trigger guests_notify after insert on public.guests for each row execute function public.notify_new_guest();
+
+do $$ begin
+  alter publication supabase_realtime add table public.notifications;
+exception when others then null; end $$;
+
+-- submit_guest versi baru: mendukung jadwal & tanda penting
+create or replace function public.submit_guest(_payload jsonb, _token uuid)
+returns uuid language plpgsql security definer set search_path = public as $$
+declare new_id uuid; opened timestamptz; sched timestamptz;
+begin
+  if not exists (select 1 from employees where id=(_payload->>'employee_id')::uuid and is_active) then
+    raise exception 'Karyawan tidak valid'; end if;
+  if not exists (select 1 from visit_purposes where id=(_payload->>'visit_purpose_id')::uuid and is_active) then
+    raise exception 'Tujuan tidak valid'; end if;
+  opened := nullif(_payload->>'form_opened_at','')::timestamptz;
+  sched := nullif(_payload->>'scheduled_at','')::timestamptz;
+  if sched is not null and (sched < now() - interval '5 minutes' or sched > now() + interval '180 days') then
+    raise exception 'Jadwal tidak valid'; end if;
+  insert into guests(name,institution,phone,employee_id,visit_purpose_id,notes,form_opened_at,fill_duration_seconds,scheduled_at,is_important)
+  values (trim(_payload->>'name'), trim(_payload->>'institution'), trim(_payload->>'phone'),
+    (_payload->>'employee_id')::uuid, (_payload->>'visit_purpose_id')::uuid,
+    nullif(trim(coalesce(_payload->>'notes','')),''), opened,
+    case when opened is not null then greatest(0, extract(epoch from now()-opened))::int end,
+    sched, coalesce((_payload->>'is_important')::boolean, false))
+  returning id into new_id;
+  if _token is not null then delete from guest_drafts where draft_token=_token; end if;
+  return new_id;
+end $$;
+
+-- ============================================================
+-- KELOLA EMAIL ADMIN DARI APLIKASI
+-- ============================================================
+alter table public.admin_emails add column if not exists created_at timestamptz not null default now();
+grant select, insert, delete on public.admin_emails to authenticated;
+drop policy if exists "admin manage admin_emails" on public.admin_emails;
+create policy "admin manage admin_emails" on public.admin_emails for all to authenticated
+using (public.has_role(auth.uid(),'admin')) with check (public.has_role(auth.uid(),'admin'));
+
+create or replace function public.sync_admin_email()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if tg_op = 'INSERT' then
+    insert into user_roles(user_id, role) select id, 'admin' from auth.users where lower(email)=lower(new.email)
+    on conflict (user_id, role) do nothing;
+    return new;
+  else
+    delete from user_roles where role='admin' and user_id <> auth.uid()
+      and user_id in (select id from auth.users where lower(email)=lower(old.email));
+    return old;
+  end if;
+end $$;
+drop trigger if exists admin_emails_sync on public.admin_emails;
+create trigger admin_emails_sync after insert or delete on public.admin_emails
+for each row execute function public.sync_admin_email();
