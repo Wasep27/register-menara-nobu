@@ -47,7 +47,7 @@ function Reset() {
           <>
             <label className="block text-sm">Password baru<input className={f} type="password" value={pw} onChange={(e) => setPw(e.target.value)} /></label>
             <label className="block text-sm">Ulangi password<input className={f} type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} /></label>
-            {msg && <p className="text-sm text-destructive">{msg}</p>}
+            {msg && <p role="alert" className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"><span aria-hidden>⚠</span>{msg}</p>}
             <button className="min-h-11 w-full rounded-full bg-primary font-semibold text-primary-foreground">Simpan</button>
           </>
         )}

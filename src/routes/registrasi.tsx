@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { z } from "zod";
+import type { z } from "zod";
+import { guestSchema } from "@/lib/validation";
 import { supabase, type Employee, type Purpose } from "@/lib/supabase";
 import { SiteNav } from "@/components/SiteNav";
 
@@ -20,16 +21,7 @@ export const Route = createFileRoute("/registrasi")({
   component: GuestForm,
 });
 
-const schema = z.object({
-  name: z.string().trim().min(2, "Nama minimal 2 huruf").max(100),
-  institution: z.string().trim().min(2, "Instansi wajib diisi").max(150),
-  phone: z.string().trim().regex(/^[0-9+ -]{8,20}$/, "Nomor telepon tidak valid"),
-  visit_purpose_id: z.string().min(1, "Pilih tujuan kunjungan"),
-  employee_id: z.string().min(1, "Pilih nama yang dituju"),
-  notes: z.string().max(500).optional(),
-  scheduled_at: z.string().optional().refine((v) => !v || new Date(v).getTime() > Date.now() - 300000, "Jadwal harus di masa depan"),
-  is_important: z.string().optional(),
-});
+const schema = guestSchema;
 type Form = z.infer<typeof schema> & { notes: string; scheduled_at: string; is_important: string };
 const empty: Form = { name: "", institution: "", phone: "", visit_purpose_id: "", employee_id: "", notes: "", scheduled_at: "", is_important: "" };
 const LS_DRAFT = "nobu_draft";
@@ -104,6 +96,7 @@ function GuestForm() {
     dirty.current = true;
     syncPending.current = true;
     setForm((f) => ({ ...f, [k]: v }));
+    if (errors[k]) setErrors((e) => ({ ...e, [k]: "" }));
   };
 
   const validateField = (k: keyof Form) => {
@@ -125,6 +118,9 @@ function GuestForm() {
       const errs: Record<string, string> = {};
       r.error.issues.forEach((i) => { errs[String(i.path[0])] = i.message; });
       setErrors(errs as Partial<Record<keyof Form, string>>);
+      setSubmitErr(`Periksa kembali ${Object.keys(errs).length} isian yang ditandai merah.`);
+      const first = document.querySelector<HTMLElement>(`[name="${String(r.error.issues[0]?.path[0])}"]`);
+      first?.focus();
       return;
     }
     setSubmitting(true);
@@ -134,7 +130,7 @@ function GuestForm() {
       _token: token.current,
     });
     setSubmitting(false);
-    if (error) { setSubmitErr("Gagal mengirim. Isian Anda tetap tersimpan, silakan coba lagi."); return; }
+    if (error) { setSubmitErr(navigator.onLine ? "Gagal mengirim. Isian Anda tetap tersimpan, silakan coba lagi." : "Tidak ada koneksi internet. Isian Anda tetap tersimpan, kirim lagi setelah tersambung."); return; }
     clearAll();
     dirty.current = false;
     syncPending.current = false;
@@ -175,6 +171,8 @@ function GuestForm() {
 
   const field = "mt-1 w-full rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground transition-shadow focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/25";
 
+  const fc = (k: keyof Form) => errors[k] ? field + " border-destructive bg-destructive/5 focus:border-destructive focus:ring-destructive/20" : field;
+
   return (
     <main className="min-h-screen bg-background">
       <SiteNav items={navItems} />
@@ -196,40 +194,40 @@ function GuestForm() {
         )}
 
         <form onSubmit={submit} className="fade-up space-y-4 rounded-3xl bg-card p-5 shadow-soft [animation-delay:120ms] sm:p-7">
-          <F label="Nama lengkap" err={errors.name}>
-            <input className={field} value={form.name} onChange={(e) => update("name", e.target.value)} onBlur={() => validateField("name")} autoComplete="name" />
+          <F required label="Nama lengkap" err={errors.name}>
+            <input className={fc("name")} name="name" aria-invalid={!!errors.name} value={form.name} onChange={(e) => update("name", e.target.value)} onBlur={() => validateField("name")} autoComplete="name" />
           </F>
-          <F label="Instansi / Perusahaan" err={errors.institution}>
-            <input className={field} value={form.institution} onChange={(e) => update("institution", e.target.value)} onBlur={() => validateField("institution")} />
+          <F required label="Instansi / Perusahaan" err={errors.institution}>
+            <input className={fc("institution")} name="institution" aria-invalid={!!errors.institution} value={form.institution} onChange={(e) => update("institution", e.target.value)} onBlur={() => validateField("institution")} />
           </F>
-          <F label="Nomor telepon" err={errors.phone}>
-            <input className={field} inputMode="tel" value={form.phone} onChange={(e) => update("phone", e.target.value)} onBlur={() => validateField("phone")} />
+          <F required hint="Contoh: 0812 3456 7890" label="Nomor telepon" err={errors.phone}>
+            <input className={fc("phone")} name="phone" aria-invalid={!!errors.phone} inputMode="tel" value={form.phone} onChange={(e) => update("phone", e.target.value)} onBlur={() => validateField("phone")} />
           </F>
-          <F label="Tujuan kunjungan" err={errors.visit_purpose_id}>
-            <select className={field} value={form.visit_purpose_id} onChange={(e) => update("visit_purpose_id", e.target.value)} onBlur={() => validateField("visit_purpose_id")}>
+          <F required label="Tujuan kunjungan" err={errors.visit_purpose_id}>
+            <select className={fc("visit_purpose_id")} name="visit_purpose_id" aria-invalid={!!errors.visit_purpose_id} value={form.visit_purpose_id} onChange={(e) => update("visit_purpose_id", e.target.value)} onBlur={() => validateField("visit_purpose_id")}>
               <option value="">— Pilih —</option>
               {purposes.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </F>
-          <F label="Nama yang dituju" err={errors.employee_id}>
+          <F required label="Nama yang dituju" err={errors.employee_id}>
             <input className={field} placeholder="Cari nama…" value={empSearch} onChange={(e) => setEmpSearch(e.target.value)} />
-            <select className={field} value={form.employee_id} onChange={(e) => update("employee_id", e.target.value)} onBlur={() => validateField("employee_id")}>
+            <select className={fc("employee_id")} name="employee_id" aria-invalid={!!errors.employee_id} value={form.employee_id} onChange={(e) => update("employee_id", e.target.value)} onBlur={() => validateField("employee_id")}>
               <option value="">— Pilih —</option>
               {filteredEmp.map((p) => <option key={p.id} value={p.id}>{p.name}{p.department ? ` (${p.department})` : ""}</option>)}
             </select>
           </F>
           <F label="Jadwal kunjungan (opsional — isi jika datang di lain waktu)" err={errors.scheduled_at}>
-            <input type="datetime-local" className={field} value={form.scheduled_at} onChange={(e) => update("scheduled_at", e.target.value)} onBlur={() => validateField("scheduled_at")} />
+            <input type="datetime-local" className={fc("scheduled_at")} name="scheduled_at" aria-invalid={!!errors.scheduled_at} value={form.scheduled_at} onChange={(e) => update("scheduled_at", e.target.value)} onBlur={() => validateField("scheduled_at")} />
           </F>
           <label className="flex min-h-11 items-center gap-3 rounded-xl border border-input px-4">
             <input type="checkbox" className="h-5 w-5 accent-primary" checked={form.is_important === "1"} onChange={(e) => update("is_important", e.target.checked ? "1" : "")} />
             <span className="text-sm text-foreground">Tandai sebagai kunjungan penting</span>
           </label>
-          <F label="Catatan (opsional)">
-            <textarea className={field} rows={3} value={form.notes} onChange={(e) => update("notes", e.target.value)} />
+          <F label="Catatan (opsional)" err={errors.notes} hint={`${form.notes.length}/500 karakter`}>
+            <textarea className={fc("notes")} name="notes" aria-invalid={!!errors.notes} maxLength={500} rows={3} value={form.notes} onChange={(e) => update("notes", e.target.value)} />
           </F>
 
-          {submitErr && <p className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{submitErr}</p>}
+          {submitErr && <p role="alert" className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"><span aria-hidden>⚠</span>{submitErr}</p>}
 
           <div className="flex items-center justify-between gap-3">
             <span className="text-sm text-muted-foreground" aria-live="polite">{statusText}</span>
@@ -243,12 +241,13 @@ function GuestForm() {
   );
 }
 
-function F({ label, err, children }: { label: string; err?: string | undefined; children: React.ReactNode }) {
+function F({ label, err, hint, required, children }: { label: string; err?: string | undefined; hint?: string; required?: boolean; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="text-sm font-medium text-foreground">{label}</span>
+      <span className="text-sm font-medium text-foreground">{label}{required && <span className="text-destructive" aria-hidden> *</span>}</span>
       {children}
-      {err && <span className="mt-1 block text-sm text-destructive">{err}</span>}
+      {err ? <span role="alert" className="mt-1 flex items-center gap-1 text-sm text-destructive"><span aria-hidden>⚠</span>{err}</span>
+        : hint ? <span className="mt-1 block text-xs text-muted-foreground">{hint}</span> : null}
     </label>
   );
 }

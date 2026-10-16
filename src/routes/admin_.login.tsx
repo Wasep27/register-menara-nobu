@@ -26,8 +26,10 @@ function Login() {
   const [info, setInfo] = useState("");
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErr(""); setInfo("");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return setErr("Format email tidak valid, contoh admin@nobu.id");
+    if (!password) return setErr("Password wajib diisi.");
     setLoading(true);
-    setErr("");
     const { data: lock } = await supabase.rpc("login_lock_seconds", { _email: email });
     if (typeof lock === "number" && lock > 0) {
       setLoading(false);
@@ -36,12 +38,12 @@ function Login() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     await supabase.rpc("record_login_attempt", { _email: email, _success: !error });
     setLoading(false);
-    if (error) return setErr("Email atau password salah. Setelah 5 kali gagal, akun dikunci 15 menit.");
+    if (error) return setErr(!navigator.onLine ? "Tidak ada koneksi internet. Periksa jaringan lalu coba lagi." : error.message.includes("not confirmed") ? "Email belum dikonfirmasi. Cek kotak masuk email Anda." : "Email atau password salah. Setelah 5 kali gagal, akun dikunci 15 menit.");
     nav({ to: "/admin" });
   };
   const forgot = async () => {
     setErr(""); setInfo("");
-    if (!email) return setErr("Isi email terlebih dahulu.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return setErr("Isi email yang valid terlebih dahulu, lalu tekan Lupa password.");
     await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` });
     setInfo("Jika email terdaftar, tautan untuk mengatur ulang password sudah dikirim.");
   };
@@ -54,8 +56,8 @@ function Login() {
         <h1 className="text-center text-xl font-bold text-foreground">Login Admin</h1>
         <label className="block text-sm">Email<input className={f} type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
         <label className="block text-sm">Password<input className={f} type="password" value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
-        {err && <p className="text-sm text-destructive">{err}</p>}
-        {info && <p className="text-sm text-primary">{info}</p>}
+        {err && <p role="alert" className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"><span aria-hidden>⚠</span>{err}</p>}
+        {info && <p role="status" className="flex items-start gap-2 rounded-xl border border-primary/30 bg-brand-soft p-3 text-sm text-primary"><span aria-hidden>✓</span>{info}</p>}
         <button disabled={loading} className="min-h-11 w-full rounded-full bg-primary font-semibold transition-all hover:brightness-110 active:scale-95 text-primary-foreground">{loading ? "Masuk…" : "Masuk"}</button>
         <button type="button" className="w-full text-sm text-primary" onClick={forgot}>Lupa password?</button>
       </form>
