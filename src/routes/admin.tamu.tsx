@@ -11,6 +11,7 @@ function Guests() {
   const [page, setPage] = useState(0);
   const [q, setQ] = useState("");
   const [date, setDate] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [purpose, setPurpose] = useState("");
   const [emp, setEmp] = useState("");
   const [asc, setAsc] = useState(false);
@@ -25,14 +26,16 @@ function Guests() {
 
   const load = useCallback(async () => {
     let qb = supabase.from("guests").select("*, employees(name), visit_purposes(name)", { count: "exact" });
-    if (q) qb = qb.or(`name.ilike.%${q}%,institution.ilike.%${q}%,phone.ilike.%${q}%`);
-    if (date) { const s = new Date(date); const e = new Date(date); e.setDate(e.getDate() + 1); qb = qb.gte("check_in_time", s.toISOString()).lt("check_in_time", e.toISOString()); }
+    const term = q.replace(/[,()%*]/g, " ").trim();
+    if (term) qb = qb.or(`name.ilike.%${term}%,institution.ilike.%${term}%,phone.ilike.%${term}%`);
+    if (date) qb = qb.gte("check_in_time", new Date(`${date}T00:00:00`).toISOString());
+    if (dateTo || date) { const e = new Date(`${dateTo || date}T00:00:00`); e.setDate(e.getDate() + 1); qb = qb.lt("check_in_time", e.toISOString()); }
     if (purpose) qb = qb.eq("visit_purpose_id", purpose);
     if (emp) qb = qb.eq("employee_id", emp);
     const { data, count } = await qb.order("check_in_time", { ascending: asc }).range(page * PAGE, page * PAGE + PAGE - 1);
     setRows((data as Guest[]) ?? []);
     setCount(count ?? 0);
-  }, [q, date, purpose, emp, asc, page]);
+  }, [q, date, dateTo, purpose, emp, asc, page]);
   useEffect(() => { load(); }, [load]);
 
   const del = async (id: string) => { if (confirm("Hapus data tamu ini?")) { await supabase.from("guests").delete().eq("id", id); load(); } };
@@ -47,11 +50,14 @@ function Guests() {
     <div className="space-y-4">
       <h1 className="text-2xl font-bold text-foreground">Data Tamu</h1>
       <div className="flex flex-wrap gap-2">
-        <input className={i} placeholder="Cari nama / instansi / telepon" value={q} onChange={(e) => { setQ(e.target.value); setPage(0); }} />
-        <input className={i} type="date" value={date} onChange={(e) => { setDate(e.target.value); setPage(0); }} />
+        <input className={`${i} min-w-0 flex-1 sm:flex-none sm:w-64`} type="search" placeholder="Cari nama / instansi / telepon" value={q} onChange={(e) => { setQ(e.target.value); setPage(0); }} />
+        <label className="flex items-center gap-1 text-sm text-muted-foreground">Dari<input className={i} type="date" value={date} onChange={(e) => { setDate(e.target.value); setPage(0); }} /></label>
+        <label className="flex items-center gap-1 text-sm text-muted-foreground">Sampai<input className={i} type="date" value={dateTo} min={date || undefined} onChange={(e) => { setDateTo(e.target.value); setPage(0); }} /></label>
         <select className={i} value={purpose} onChange={(e) => { setPurpose(e.target.value); setPage(0); }}><option value="">Semua tujuan</option>{purps.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
         <select className={i} value={emp} onChange={(e) => { setEmp(e.target.value); setPage(0); }}><option value="">Semua karyawan</option>{emps.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
+        <button className={i} onClick={() => { setQ(""); setDate(""); setDateTo(""); setPurpose(""); setEmp(""); setPage(0); }}>Reset filter</button>
       </div>
+      <p className="text-sm text-muted-foreground">{count} kunjungan ditemukan</p>
       <div className="overflow-x-auto rounded-xl bg-card">
         <table className="w-full text-sm">
           <thead className="bg-muted text-left"><tr>
