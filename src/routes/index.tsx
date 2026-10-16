@@ -2,6 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { supabase, type Employee, type Purpose } from "@/lib/supabase";
+import { SiteNav } from "@/components/SiteNav";
+
+const navItems = [{ to: "/", label: "Registrasi Tamu" }, { to: "/admin/login", label: "Admin" }];
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -155,29 +158,33 @@ function GuestForm() {
 
   if (done) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-background p-6">
-        <div className="max-w-md rounded-2xl bg-card p-10 text-center shadow-sm">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-3xl text-primary-foreground">✓</div>
+      <main className="min-h-screen bg-background">
+        <SiteNav items={navItems} />
+        <div className="flex items-center justify-center p-6 pt-16">
+        <div className="fade-up max-w-md rounded-3xl bg-card p-10 text-center shadow-soft">
+          <div className="mx-auto mb-4 flex h-16 w-16 animate-in zoom-in items-center justify-center rounded-full bg-brand text-3xl text-foreground duration-500">✓</div>
           <h1 className="text-2xl font-bold text-foreground">Terima kasih!</h1>
           <p className="mt-2 text-muted-foreground">Registrasi berhasil. Silakan menunggu, pihak yang Anda tuju akan segera dihubungi.</p>
+        </div>
         </div>
       </main>
     );
   }
 
-  const field = "mt-1 w-full rounded-lg border border-input bg-card px-3 py-3 text-base text-foreground focus:outline-none focus:ring-2 focus:ring-ring";
+  const field = "mt-1 w-full rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground transition-shadow focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/25";
 
   return (
-    <main className="min-h-screen bg-background px-4 py-8">
-      <div className="mx-auto max-w-xl">
-        <header className="mb-6 text-center">
-          <p className="text-sm font-semibold uppercase tracking-widest text-accent">Menara Nobu</p>
-          <h1 className="mt-1 text-3xl font-bold text-primary">Registrasi Tamu</h1>
+    <main className="min-h-screen bg-background">
+      <SiteNav items={navItems} />
+      <div className="mx-auto max-w-xl px-4 pb-10 pt-4 md:pt-8">
+        <header className="fade-up mb-6 text-center">
+          <span className="inline-block rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold uppercase tracking-widest text-primary">Selamat datang</span>
+          <h1 className="mt-1 text-3xl font-bold text-foreground md:text-4xl">Registrasi Tamu</h1>
           <p className="mt-1 text-muted-foreground">Silakan isi data kunjungan Anda</p>
         </header>
 
         {restore && (
-          <div className="mb-4 rounded-xl border border-accent bg-card p-4">
+          <div className="mb-4 fade-up rounded-2xl border border-brand bg-brand-soft p-4">
             <p className="font-medium text-foreground">Ada isian yang belum selesai. Lanjutkan?</p>
             <div className="mt-3 flex gap-2">
               <button className="min-h-11 flex-1 rounded-lg bg-primary px-4 text-primary-foreground" onClick={() => { setForm({ ...empty, ...restore }); setRestore(null); }}>Lanjutkan</button>
@@ -186,7 +193,7 @@ function GuestForm() {
           </div>
         )}
 
-        <form onSubmit={submit} className="space-y-4 rounded-2xl bg-card p-6 shadow-sm">
+        <form onSubmit={submit} className="fade-up space-y-4 rounded-3xl bg-card p-5 shadow-soft [animation-delay:120ms] sm:p-7">
           <F label="Nama lengkap" err={errors.name}>
             <input className={field} value={form.name} onChange={(e) => update("name", e.target.value)} onBlur={() => validateField("name")} autoComplete="name" />
           </F>
@@ -217,7 +224,7 @@ function GuestForm() {
 
           <div className="flex items-center justify-between gap-3">
             <span className="text-sm text-muted-foreground" aria-live="polite">{statusText}</span>
-            <button type="submit" disabled={submitting} className="min-h-12 rounded-lg bg-primary px-6 font-semibold text-primary-foreground disabled:opacity-60">
+            <button type="submit" disabled={submitting} className="min-h-12 shrink-0 rounded-full bg-primary px-7 font-semibold text-primary-foreground shadow-soft transition-all hover:-translate-y-0.5 hover:brightness-110 active:scale-95 disabled:opacity-60">
               {submitting ? "Mengirim…" : submitErr ? "Coba lagi" : "Kirim"}
             </button>
           </div>

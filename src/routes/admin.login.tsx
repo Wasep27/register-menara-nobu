@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
+import logo from "@/assets/logo.webp.asset.json";
 
 export const Route = createFileRoute("/admin/login")({
   head: () => ({
@@ -34,12 +35,13 @@ function Login() {
   const f = "mt-1 w-full rounded-lg border border-input bg-card px-3 py-3 text-foreground";
   return (
     <main className="flex min-h-screen items-center justify-center bg-background p-4">
-      <form onSubmit={submit} className="w-full max-w-sm space-y-4 rounded-2xl bg-card p-8 shadow-sm">
-        <h1 className="text-2xl font-bold text-primary">Login Admin</h1>
+      <form onSubmit={submit} className="fade-up w-full max-w-sm space-y-4 rounded-3xl bg-card p-8 shadow-soft">
+        <img src={logo.url} alt="Nobu" className="mx-auto h-9 w-auto mix-blend-multiply" />
+        <h1 className="text-center text-xl font-bold text-foreground">Login Admin</h1>
         <label className="block text-sm">Email<input className={f} type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
         <label className="block text-sm">Password<input className={f} type="password" value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
         {err && <p className="text-sm text-destructive">{err}</p>}
-        <button disabled={loading} className="min-h-11 w-full rounded-lg bg-primary font-semibold text-primary-foreground">{loading ? "Masuk…" : "Masuk"}</button>
+        <button disabled={loading} className="min-h-11 w-full rounded-full bg-primary font-semibold transition-all hover:brightness-110 active:scale-95 text-primary-foreground">{loading ? "Masuk…" : "Masuk"}</button>
       </form>
     </main>
   );

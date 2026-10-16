@@ -1,6 +1,7 @@
 import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { SiteNav } from "@/components/SiteNav";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
@@ -52,14 +53,8 @@ function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-background">
-      <nav className="flex flex-wrap items-center gap-1 border-b border-border bg-card px-4 py-3">
-        <span className="mr-4 font-bold text-primary">Menara Nobu</span>
-        {links.map((l) => (
-          <Link key={l.to} to={l.to} activeOptions={{ exact: true }} className="rounded-md px-3 py-2 text-sm text-muted-foreground" activeProps={{ className: "bg-primary text-primary-foreground" }}>{l.label}</Link>
-        ))}
-        <button className="ml-auto text-sm text-muted-foreground" onClick={() => supabase.auth.signOut().then(() => nav({ to: "/admin/login" }))}>Keluar</button>
-      </nav>
-      <div className="mx-auto max-w-6xl p-4 md:p-6"><Outlet /></div>
+      <SiteNav items={[...links]} right={<button className="min-h-11 w-full rounded-full px-4 text-left text-sm font-medium text-muted-foreground hover:bg-brand-soft hover:text-primary md:w-auto" onClick={() => supabase.auth.signOut().then(() => nav({ to: "/admin/login" }))}>Keluar</button>} />
+      <div key={loc.pathname} className="fade-up mx-auto max-w-6xl p-4 md:p-6"><Outlet /></div>
     </div>
   );
 }

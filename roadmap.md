@@ -1,0 +1,2 @@
+- [x] Logo, warna brand, menu responsif beranimasi
+- [x] Huruf mengikuti gaya Bank Nobu
