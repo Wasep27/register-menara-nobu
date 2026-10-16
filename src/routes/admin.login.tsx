@@ -1,0 +1,46 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
+import { supabase } from "@/lib/supabase";
+
+export const Route = createFileRoute("/admin/login")({
+  head: () => ({
+    meta: [
+      { title: "Login Admin — Menara Nobu" },
+      { name: "description", content: "Masuk ke dashboard buku tamu Menara Nobu." },
+      { property: "og:title", content: "Login Admin — Menara Nobu" },
+      { property: "og:description", content: "Masuk ke dashboard buku tamu Menara Nobu." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
+  component: Login,
+});
+
+function Login() {
+  const nav = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErr("");
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setLoading(false);
+    if (error) return setErr("Email atau password salah.");
+    nav({ to: "/admin" });
+  };
+  const f = "mt-1 w-full rounded-lg border border-input bg-card px-3 py-3 text-foreground";
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-background p-4">
+      <form onSubmit={submit} className="w-full max-w-sm space-y-4 rounded-2xl bg-card p-8 shadow-sm">
+        <h1 className="text-2xl font-bold text-primary">Login Admin</h1>
+        <label className="block text-sm">Email<input className={f} type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
+        <label className="block text-sm">Password<input className={f} type="password" value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
+        {err && <p className="text-sm text-destructive">{err}</p>}
+        <button disabled={loading} className="min-h-11 w-full rounded-lg bg-primary font-semibold text-primary-foreground">{loading ? "Masuk…" : "Masuk"}</button>
+      </form>
+    </main>
+  );
+}

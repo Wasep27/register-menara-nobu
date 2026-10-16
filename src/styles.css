@@ -142,3 +142,19 @@
     color: var(--color-foreground);
   }
 }
+
+:root {
+  --background: #F7F8FA;
+  --foreground: #1F2933;
+  --card: #FFFFFF;
+  --primary: #0A6B73;
+  --primary-foreground: #FFFFFF;
+  --accent: #B07A00;
+  --muted: #EEF1F4;
+  --muted-foreground: #5B6670;
+  --border: #DDE2E7;
+  --input: #CBD2D9;
+  --ring: #0A6B73;
+  --destructive: #C62828;
+}
+@media print { nav { display: none; } }
