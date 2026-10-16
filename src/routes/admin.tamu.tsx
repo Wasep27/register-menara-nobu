@@ -24,7 +24,7 @@ function Guests() {
     supabase.from("visit_purposes").select("*").order("name").then(({ data }) => setPurps(data ?? []));
   }, []);
 
-  const load = useCallback(async () => {
+  const buildQuery = useCallback(() => {
     let qb = supabase.from("guests").select("*, employees(name), visit_purposes(name)", { count: "exact" });
     const term = q.replace(/[,()%*]/g, " ").trim();
     if (term) qb = qb.or(`name.ilike.%${term}%,institution.ilike.%${term}%,phone.ilike.%${term}%`);
@@ -32,10 +32,34 @@ function Guests() {
     if (dateTo || date) { const e = new Date(`${dateTo || date}T00:00:00`); e.setDate(e.getDate() + 1); qb = qb.lt("check_in_time", e.toISOString()); }
     if (purpose) qb = qb.eq("visit_purpose_id", purpose);
     if (emp) qb = qb.eq("employee_id", emp);
-    const { data, count } = await qb.order("check_in_time", { ascending: asc }).range(page * PAGE, page * PAGE + PAGE - 1);
+    return qb.order("check_in_time", { ascending: asc });
+  }, [q, date, dateTo, purpose, emp, asc]);
+
+  const [exporting, setExporting] = useState(false);
+  const exportCsv = async () => {
+    setExporting(true);
+    const all: Guest[] = [];
+    for (let from = 0; ; from += 1000) {
+      const { data } = await buildQuery().range(from, from + 999);
+      all.push(...((data as Guest[]) ?? []));
+      if (!data || data.length < 1000) break;
+    }
+    const esc = (v: unknown) => { let t = String(v ?? ""); if (/^[=+\-@]/.test(t)) t = "'" + t; return `"${t.replace(/"/g, '""')}"`; };
+    const lines = [["Waktu", "Nama", "Instansi", "Telepon", "Tujuan", "Dituju", "Catatan", "Durasi isi (detik)"].join(",")];
+    all.forEach((r) => lines.push([new Date(r.check_in_time).toLocaleString("id-ID"), r.name, r.institution, r.phone, r.visit_purposes?.name, r.employees?.name, r.notes, r.fill_duration_seconds].map(esc).join(",")));
+    const url = URL.createObjectURL(new Blob(["\ufeff" + lines.join("\n")], { type: "text/csv;charset=utf-8" }));
+    const a = document.createElement("a");
+    a.href = url; a.download = `data-tamu-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+    setExporting(false);
+  };
+
+  const load = useCallback(async () => {
+    const { data, count } = await buildQuery()("check_in_time", { ascending: asc }).range(page * PAGE, page * PAGE + PAGE - 1);
     setRows((data as Guest[]) ?? []);
     setCount(count ?? 0);
-  }, [q, date, dateTo, purpose, emp, asc, page]);
+  }, [buildQuery, page]);
   useEffect(() => { load(); }, [load]);
 
   const del = async (id: string) => { if (confirm("Hapus data tamu ini?")) { await supabase.from("guests").delete().eq("id", id); load(); } };
@@ -57,7 +81,10 @@ function Guests() {
         <select className={i} value={emp} onChange={(e) => { setEmp(e.target.value); setPage(0); }}><option value="">Semua karyawan</option>{emps.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
         <button className={i} onClick={() => { setQ(""); setDate(""); setDateTo(""); setPurpose(""); setEmp(""); setPage(0); }}>Reset filter</button>
       </div>
-      <p className="text-sm text-muted-foreground">{count} kunjungan ditemukan</p>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground">{count} kunjungan ditemukan</p>
+        <button disabled={exporting || count === 0} onClick={exportCsv} className="min-h-10 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-all active:scale-95 disabled:opacity-50">{exporting ? "Menyiapkan…" : "Ekspor CSV"}</button>
+      </div>
       <div className="overflow-x-auto rounded-xl bg-card">
         <table className="w-full text-sm">
           <thead className="bg-muted text-left"><tr>
