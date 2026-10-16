@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
-import logo from "@/assets/logo.webp.asset.json";
+import logo from "@/assets/logo.png";
 
 export const Route = createFileRoute("/admin_/login")({
   head: () => ({

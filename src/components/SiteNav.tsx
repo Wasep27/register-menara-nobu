@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
-import logo from "@/assets/logo.webp.asset.json";
+import logo from "@/assets/logo.png";
 
 export type NavItem = { to: string; label: string };
 
@@ -19,11 +19,18 @@ export function SiteNav({ items, right }: { items: NavItem[]; right?: React.Reac
   }, [open]);
 
   return (
-    <header className={`app-header sticky top-0 z-40 transition-all duration-300 ${scrolled ? "bg-card/85 shadow-soft backdrop-blur-md" : "bg-transparent"}`}>
-      <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 md:flex md:justify-between">
-        <Link to="/" className="flex min-w-0 items-center gap-2" onClick={() => setOpen(false)}>
-          <img src={logo.url} alt="Nobu" className="h-7 w-auto shrink-0 mix-blend-multiply transition-transform duration-300 hover:scale-105 md:h-8" />
-          <span className="hidden truncate text-sm font-medium text-muted-foreground sm:inline">Menara Nobu</span>
+    <header className="app-header sticky top-0 z-40 px-3 pt-3 md:px-6 md:pt-4">
+      {/* kapsul melayang */}
+      <div
+        className={`mx-auto flex max-w-6xl items-center justify-between gap-3 rounded-full border px-4 py-2.5 transition-all duration-300 md:px-5 ${
+          scrolled
+            ? "border-border/50 bg-card/85 shadow-soft backdrop-blur-md"
+            : "border-transparent bg-card/50 backdrop-blur-md"
+        }`}
+      >
+        <Link to="/" className="flex min-w-0 items-center gap-2.5" onClick={() => setOpen(false)}>
+          <img src={logo.url} alt="Nobu" className="h-7 w-auto shrink-0 transition-transform duration-300 hover:scale-105 md:h-8" />
+          <span className="hidden truncate text-sm font-semibold text-foreground sm:inline">Menara Nobu</span>
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">
@@ -44,9 +51,9 @@ export function SiteNav({ items, right }: { items: NavItem[]; right?: React.Reac
       </div>
 
       {/* menu ponsel */}
-      <div className={`fixed inset-0 top-[68px] z-30 md:hidden ${open ? "pointer-events-auto" : "pointer-events-none"}`}>
+      <div className={`fixed inset-0 top-[84px] z-30 md:hidden ${open ? "pointer-events-auto" : "pointer-events-none"}`}>
         <div onClick={() => setOpen(false)} className={`absolute inset-0 bg-foreground/30 transition-opacity duration-300 ${open ? "opacity-100" : "opacity-0"}`} />
-        <div className={`absolute inset-x-3 top-2 rounded-2xl bg-card p-3 shadow-soft transition-all duration-300 ease-out ${open ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"}`}>
+        <div className={`absolute inset-x-3 top-2 rounded-3xl bg-card p-3 shadow-soft transition-all duration-300 ease-out ${open ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"}`}>
           {items.map((l, i) => (
             <Link key={l.to} to={l.to} activeOptions={{ exact: true }} onClick={() => setOpen(false)}
               style={{ transitionDelay: open ? `${i * 40}ms` : "0ms" }}

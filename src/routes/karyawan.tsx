@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
-import logo from "@/assets/logo.webp.asset.json";
+import logo from "@/assets/logo.png";
 
 export const Route = createFileRoute("/karyawan")({
   ssr: false,
