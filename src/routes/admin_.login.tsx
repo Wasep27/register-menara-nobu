@@ -50,7 +50,7 @@ function Login() {
     <main className="relative flex min-h-screen items-center justify-center bg-background p-4">
       <Link to="/" className="absolute left-4 top-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-card px-4 text-sm font-medium text-primary shadow-soft transition-transform hover:-translate-x-0.5">← Kembali</Link>
       <form onSubmit={submit} className="fade-up w-full max-w-sm space-y-4 rounded-3xl bg-card p-8 shadow-soft">
-        <img src={logo.url} alt="Nobu" className="mx-auto h-9 w-auto mix-blend-multiply" />
+        <img src={logo.url} alt="Nobu" className="mx-auto h-9 w-auto" />
         <h1 className="text-center text-xl font-bold text-foreground">Login Admin</h1>
         <label className="block text-sm">Email<input className={f} type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
         <label className="block text-sm">Password<input className={f} type="password" value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
