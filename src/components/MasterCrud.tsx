@@ -15,7 +15,7 @@ export function MasterCrud({ table, title, withDept }: { table: "employees" | "v
   const [editId, setEditId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [errs, setErrs] = useState<Record<string, string>>({});
+  const [errs, setErrs] = useState<Partial<Record<"name" | "department" | "email", string>>>({});
   const [toDelete, setToDelete] = useState<Row | null>(null);
   const label = table === "employees" ? "karyawan" : "tujuan kunjungan";
 
@@ -34,7 +34,7 @@ export function MasterCrud({ table, title, withDept }: { table: "employees" | "v
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     const r = withDept ? employeeSchema.safeParse({ name, department: dept, email }) : purposeSchema.safeParse({ name });
-    if (!r.success) { setErrs(fieldErrors(r.error.issues)); toast.error("Periksa kembali isian yang ditandai merah"); return; }
+    if (!r.success) { setErrs(fieldErrors(r.error.issues) as typeof errs); toast.error("Periksa kembali isian yang ditandai merah"); return; }
     setErrs({});
     const dup = rows.find((x) => x.id !== editId && x.name.trim().toLowerCase() === name.trim().toLowerCase());
     if (dup) { setErrs({ name: `"${dup.name}" sudah ada di daftar` }); return; }
@@ -65,8 +65,8 @@ export function MasterCrud({ table, title, withDept }: { table: "employees" | "v
     load();
   };
 
-  const ic = (k: string) => errs[k] ? i + " border-destructive bg-destructive/5" : i;
   const i = "min-h-11 w-full rounded-lg border border-input bg-card px-3 py-2 text-sm";
+  const ic = (k: keyof typeof errs) => errs[k] ? i + " border-destructive bg-destructive/5" : i;
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -120,7 +120,7 @@ export function MasterCrud({ table, title, withDept }: { table: "employees" | "v
   );
 }
 
-function Field({ label, required, err, children }: { label: string; required?: boolean; err?: string; children: React.ReactNode }) {
+function Field({ label, required, err, children }: { label: string; required?: boolean; err?: string | undefined; children: React.ReactNode }) {
   return (
     <label className="block text-sm">
       <span className="font-medium text-foreground">{label}{required && <span className="text-destructive" aria-hidden> *</span>}</span>
