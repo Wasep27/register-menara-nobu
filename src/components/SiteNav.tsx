@@ -69,46 +69,42 @@ export function SiteNav({ items, right }: { items: NavItem[]; right?: React.Reac
         </a>
       );
     }
+    const active = activeAnchor === null && pathname === l.to;
     return (
-      <Link
-        key={l.to}
-        to={l.to}
-        activeOptions={{ exact: true }}
-        className={`${linkBase} ${idleCls}`}
-        activeProps={{ className: activeCls }}
-      >
+      <Link key={l.to} to={l.to} className={`${linkBase} ${active ? activeCls : idleCls}`}>
         {l.label}
       </Link>
     );
   }
 
   function mobileItem(l: NavItem, i: number) {
-    const active = l.to.startsWith("#")
-      ? activeAnchor === l.to
-      : false;
-    return l.to.startsWith("#") ? (
-      <a
+    const motion = open ? "translate-x-0 opacity-100" : "-translate-x-3 opacity-0";
+    if (l.to.startsWith("#")) {
+      const active = activeAnchor === l.to;
+      return (
+        <a
+          key={l.to}
+          href={l.to}
+          onClick={() => setOpen(false)}
+          style={{ transitionDelay: open ? `${i * 40}ms` : "0ms" }}
+          className={`flex min-h-12 items-center rounded-xl px-4 text-base font-medium transition-all duration-300 hover:bg-brand-soft ${
+            active ? "bg-brand-soft text-primary" : "text-foreground"
+          } ${motion}`}
+        >
+          {l.label}
+        </a>
+      );
+    }
+    const active = activeAnchor === null && pathname === l.to;
+    return (
+      <Link
         key={l.to}
-        href={l.to}
+        to={l.to}
         onClick={() => setOpen(false)}
         style={{ transitionDelay: open ? `${i * 40}ms` : "0ms" }}
         className={`flex min-h-12 items-center rounded-xl px-4 text-base font-medium transition-all duration-300 hover:bg-brand-soft ${
           active ? "bg-brand-soft text-primary" : "text-foreground"
-        } ${open ? "translate-x-0 opacity-100" : "-translate-x-3 opacity-0"}`}
-      >
-        {l.label}
-      </a>
-    ) : (
-      <Link
-        key={l.to}
-        to={l.to}
-        activeOptions={{ exact: true }}
-        onClick={() => setOpen(false)}
-        style={{ transitionDelay: open ? `${i * 40}ms` : "0ms" }}
-        className={`flex min-h-12 items-center rounded-xl px-4 text-base font-medium text-foreground transition-all duration-300 hover:bg-brand-soft ${
-          open ? "translate-x-0 opacity-100" : "-translate-x-3 opacity-0"
-        }`}
-        activeProps={{ className: "bg-brand-soft text-primary" }}
+        } ${motion}`}
       >
         {l.label}
       </Link>
