@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ClipboardCheck, Clock, Save, ShieldCheck, Smartphone, UserCheck } from "lucide-react";
 import { SiteNav } from "@/components/SiteNav";
+import { BackToTop } from "@/components/BackToTop";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import lobby from "@/assets/lobby.jpg";
@@ -137,6 +138,7 @@ function Landing() {
       </section>
       </main>
       <SiteFooter />
+      <BackToTop />
     </div>
   );
 }

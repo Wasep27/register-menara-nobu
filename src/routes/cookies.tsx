@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { CookieSettings } from "@/components/CookieSettings";
 import { PolicyPage } from "@/components/PolicyPage";
 
 export const Route = createFileRoute("/cookies")({
@@ -21,6 +22,8 @@ export const Route = createFileRoute("/cookies")({
         { h: "Yang tidak kami pakai", p: ["Tidak ada cookie iklan, pelacakan lintas situs, atau analitik pihak ketiga."] },
         { h: "Mengelola penyimpanan", p: ["Anda dapat menghapus data situs kapan saja melalui pengaturan browser. Akibatnya draf formulir akan hilang dan Anda perlu login ulang."] },
       ]}
-    />
+    >
+      <CookieSettings />
+    </PolicyPage>
   ),
 });
