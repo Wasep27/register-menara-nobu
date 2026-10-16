@@ -34,7 +34,7 @@ export function SiteNav({ items, right }: { items: NavItem[]; right?: React.Reac
       if (window.scrollY >= 80) {
         for (const a of anchors) {
           const el = document.getElementById(a.to.slice(1));
-          if (el && el.getBoundingClientRect().top <= 140) current = a.to;
+          if (el && el.getBoundingClientRect().top <= 200) current = a.to;
         }
       }
       setActiveAnchor(current);
