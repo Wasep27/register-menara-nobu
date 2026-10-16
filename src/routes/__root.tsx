@@ -1,3 +1,5 @@
+import logo from "@/assets/logo.png";
+import gedung from "@/assets/gedung-nobu.jpg.asset.json";
 import { CookieBanner } from "@/components/CookieBanner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
@@ -16,23 +18,26 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
+    <main className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-foreground px-4 py-12">
+      <img src={gedung.url} alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover opacity-60" />
+      <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-foreground via-foreground/60 to-transparent" />
+      <div className="fade-up relative w-full max-w-md rounded-[2rem] border border-border/40 bg-card/90 p-8 text-center shadow-soft backdrop-blur-md">
+        <img src={logo} alt="Nobu" className="mx-auto h-8 w-auto" />
+        <p className="mt-6 font-display text-7xl font-black text-primary">404</p>
+        <h1 className="mt-2 text-2xl text-foreground">Halaman tidak ditemukan</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
+          Sepertinya Anda salah lantai. Halaman yang dicari tidak ada atau sudah dipindahkan.
         </p>
-        <div className="mt-6">
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Go home
+        <div className="mt-6 flex flex-col gap-3">
+          <Link to="/registrasi" className="inline-flex min-h-12 items-center justify-center rounded-full bg-primary px-6 font-display font-bold text-primary-foreground transition-all hover:brightness-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
+            Isi Registrasi Tamu
+          </Link>
+          <Link to="/" className="inline-flex min-h-12 items-center justify-center rounded-full border border-border bg-card px-6 font-medium text-foreground transition-colors hover:bg-brand-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+            Kembali ke Beranda
           </Link>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 
