@@ -128,8 +128,57 @@ where not exists (select 1 from public.visit_purposes);
 insert into public.employees(name,department) select * from (values ('Budi Santoso','HRD'),('Siti Rahma','Keuangan'),('Andi Wijaya','IT'),('Dewi Lestari','Marketing')) v(n,d)
 where not exists (select 1 from public.employees);
 
--- JADIKAN ADMIN (setelah membuat user di Authentication -> Users), ganti emailnya:
--- insert into public.user_roles(user_id, role) select id, 'admin' from auth.users where email = 'admin@contoh.com';
+-- PROFIL & ADMIN OTOMATIS
+-- Cara pakai:
+--   1) Daftarkan email admin:  insert into public.admin_emails(email) values ('admin@contoh.com');
+--   2) Buat user di Authentication -> Users (Add user / invite).
+--      Profil otomatis dibuat, dan jika emailnya ada di admin_emails, user langsung jadi admin.
+create table if not exists public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  email text not null,
+  full_name text,
+  created_at timestamptz not null default now()
+);
+grant select, update on public.profiles to authenticated;
+grant all on public.profiles to service_role;
+alter table public.profiles enable row level security;
+drop policy if exists "own profile read" on public.profiles;
+create policy "own profile read" on public.profiles for select to authenticated using (id = auth.uid());
+drop policy if exists "own profile update" on public.profiles;
+create policy "own profile update" on public.profiles for update to authenticated using (id = auth.uid()) with check (id = auth.uid());
+
+create table if not exists public.admin_emails (
+  email text primary key
+);
+grant all on public.admin_emails to service_role;
+alter table public.admin_emails enable row level security;
+
+create or replace function public.handle_new_user()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.profiles (id, email, full_name)
+  values (new.id, new.email, coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name'))
+  on conflict (id) do nothing;
+  if exists (select 1 from public.admin_emails where lower(email) = lower(new.email)) then
+    insert into public.user_roles (user_id, role) values (new.id, 'admin')
+    on conflict (user_id, role) do nothing;
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created after insert on auth.users
+for each row execute function public.handle_new_user();
+
+-- Mengisi profil untuk user yang sudah dibuat sebelum trigger ini ada
+insert into public.profiles (id, email)
+select id, email from auth.users
+on conflict (id) do nothing;
+-- Mengangkat admin untuk user lama yang emailnya sudah terdaftar di admin_emails
+insert into public.user_roles (user_id, role)
+select u.id, 'admin' from auth.users u
+where exists (select 1 from public.admin_emails a where lower(a.email) = lower(u.email))
+on conflict (user_id, role) do nothing;
 
 -- PEMBATASAN PERCOBAAN LOGIN (maks 5 gagal per 15 menit per email, kunci 15 menit)
 create table if not exists public.login_attempts (
