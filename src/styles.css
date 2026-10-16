@@ -174,3 +174,4 @@ h1 { font-weight: 800; }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 @media print { nav, header.app-header { display: none; } }
+html { scroll-behavior: smooth; }

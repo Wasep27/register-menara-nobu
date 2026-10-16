@@ -3,3 +3,6 @@
 - [x] Filter data tamu (nama, rentang tanggal, tujuan)
 - [x] Batas login + lupa password
 - [x] Halaman panduan Vercel + cek koneksi
+- [x] Landing page + CTA, tombol kembali di login
+- [ ] Grafik dashboard (periode, tujuan, karyawan)
+- [ ] Ekspor CSV hasil filter data tamu
