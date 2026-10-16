@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { z } from "zod";
+import type { z } from "zod";
+import { guestSchema } from "@/lib/validation";
 import { supabase, type Employee, type Purpose } from "@/lib/supabase";
 import { SiteNav } from "@/components/SiteNav";
 
@@ -20,16 +21,7 @@ export const Route = createFileRoute("/registrasi")({
   component: GuestForm,
 });
 
-const schema = z.object({
-  name: z.string().trim().min(2, "Nama minimal 2 huruf").max(100),
-  institution: z.string().trim().min(2, "Instansi wajib diisi").max(150),
-  phone: z.string().trim().regex(/^[0-9+ -]{8,20}$/, "Nomor telepon tidak valid"),
-  visit_purpose_id: z.string().min(1, "Pilih tujuan kunjungan"),
-  employee_id: z.string().min(1, "Pilih nama yang dituju"),
-  notes: z.string().max(500).optional(),
-  scheduled_at: z.string().optional().refine((v) => !v || new Date(v).getTime() > Date.now() - 300000, "Jadwal harus di masa depan"),
-  is_important: z.string().optional(),
-});
+const schema = guestSchema;
 type Form = z.infer<typeof schema> & { notes: string; scheduled_at: string; is_important: string };
 const empty: Form = { name: "", institution: "", phone: "", visit_purpose_id: "", employee_id: "", notes: "", scheduled_at: "", is_important: "" };
 const LS_DRAFT = "nobu_draft";
