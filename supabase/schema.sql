@@ -376,3 +376,23 @@ do $$ begin
   perform cron.schedule('nobu-visit-reminders', '* * * * *', 'select public.generate_visit_reminders()');
 exception when others then raise notice 'pg_cron belum aktif; pengingat tetap dibuat saat portal karyawan terbuka';
 end $$;
+
+-- Daftar pengguna + role untuk halaman admin (role tetap di user_roles)
+create or replace function public.list_users_with_roles()
+returns table (id uuid, email text, full_name text, roles text[], is_employee boolean, created_at timestamptz)
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not public.has_role(auth.uid(), 'admin') then
+    raise exception 'forbidden' using errcode = '42501';
+  end if;
+  return query
+    select p.id, p.email, p.full_name,
+      coalesce(array_agg(r.role::text order by r.role) filter (where r.role is not null), '{}'),
+      exists (select 1 from public.employees e where e.user_id = p.id),
+      p.created_at
+    from public.profiles p
+    left join public.user_roles r on r.user_id = p.id
+    group by p.id order by p.created_at desc;
+end $$;
+revoke all on function public.list_users_with_roles() from public, anon;
+grant execute on function public.list_users_with_roles() to authenticated;
