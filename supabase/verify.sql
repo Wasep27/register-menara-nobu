@@ -41,7 +41,7 @@ checks as (
   select 5, 'Trigger', x.name,
     case when exists (select 1 from pg_trigger where tgname = x.name and not tgisinternal) then 'OK' else 'KURANG' end,
     'Trigger otomatis belum terpasang'
-  from (values ('on_auth_user_created'),('on_guest_created')) x(name)
+  from (values ('on_auth_user_created'),('on_auth_user_link_employee'),('employees_link_user'),('guests_notify'),('admin_emails_sync')) x(name)
   union all
   select 5, 'Trigger', 'trigger pada auth.users (profil & admin otomatis)',
     case when exists (select 1 from pg_trigger tg join pg_class c on c.oid=tg.tgrelid
@@ -50,9 +50,9 @@ checks as (
     'Profil & peran admin tidak dibuat otomatis'
   union all
   select 6, 'Akses tamu (anon)', 'execute submit_guest',
-    case when has_function_privilege('anon', 'public.submit_guest(jsonb)', 'execute') then 'OK' else 'PERINGATAN' end,
+    case when to_regprocedure('public.submit_guest(jsonb,uuid)') is not null
+      and has_function_privilege('anon', 'public.submit_guest(jsonb,uuid)', 'execute') then 'OK' else 'KURANG' end,
     'Tamu tidak bisa mengirim formulir'
-  where exists (select 1 from pg_proc where proname='submit_guest' and pg_get_function_identity_arguments(oid)='p jsonb')
   union all
   select 7, 'Realtime', 'notifications di supabase_realtime',
     case when exists (select 1 from pg_publication_tables
