@@ -35,9 +35,9 @@ function AdminLayout() {
   const isLogin = loc.pathname === "/admin/login";
 
   useEffect(() => {
-    if (isLogin) return;
+    if (isLogin || !loc.pathname.startsWith("/admin")) return;
     supabase.auth.getUser().then(async ({ data }) => {
-      if (!data.user) { setState("out"); nav({ to: "/admin/login" }); return; }
+      if (!data.user) { setState("out"); if (!window.location.pathname.startsWith("/admin")) return; nav({ to: "/admin/login" }); return; }
       const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", data.user.id);
       setState(roles?.some((r) => r.role === "admin") ? "ok" : "noadmin");
     });
