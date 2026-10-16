@@ -11,7 +11,7 @@ req_functions(name) as (values
   ('has_role'),('upsert_draft'),('get_draft'),('delete_draft'),('submit_guest'),
   ('login_lock_seconds'),('record_login_attempt'),('handle_new_user'),
   ('sync_admin_email'),('link_employee_user'),('link_user_employee'),
-  ('notify_new_guest'),('generate_visit_reminders')),
+  ('notify_new_guest'),('generate_visit_reminders'),('list_users_with_roles')),
 req_columns(tbl, col) as (values
   ('guests','scheduled_at'),('guests','is_important'),('guests','fill_duration_seconds'),
   ('employees','email'),('employees','user_id'),('admin_emails','created_at')),
