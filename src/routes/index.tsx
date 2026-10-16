@@ -87,7 +87,7 @@ function Landing() {
         </div>
       </section>
 
-      <section id="cara" className="mx-auto max-w-6xl px-4 py-16">
+      <section id="cara" className="mx-auto max-w-6xl scroll-mt-24 px-4 py-16">
         <h2 className="text-center text-3xl text-foreground">3 langkah mudah</h2>
         <div className="mt-10 grid gap-5 md:grid-cols-3">
           {steps.map((s, i) => (
