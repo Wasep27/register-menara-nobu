@@ -25,8 +25,8 @@ export function SiteNav({ items, right }: { items: NavItem[]; right?: React.Reac
         if (e.key !== "Tab" || !panelRef.current) return;
         const els = [btnRef.current, ...panelRef.current.querySelectorAll<HTMLElement>("a,button")].filter(Boolean) as HTMLElement[];
         const i = els.indexOf(document.activeElement as HTMLElement);
-        if (e.shiftKey && i <= 0) { e.preventDefault(); els[els.length - 1].focus(); }
-        else if (!e.shiftKey && i === els.length - 1) { e.preventDefault(); els[0].focus(); }
+        if (e.shiftKey && i <= 0) { e.preventDefault(); els[els.length - 1]?.focus(); }
+        else if (!e.shiftKey && i === els.length - 1) { e.preventDefault(); els[0]?.focus(); }
       };
       document.addEventListener("keydown", onKey);
       return () => document.removeEventListener("keydown", onKey);
@@ -34,6 +34,7 @@ export function SiteNav({ items, right }: { items: NavItem[]; right?: React.Reac
       wasOpen.current = false;
       btnRef.current?.focus();
     }
+    return undefined;
   }, [open]);
 
   useEffect(() => {
