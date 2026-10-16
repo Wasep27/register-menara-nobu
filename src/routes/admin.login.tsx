@@ -23,14 +23,27 @@ function Login() {
   const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
+  const [info, setInfo] = useState("");
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setErr("");
+    const { data: lock } = await supabase.rpc("login_lock_seconds", { _email: email });
+    if (typeof lock === "number" && lock > 0) {
+      setLoading(false);
+      return setErr(`Terlalu banyak percobaan gagal. Coba lagi dalam ${Math.ceil(lock / 60)} menit.`);
+    }
     const { error } = await supabase.auth.signInWithPassword({ email, password });
+    await supabase.rpc("record_login_attempt", { _email: email, _success: !error });
     setLoading(false);
-    if (error) return setErr("Email atau password salah.");
+    if (error) return setErr("Email atau password salah. Setelah 5 kali gagal, akun dikunci 15 menit.");
     nav({ to: "/admin" });
+  };
+  const forgot = async () => {
+    setErr(""); setInfo("");
+    if (!email) return setErr("Isi email terlebih dahulu.");
+    await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` });
+    setInfo("Jika email terdaftar, tautan untuk mengatur ulang password sudah dikirim.");
   };
   const f = "mt-1 w-full rounded-lg border border-input bg-card px-3 py-3 text-foreground";
   return (
@@ -41,7 +54,9 @@ function Login() {
         <label className="block text-sm">Email<input className={f} type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
         <label className="block text-sm">Password<input className={f} type="password" value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
         {err && <p className="text-sm text-destructive">{err}</p>}
+        {info && <p className="text-sm text-primary">{info}</p>}
         <button disabled={loading} className="min-h-11 w-full rounded-full bg-primary font-semibold transition-all hover:brightness-110 active:scale-95 text-primary-foreground">{loading ? "Masuk…" : "Masuk"}</button>
+        <button type="button" className="w-full text-sm text-primary" onClick={forgot}>Lupa password?</button>
       </form>
     </main>
   );

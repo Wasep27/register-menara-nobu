@@ -130,3 +130,33 @@ where not exists (select 1 from public.employees);
 
 -- JADIKAN ADMIN (setelah membuat user di Authentication -> Users), ganti emailnya:
 -- insert into public.user_roles(user_id, role) select id, 'admin' from auth.users where email = 'admin@contoh.com';
+
+-- PEMBATASAN PERCOBAAN LOGIN (maks 5 gagal per 15 menit per email, kunci 15 menit)
+create table if not exists public.login_attempts (
+  id bigserial primary key,
+  email text not null,
+  success boolean not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists login_attempts_email_time on public.login_attempts(lower(email), created_at desc);
+grant all on public.login_attempts to service_role;
+alter table public.login_attempts enable row level security;
+
+create or replace function public.login_lock_seconds(_email text)
+returns integer language sql stable security definer set search_path = public as $$
+  select case when count(*) >= 5
+    then greatest(0, extract(epoch from (max(created_at) + interval '15 minutes' - now()))::int) else 0 end
+  from login_attempts
+  where lower(email) = lower(_email) and not success and created_at > now() - interval '15 minutes'
+    and created_at > coalesce((select max(created_at) from login_attempts where lower(email)=lower(_email) and success), '-infinity')
+$$;
+
+create or replace function public.record_login_attempt(_email text, _success boolean)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if char_length(_email) > 255 then return; end if;
+  insert into login_attempts(email, success) values (lower(trim(_email)), _success);
+  delete from login_attempts where created_at < now() - interval '7 days';
+end $$;
+
+grant execute on function public.login_lock_seconds(text), public.record_login_attempt(text, boolean) to anon, authenticated;
