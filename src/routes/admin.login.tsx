@@ -36,7 +36,7 @@ function Login() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background p-4">
       <form onSubmit={submit} className="fade-up w-full max-w-sm space-y-4 rounded-3xl bg-card p-8 shadow-soft">
-        <img src={logo.url} alt="Nobu" className="mx-auto h-9 w-auto" />
+        <img src={logo.url} alt="Nobu" className="mx-auto h-9 w-auto mix-blend-multiply" />
         <h1 className="text-center text-xl font-bold text-foreground">Login Admin</h1>
         <label className="block text-sm">Email<input className={f} type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
         <label className="block text-sm">Password<input className={f} type="password" value={password} onChange={(e) => setPassword(e.target.value)} required /></label>

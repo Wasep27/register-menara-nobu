@@ -22,7 +22,7 @@ export function SiteNav({ items, right }: { items: NavItem[]; right?: React.Reac
     <header className={`app-header sticky top-0 z-40 transition-all duration-300 ${scrolled ? "bg-card/85 shadow-soft backdrop-blur-md" : "bg-transparent"}`}>
       <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 md:flex md:justify-between">
         <Link to="/" className="flex min-w-0 items-center gap-2" onClick={() => setOpen(false)}>
-          <img src={logo.url} alt="Nobu" className="h-7 w-auto shrink-0 transition-transform duration-300 hover:scale-105 md:h-8" />
+          <img src={logo.url} alt="Nobu" className="h-7 w-auto shrink-0 mix-blend-multiply transition-transform duration-300 hover:scale-105 md:h-8" />
           <span className="hidden truncate text-sm font-medium text-muted-foreground sm:inline">Menara Nobu</span>
         </Link>
 
