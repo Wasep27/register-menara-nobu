@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ClipboardCheck, Clock, Save, ShieldCheck, Smartphone, UserCheck } from "lucide-react";
 import { SiteNav } from "@/components/SiteNav";
+import { SiteFooter } from "@/components/SiteFooter";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import lobby from "@/assets/lobby.jpg";
 
 export const Route = createFileRoute("/")({
@@ -21,6 +23,7 @@ const nav = [
   { to: "/", label: "Beranda" },
   { to: "#fitur", label: "Fitur" },
   { to: "#cara", label: "Cara Kerja" },
+  { to: "#faq", label: "FAQ" },
   { to: "/registrasi", label: "Registrasi Tamu" },
   { to: "/panduan", label: "Panduan" },
   { to: "/admin/login", label: "Admin" },
@@ -39,10 +42,20 @@ const steps = [
   { icon: Clock, t: "Tunggu dipanggil", d: "Pihak yang dituju segera kami hubungi." },
 ];
 
+const faqs = [
+  { q: "Apakah saya perlu membuat akun untuk mendaftar?", a: "Tidak. Tamu cukup mengisi formulir registrasi tanpa membuat akun." },
+  { q: "Bagaimana jika koneksi internet saya terputus?", a: "Isian Anda tersimpan otomatis di perangkat dan dikirim kembali saat koneksi pulih." },
+  { q: "Bisakah saya mendaftar sebelum hari kunjungan?", a: "Bisa. Pilih tanggal dan jam kunjungan di formulir; pihak yang Anda temui akan mendapat pengingat." },
+  { q: "Siapa yang dapat melihat data saya?", a: "Hanya petugas berwenang dan karyawan yang Anda tuju. Detailnya ada di Kebijakan Privasi." },
+  { q: "Apakah situs ini memakai cookie?", a: "Kami hanya memakai penyimpanan yang diperlukan agar formulir dan login berfungsi, tanpa cookie iklan atau pelacakan. Lihat Kebijakan Cookie." },
+  { q: "Bagaimana cara meminta data saya dihapus?", a: "Hubungi resepsionis Menara Nobu atau petugas keamanan gedung; permintaan akan diproses oleh admin." },
+];
+
 function Landing() {
   return (
-    <main className="min-h-screen overflow-x-clip bg-background">
+    <div className="min-h-screen overflow-x-clip bg-background">
       <SiteNav items={nav} />
+      <main id="konten" tabIndex={-1} className="outline-none">
 
       <section className="mx-auto grid max-w-6xl items-center gap-10 px-4 pb-16 pt-6 md:grid-cols-2 md:pt-12">
         <div className="fade-up">
@@ -111,9 +124,19 @@ function Landing() {
         </div>
       </section>
 
-      <footer className="border-t border-border py-6 text-center text-sm text-muted-foreground">
-        © {new Date().getFullYear()} Menara Nobu · Buku Tamu Digital
-      </footer>
-    </main>
+      <section id="faq" aria-labelledby="faq-judul" className="mx-auto max-w-3xl scroll-mt-24 px-4 py-16">
+        <h2 id="faq-judul" className="text-center text-3xl text-foreground">Pertanyaan yang sering diajukan</h2>
+        <Accordion type="single" collapsible className="mt-8 rounded-3xl border border-border bg-card px-5">
+          {faqs.map((f, i) => (
+            <AccordionItem key={i} value={`q${i}`}>
+              <AccordionTrigger className="text-left text-base">{f.q}</AccordionTrigger>
+              <AccordionContent className="text-muted-foreground">{f.a}</AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      </section>
+      </main>
+      <SiteFooter />
+    </div>
   );
 }
