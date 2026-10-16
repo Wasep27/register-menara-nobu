@@ -46,7 +46,7 @@ export function MasterCrud({ table, title, withDept }: { table: "employees" | "v
 
   const toggle = async (r: Row) => {
     const { error } = await supabase.from(table).update({ is_active: !r.is_active }).eq("id", r.id);
-    if (error) return toast.error("Gagal mengubah status");
+    if (error) { toast.error("Gagal mengubah status"); return; }
     toast.success(`${r.name} ${r.is_active ? "dinonaktifkan" : "diaktifkan"}`);
     load();
   };
