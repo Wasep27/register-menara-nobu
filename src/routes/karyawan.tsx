@@ -54,7 +54,7 @@ function StaffLogin() {
     <main className="relative flex min-h-screen items-center justify-center bg-background p-4">
       <Link to="/" className="absolute left-4 top-4 inline-flex min-h-11 items-center rounded-full bg-card px-4 text-sm font-medium text-primary shadow-soft">← Kembali</Link>
       <form onSubmit={submit} className="fade-up w-full max-w-sm space-y-4 rounded-3xl bg-card p-8 shadow-soft">
-        <img src={logo.url} alt="Nobu" className="mx-auto h-9 w-auto" />
+        <img src={logo} alt="Nobu" className="mx-auto h-9 w-auto" />
         <h1 className="text-center text-xl font-bold text-foreground">Portal Karyawan</h1>
         <p className="text-center text-sm text-muted-foreground">Masuk untuk melihat notifikasi tamu Anda.</p>
         <label className="block text-sm">Email<input className={f} type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
@@ -123,7 +123,7 @@ function Inbox({ user }: { user: User }) {
   return (
     <main className="min-h-screen bg-background">
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card/90 px-4 py-3 backdrop-blur">
-        <img src={logo.url} alt="Nobu" className="h-7 w-auto" />
+        <img src={logo} alt="Nobu" className="h-7 w-auto" />
         <button className="min-h-11 rounded-full px-4 text-sm text-muted-foreground hover:bg-brand-soft hover:text-primary" onClick={() => supabase.auth.signOut()}>Keluar</button>
       </header>
 

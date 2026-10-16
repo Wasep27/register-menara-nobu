@@ -29,7 +29,7 @@ export function SiteNav({ items, right }: { items: NavItem[]; right?: React.Reac
         }`}
       >
         <Link to="/" className="flex min-w-0 items-center gap-2.5" onClick={() => setOpen(false)}>
-          <img src={logo.url} alt="Nobu" className="h-7 w-auto shrink-0 transition-transform duration-300 hover:scale-105 md:h-8" />
+          <img src={logo} alt="Nobu" className="h-7 w-auto shrink-0 transition-transform duration-300 hover:scale-105 md:h-8" />
           <span className="hidden truncate text-sm font-semibold text-foreground sm:inline">Menara Nobu</span>
         </Link>
 
