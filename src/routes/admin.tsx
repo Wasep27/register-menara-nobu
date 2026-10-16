@@ -24,6 +24,7 @@ const links = [
   { to: "/admin/karyawan", label: "Karyawan" },
   { to: "/admin/tujuan", label: "Tujuan" },
   { to: "/admin/laporan", label: "Laporan" },
+  { to: "/panduan", label: "Panduan" },
 ] as const;
 
 function AdminLayout() {
