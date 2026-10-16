@@ -52,7 +52,7 @@ function StaffLogin() {
   const f = "mt-1 w-full rounded-lg border border-input bg-card px-3 py-3 text-foreground";
   return (
     <main className="relative flex min-h-screen items-center justify-center bg-background p-4">
-      <Link to="/" className="absolute left-4 top-4 inline-flex min-h-11 items-center rounded-full bg-card px-4 text-sm font-medium text-primary shadow-soft">← Kembali ke beranda</Link>
+      <Link to="/" className="absolute left-4 top-4 inline-flex min-h-11 items-center rounded-full bg-card px-4 text-sm font-medium text-primary shadow-soft">← Kembali</Link>
       <form onSubmit={submit} className="fade-up w-full max-w-sm space-y-4 rounded-3xl bg-card p-8 shadow-soft">
         <img src={logo.url} alt="Nobu" className="mx-auto h-9 w-auto mix-blend-multiply" />
         <h1 className="text-center text-xl font-bold text-foreground">Portal Karyawan</h1>
@@ -97,7 +97,9 @@ function Inbox({ user }: { user: User }) {
         setTimeout(() => setToast(""), 6000);
         load(emp.id);
       }).subscribe();
-    const iv = setInterval(() => load(emp.id), 60000);
+    const tick = async () => { await supabase.rpc("generate_visit_reminders"); load(emp.id); };
+    tick();
+    const iv = setInterval(tick, 30000);
     return () => { supabase.removeChannel(ch); clearInterval(iv); };
   }, [emp, load]);
 
@@ -112,6 +114,10 @@ function Inbox({ user }: { user: User }) {
   };
   const unread = notifs.filter((n) => !n.read_at).length;
   const today = new Date().toDateString();
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 15000); return () => clearInterval(t); }, []);
+  const next = visits.find((v) => v.is_important && new Date(v.scheduled_at).getTime() - now <= 30 * 60000);
+  const mins = next ? Math.max(0, Math.round((new Date(next.scheduled_at).getTime() - now) / 60000)) : 0;
   const soonImportant = visits.filter((v) => v.is_important && new Date(v.scheduled_at).toDateString() === today);
 
   return (
@@ -135,6 +141,13 @@ function Inbox({ user }: { user: User }) {
               <p className="text-sm text-muted-foreground">Halo,</p>
               <h1 className="text-2xl font-bold text-foreground">{emp.name}</h1>
             </div>
+
+            {next && (
+              <div role="alert" className="fade-up rounded-2xl bg-primary p-4 text-primary-foreground shadow-soft">
+                <p className="font-bold">{mins > 0 ? `⏰ ${mins} menit lagi` : "🔔 Waktunya sekarang"}: {next.name}</p>
+                <p className="text-sm opacity-90">{next.institution} · {fmt(next.scheduled_at)}</p>
+              </div>
+            )}
 
             {soonImportant.length > 0 && (
               <div className="rounded-2xl border border-brand bg-brand-soft p-4">
