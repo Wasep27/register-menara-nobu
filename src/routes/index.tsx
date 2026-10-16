@@ -4,6 +4,7 @@ import { SiteNav } from "@/components/SiteNav";
 import { BackToTop } from "@/components/BackToTop";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import gedung from "@/assets/gedung-nobu.jpg.asset.json";
 import lobby from "@/assets/lobby.jpg";
 
 export const Route = createFileRoute("/")({
@@ -116,12 +117,16 @@ function Landing() {
       </section>
 
       <section className="px-4 pb-16">
-        <div className="mx-auto flex max-w-6xl flex-col items-center gap-5 rounded-[2rem] bg-primary px-6 py-12 text-center text-primary-foreground shadow-soft">
+        <div className="relative mx-auto flex max-w-6xl flex-col items-center gap-5 overflow-hidden rounded-[2rem] bg-primary px-6 py-16 text-center text-primary-foreground shadow-soft">
+          <img src={gedung.url} alt="" aria-hidden loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+          <div aria-hidden className="absolute inset-0 bg-gradient-to-r from-primary via-primary/85 to-primary/40" />
+          <div className="relative flex flex-col items-center gap-5">
           <h2 className="text-3xl">Siap berkunjung?</h2>
           <p className="max-w-md opacity-90">Isi formulir sekarang dan kami akan segera menghubungkan Anda.</p>
           <Link to="/registrasi" className="inline-flex min-h-12 items-center rounded-full bg-brand px-8 py-3 font-display text-lg font-bold text-foreground transition-all hover:-translate-y-0.5 active:scale-95">
             Registrasi Sekarang
           </Link>
+          </div>
         </div>
       </section>
 
