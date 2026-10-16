@@ -1,245 +1,117 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
-import { z } from "zod";
-import { supabase, type Employee, type Purpose } from "@/lib/supabase";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { ClipboardCheck, Clock, Save, ShieldCheck, Smartphone, UserCheck } from "lucide-react";
 import { SiteNav } from "@/components/SiteNav";
-
-const navItems = [{ to: "/", label: "Registrasi Tamu" }, { to: "/panduan", label: "Panduan" }, { to: "/admin/login", label: "Admin" }];
+import lobby from "@/assets/lobby.jpg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Registrasi Tamu — Menara Nobu" },
-      { name: "description", content: "Isi buku tamu digital Menara Nobu dengan cepat." },
-      { property: "og:title", content: "Registrasi Tamu — Menara Nobu" },
-      { property: "og:description", content: "Isi buku tamu digital Menara Nobu dengan cepat." },
+      { title: "Buku Tamu Digital Menara Nobu" },
+      { name: "description", content: "Registrasi tamu Menara Nobu cepat, tanpa antre, dan tersimpan otomatis. Isi data kunjungan Anda dalam satu menit." },
+      { property: "og:title", content: "Buku Tamu Digital Menara Nobu" },
+      { property: "og:description", content: "Registrasi tamu cepat, tanpa antre, dan tersimpan otomatis." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: GuestForm,
+  component: Landing,
 });
 
-const schema = z.object({
-  name: z.string().trim().min(2, "Nama minimal 2 huruf").max(100),
-  institution: z.string().trim().min(2, "Instansi wajib diisi").max(150),
-  phone: z.string().trim().regex(/^[0-9+ -]{8,20}$/, "Nomor telepon tidak valid"),
-  visit_purpose_id: z.string().min(1, "Pilih tujuan kunjungan"),
-  employee_id: z.string().min(1, "Pilih nama yang dituju"),
-  notes: z.string().max(500).optional(),
-});
-type Form = z.infer<typeof schema> & { notes: string };
-const empty: Form = { name: "", institution: "", phone: "", visit_purpose_id: "", employee_id: "", notes: "" };
-const LS_DRAFT = "nobu_draft";
-const LS_TOKEN = "nobu_token";
-const LS_OPENED = "nobu_opened";
+const nav = [
+  { to: "/", label: "Beranda" },
+  { to: "/registrasi", label: "Registrasi Tamu" },
+  { to: "/panduan", label: "Panduan" },
+  { to: "/admin/login", label: "Admin" },
+];
 
-type Status = "idle" | "saving" | "saved" | "offline" | "error";
+const features = [
+  { icon: Clock, t: "Kurang dari 1 menit", d: "Formulir singkat, langsung ke inti tanpa antre di meja resepsionis." },
+  { icon: Save, t: "Tersimpan otomatis", d: "Isian aman walau koneksi terputus atau halaman tertutup." },
+  { icon: Smartphone, t: "Dari perangkat apa saja", d: "Nyaman di ponsel, tablet kiosk, maupun komputer." },
+  { icon: ShieldCheck, t: "Data terlindungi", d: "Data kunjungan hanya dapat dilihat oleh petugas berwenang." },
+];
 
-function GuestForm() {
-  const [form, setForm] = useState<Form>(empty);
-  const [errors, setErrors] = useState<Partial<Record<keyof Form, string>>>({});
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [purposes, setPurposes] = useState<Purpose[]>([]);
-  const [status, setStatus] = useState<Status>("idle");
-  const [savedAt, setSavedAt] = useState<string>("");
-  const [restore, setRestore] = useState<Form | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [submitErr, setSubmitErr] = useState("");
-  const [done, setDone] = useState(false);
-  const [empSearch, setEmpSearch] = useState("");
-  const dirty = useRef(false);
-  const token = useRef<string>("");
-  const formRef = useRef(form);
-  formRef.current = form;
+const steps = [
+  { icon: ClipboardCheck, t: "Isi data diri", d: "Nama, instansi, dan nomor telepon." },
+  { icon: UserCheck, t: "Pilih tujuan", d: "Tujuan kunjungan dan siapa yang ingin ditemui." },
+  { icon: Clock, t: "Tunggu dipanggil", d: "Pihak yang dituju segera kami hubungi." },
+];
 
-  useEffect(() => {
-    supabase.from("employees").select("*").eq("is_active", true).order("name").then(({ data }) => setEmployees(data ?? []));
-    supabase.from("visit_purposes").select("*").eq("is_active", true).order("name").then(({ data }) => setPurposes(data ?? []));
-    token.current = localStorage.getItem(LS_TOKEN) || crypto.randomUUID();
-    localStorage.setItem(LS_TOKEN, token.current);
-    if (!localStorage.getItem(LS_OPENED)) localStorage.setItem(LS_OPENED, new Date().toISOString());
-    const raw = localStorage.getItem(LS_DRAFT);
-    if (raw) {
-      try {
-        const d = JSON.parse(raw) as Form;
-        if (Object.values(d).some((v) => v)) setRestore(d);
-      } catch {}
-    }
-  }, []);
-
-  // simpan lokal (debounce 500ms)
-  useEffect(() => {
-    if (!dirty.current) return;
-    setStatus("saving");
-    const t = setTimeout(() => {
-      localStorage.setItem(LS_DRAFT, JSON.stringify(form));
-      if (!navigator.onLine) setStatus("offline");
-      else { setStatus("saved"); setSavedAt(new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })); }
-    }, 500);
-    return () => clearTimeout(t);
-  }, [form]);
-
-  // sinkron server tiap 30 detik
-  const syncPending = useRef(false);
-  useEffect(() => {
-    let retry = 0;
-    const sync = async () => {
-      if (!syncPending.current || !navigator.onLine) { if (!navigator.onLine && syncPending.current) setStatus("offline"); return; }
-      const { error } = await supabase.rpc("upsert_draft", { _token: token.current, _payload: formRef.current });
-      if (error) { setStatus("error"); retry++; setTimeout(sync, Math.min(30000, 2000 * 2 ** retry)); }
-      else { retry = 0; syncPending.current = false; setStatus("saved"); setSavedAt(new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })); }
-    };
-    const iv = setInterval(sync, 30000);
-    const onOnline = () => sync();
-    const onOffline = () => setStatus("offline");
-    window.addEventListener("online", onOnline);
-    window.addEventListener("offline", onOffline);
-    return () => { clearInterval(iv); window.removeEventListener("online", onOnline); window.removeEventListener("offline", onOffline); };
-  }, []);
-
-  const update = (k: keyof Form, v: string) => {
-    dirty.current = true;
-    syncPending.current = true;
-    setForm((f) => ({ ...f, [k]: v }));
-  };
-
-  const validateField = (k: keyof Form) => {
-    const r = schema.safeParse(form);
-    const issue = r.success ? undefined : r.error.issues.find((i) => i.path[0] === k);
-    setErrors((e) => ({ ...e, [k]: issue?.message ?? "" }));
-  };
-
-  const clearAll = () => {
-    localStorage.removeItem(LS_DRAFT);
-    localStorage.removeItem(LS_OPENED);
-    localStorage.removeItem(LS_TOKEN);
-  };
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const r = schema.safeParse(form);
-    if (!r.success) {
-      const errs: Record<string, string> = {};
-      r.error.issues.forEach((i) => { errs[String(i.path[0])] = i.message; });
-      setErrors(errs as Partial<Record<keyof Form, string>>);
-      return;
-    }
-    setSubmitting(true);
-    setSubmitErr("");
-    const { error } = await supabase.rpc("submit_guest", {
-      _payload: { ...r.data, form_opened_at: localStorage.getItem(LS_OPENED) },
-      _token: token.current,
-    });
-    setSubmitting(false);
-    if (error) { setSubmitErr("Gagal mengirim. Isian Anda tetap tersimpan, silakan coba lagi."); return; }
-    clearAll();
-    dirty.current = false;
-    syncPending.current = false;
-    setDone(true);
-    setTimeout(() => {
-      setDone(false);
-      setForm(empty);
-      setStatus("idle");
-      token.current = crypto.randomUUID();
-      localStorage.setItem(LS_TOKEN, token.current);
-      localStorage.setItem(LS_OPENED, new Date().toISOString());
-    }, 8000);
-  };
-
-  const filteredEmp = employees.filter((x) => x.name.toLowerCase().includes(empSearch.toLowerCase()));
-  const statusText = {
-    idle: "",
-    saving: "Menyimpan…",
-    saved: `Tersimpan ${savedAt}`,
-    offline: "Offline — tersimpan di perangkat",
-    error: "Gagal sinkron, mencoba lagi",
-  }[status];
-
-  if (done) {
-    return (
-      <main className="min-h-screen bg-background">
-        <SiteNav items={navItems} />
-        <div className="flex items-center justify-center p-6 pt-16">
-        <div className="fade-up max-w-md rounded-3xl bg-card p-10 text-center shadow-soft">
-          <div className="mx-auto mb-4 flex h-16 w-16 animate-in zoom-in items-center justify-center rounded-full bg-brand text-3xl text-foreground duration-500">✓</div>
-          <h1 className="text-2xl font-bold text-foreground">Terima kasih!</h1>
-          <p className="mt-2 text-muted-foreground">Registrasi berhasil. Silakan menunggu, pihak yang Anda tuju akan segera dihubungi.</p>
-        </div>
-        </div>
-      </main>
-    );
-  }
-
-  const field = "mt-1 w-full rounded-xl border border-input bg-card px-4 py-3 text-base text-foreground transition-shadow focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/25";
-
+function Landing() {
   return (
-    <main className="min-h-screen bg-background">
-      <SiteNav items={navItems} />
-      <div className="mx-auto max-w-xl px-4 pb-10 pt-4 md:pt-8">
-        <header className="fade-up mb-6 text-center">
-          <span className="inline-block rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold uppercase tracking-widest text-primary">Selamat datang</span>
-          <h1 className="mt-1 text-3xl font-bold text-foreground md:text-4xl">Registrasi Tamu</h1>
-          <p className="mt-1 text-muted-foreground">Silakan isi data kunjungan Anda</p>
-        </header>
+    <main className="min-h-screen overflow-x-hidden bg-background">
+      <SiteNav items={nav} />
 
-        {restore && (
-          <div className="mb-4 fade-up rounded-2xl border border-brand bg-brand-soft p-4">
-            <p className="font-medium text-foreground">Ada isian yang belum selesai. Lanjutkan?</p>
-            <div className="mt-3 flex gap-2">
-              <button className="min-h-11 flex-1 rounded-lg bg-primary px-4 text-primary-foreground" onClick={() => { setForm({ ...empty, ...restore }); setRestore(null); }}>Lanjutkan</button>
-              <button className="min-h-11 flex-1 rounded-lg border border-input px-4 text-foreground" onClick={() => { clearAll(); supabase.rpc("delete_draft", { _token: token.current }); token.current = crypto.randomUUID(); localStorage.setItem(LS_TOKEN, token.current); localStorage.setItem(LS_OPENED, new Date().toISOString()); setRestore(null); }}>Mulai dari awal</button>
+      <section className="mx-auto grid max-w-6xl items-center gap-10 px-4 pb-16 pt-6 md:grid-cols-2 md:pt-12">
+        <div className="fade-up">
+          <span className="inline-block rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold uppercase tracking-widest text-primary">Buku Tamu Digital</span>
+          <h1 className="mt-4 text-4xl leading-tight text-foreground sm:text-5xl lg:text-6xl">
+            Selamat datang di <span className="text-primary">Menara Nobu</span>
+          </h1>
+          <p className="mt-4 max-w-md text-lg text-muted-foreground">
+            Daftarkan kunjungan Anda dalam hitungan detik. Tanpa kertas, tanpa antre, langsung terhubung dengan pihak yang Anda tuju.
+          </p>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <Link to="/registrasi" className="inline-flex min-h-13 items-center justify-center rounded-full bg-primary px-8 py-3.5 font-display text-lg font-bold text-primary-foreground shadow-soft transition-all hover:-translate-y-0.5 hover:brightness-110 active:scale-95">
+              Mulai Registrasi →
+            </Link>
+            <a href="#cara" className="inline-flex min-h-13 items-center justify-center rounded-full border border-border bg-card px-8 py-3.5 font-medium text-foreground transition-colors hover:bg-brand-soft">
+              Lihat caranya
+            </a>
+          </div>
+        </div>
+        <div className="fade-up relative [animation-delay:150ms]">
+          <div className="absolute -inset-4 -z-10 rounded-[2.5rem] bg-brand/25 blur-2xl" />
+          <img src={lobby} alt="Lobi Menara Nobu dengan meja resepsionis" width={1280} height={960} className="w-full rounded-[2rem] object-cover shadow-soft" />
+          <div className="absolute -bottom-5 left-4 flex items-center gap-3 rounded-2xl bg-card px-4 py-3 shadow-soft sm:left-6">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand text-foreground"><Clock className="h-5 w-5" /></span>
+            <div><p className="font-display font-bold text-foreground">± 1 menit</p><p className="text-xs text-muted-foreground">rata-rata waktu registrasi</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-card py-16">
+        <div className="mx-auto max-w-6xl px-4">
+          <h2 className="text-center text-3xl text-foreground">Kenapa registrasi digital?</h2>
+          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {features.map((f, i) => (
+              <div key={f.t} style={{ animationDelay: `${i * 80}ms` }} className="fade-up rounded-3xl bg-background p-6 transition-transform duration-300 hover:-translate-y-1">
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-soft text-primary"><f.icon className="h-6 w-6" /></span>
+                <h3 className="mt-4 text-lg font-bold text-foreground">{f.t}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{f.d}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="cara" className="mx-auto max-w-6xl px-4 py-16">
+        <h2 className="text-center text-3xl text-foreground">3 langkah mudah</h2>
+        <div className="mt-10 grid gap-5 md:grid-cols-3">
+          {steps.map((s, i) => (
+            <div key={s.t} className="relative rounded-3xl border border-border bg-card p-6">
+              <span className="absolute right-5 top-4 font-display text-5xl font-extrabold text-brand/40">{i + 1}</span>
+              <s.icon className="h-7 w-7 text-primary" />
+              <h3 className="mt-3 text-lg font-bold text-foreground">{s.t}</h3>
+              <p className="mt-1 text-sm text-muted-foreground">{s.d}</p>
             </div>
-          </div>
-        )}
+          ))}
+        </div>
+      </section>
 
-        <form onSubmit={submit} className="fade-up space-y-4 rounded-3xl bg-card p-5 shadow-soft [animation-delay:120ms] sm:p-7">
-          <F label="Nama lengkap" err={errors.name}>
-            <input className={field} value={form.name} onChange={(e) => update("name", e.target.value)} onBlur={() => validateField("name")} autoComplete="name" />
-          </F>
-          <F label="Instansi / Perusahaan" err={errors.institution}>
-            <input className={field} value={form.institution} onChange={(e) => update("institution", e.target.value)} onBlur={() => validateField("institution")} />
-          </F>
-          <F label="Nomor telepon" err={errors.phone}>
-            <input className={field} inputMode="tel" value={form.phone} onChange={(e) => update("phone", e.target.value)} onBlur={() => validateField("phone")} />
-          </F>
-          <F label="Tujuan kunjungan" err={errors.visit_purpose_id}>
-            <select className={field} value={form.visit_purpose_id} onChange={(e) => update("visit_purpose_id", e.target.value)} onBlur={() => validateField("visit_purpose_id")}>
-              <option value="">— Pilih —</option>
-              {purposes.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          </F>
-          <F label="Nama yang dituju" err={errors.employee_id}>
-            <input className={field} placeholder="Cari nama…" value={empSearch} onChange={(e) => setEmpSearch(e.target.value)} />
-            <select className={field} value={form.employee_id} onChange={(e) => update("employee_id", e.target.value)} onBlur={() => validateField("employee_id")}>
-              <option value="">— Pilih —</option>
-              {filteredEmp.map((p) => <option key={p.id} value={p.id}>{p.name}{p.department ? ` (${p.department})` : ""}</option>)}
-            </select>
-          </F>
-          <F label="Catatan (opsional)">
-            <textarea className={field} rows={3} value={form.notes} onChange={(e) => update("notes", e.target.value)} />
-          </F>
+      <section className="px-4 pb-16">
+        <div className="mx-auto flex max-w-6xl flex-col items-center gap-5 rounded-[2rem] bg-primary px-6 py-12 text-center text-primary-foreground shadow-soft">
+          <h2 className="text-3xl">Siap berkunjung?</h2>
+          <p className="max-w-md opacity-90">Isi formulir sekarang dan kami akan segera menghubungkan Anda.</p>
+          <Link to="/registrasi" className="inline-flex min-h-12 items-center rounded-full bg-brand px-8 py-3 font-display text-lg font-bold text-foreground transition-all hover:-translate-y-0.5 active:scale-95">
+            Registrasi Sekarang
+          </Link>
+        </div>
+      </section>
 
-          {submitErr && <p className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{submitErr}</p>}
-
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-sm text-muted-foreground" aria-live="polite">{statusText}</span>
-            <button type="submit" disabled={submitting} className="min-h-12 shrink-0 rounded-full bg-primary px-7 font-semibold text-primary-foreground shadow-soft transition-all hover:-translate-y-0.5 hover:brightness-110 active:scale-95 disabled:opacity-60">
-              {submitting ? "Mengirim…" : submitErr ? "Coba lagi" : "Kirim"}
-            </button>
-          </div>
-        </form>
-      </div>
+      <footer className="border-t border-border py-6 text-center text-sm text-muted-foreground">
+        © {new Date().getFullYear()} Menara Nobu · Buku Tamu Digital
+      </footer>
     </main>
-  );
-}
-
-function F({ label, err, children }: { label: string; err?: string | undefined; children: React.ReactNode }) {
-  return (
-    <label className="block">
-      <span className="text-sm font-medium text-foreground">{label}</span>
-      {children}
-      {err && <span className="mt-1 block text-sm text-destructive">{err}</span>}
-    </label>
   );
 }

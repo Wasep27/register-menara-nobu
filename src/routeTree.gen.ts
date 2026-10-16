@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as PanduanRouteImport } from './routes/panduan'
+import { Route as RegistrasiRouteImport } from './routes/registrasi'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminKaryawanRouteImport } from './routes/admin.karyawan'
@@ -33,6 +34,11 @@ const AdminRoute = AdminRouteImport.update({
 const PanduanRoute = PanduanRouteImport.update({
   id: '/panduan',
   path: '/panduan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegistrasiRoute = RegistrasiRouteImport.update({
+  id: '/registrasi',
+  path: '/registrasi',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -75,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/panduan': typeof PanduanRoute
+  '/registrasi': typeof RegistrasiRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin/karyawan': typeof AdminKaryawanRoute
   '/admin/laporan': typeof AdminLaporanRoute
@@ -86,6 +93,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/panduan': typeof PanduanRoute
+  '/registrasi': typeof RegistrasiRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin/karyawan': typeof AdminKaryawanRoute
   '/admin/laporan': typeof AdminLaporanRoute
@@ -99,6 +107,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/panduan': typeof PanduanRoute
+  '/registrasi': typeof RegistrasiRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin/karyawan': typeof AdminKaryawanRoute
   '/admin/laporan': typeof AdminLaporanRoute
@@ -113,6 +122,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/panduan'
+    | '/registrasi'
     | '/reset-password'
     | '/admin/karyawan'
     | '/admin/laporan'
@@ -124,6 +134,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/panduan'
+    | '/registrasi'
     | '/reset-password'
     | '/admin/karyawan'
     | '/admin/laporan'
@@ -136,6 +147,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/panduan'
+    | '/registrasi'
     | '/reset-password'
     | '/admin/karyawan'
     | '/admin/laporan'
@@ -149,6 +161,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   PanduanRoute: typeof PanduanRoute
+  RegistrasiRoute: typeof RegistrasiRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
 }
 
@@ -173,6 +186,13 @@ declare module '@tanstack/react-router' {
       path: '/panduan'
       fullPath: '/panduan'
       preLoaderRoute: typeof PanduanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/registrasi': {
+      id: '/registrasi'
+      path: '/registrasi'
+      fullPath: '/registrasi'
+      preLoaderRoute: typeof RegistrasiRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -251,6 +271,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   PanduanRoute: PanduanRoute,
+  RegistrasiRoute: RegistrasiRoute,
   ResetPasswordRoute: ResetPasswordRoute,
 }
 export const routeTree = rootRouteImport

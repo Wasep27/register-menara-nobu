@@ -46,7 +46,7 @@ function Guide() {
 
   return (
     <main className="min-h-screen bg-background">
-      <SiteNav items={[{ to: "/", label: "Registrasi Tamu" }, { to: "/panduan", label: "Panduan" }, { to: "/admin/login", label: "Admin" }]} />
+      <SiteNav items={[{ to: "/", label: "Beranda" }, { to: "/registrasi", label: "Registrasi Tamu" }, { to: "/panduan", label: "Panduan" }, { to: "/admin/login", label: "Admin" }]} />
       <div className="fade-up mx-auto max-w-3xl space-y-5 px-4 py-6">
         <h1 className="text-3xl font-bold text-foreground">Panduan Deploy ke Vercel</h1>
 
