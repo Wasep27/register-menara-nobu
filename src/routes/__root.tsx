@@ -1,3 +1,4 @@
+import { Toaster } from "@/components/ui/sonner";
 import logo from "@/assets/logo.png";
 import gedung from "@/assets/gedung-nobu.jpg.asset.json";
 import { CookieBanner } from "@/components/CookieBanner";
@@ -132,6 +133,7 @@ function RootComponent() {
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
       <CookieBanner />
+      <Toaster position="top-center" richColors closeButton />
     </QueryClientProvider>
   );
 }
