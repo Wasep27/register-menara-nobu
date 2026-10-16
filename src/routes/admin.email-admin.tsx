@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { z } from "zod";
@@ -26,13 +28,15 @@ function AdminEmails() {
     if (!r.success) return setMsg("Email tidak valid.");
     const { error } = await supabase.from("admin_emails").insert({ email: r.data });
     if (error) return setMsg(error.code === "23505" ? "Email sudah terdaftar." : "Gagal menyimpan. Pastikan skrip database terbaru sudah dijalankan.");
-    setEmail(""); setMsg("Ditambahkan. Jika akunnya sudah ada, langsung menjadi admin.");
+    toast.success("Email admin ditambahkan"); setEmail(""); setMsg("Ditambahkan. Jika akunnya sudah ada, langsung menjadi admin.");
     load();
   };
-  const remove = async (em: string) => {
-    if (!confirm(`Hapus ${em} dari daftar admin? Akses adminnya akan dicabut.`)) return;
-    await supabase.from("admin_emails").delete().eq("email", em);
-    load();
+  const [toDelete, setToDelete] = useState<string | null>(null);
+  const remove = async () => {
+    if (!toDelete) return;
+    const { error } = await supabase.from("admin_emails").delete().eq("email", toDelete);
+    if (error) { toast.error("Gagal menghapus email admin"); return; }
+    toast.success(`${toDelete} dihapus dari admin`); load();
   };
 
   return (
@@ -51,10 +55,11 @@ function AdminEmails() {
         {rows.map((r) => (
           <div key={r.email} className="flex items-center gap-3 border-b border-border p-3 text-sm last:border-0">
             <span className="flex-1 break-all text-foreground">{r.email}{r.email === me && <span className="ml-2 text-xs text-muted-foreground">(Anda)</span>}</span>
-            {r.email !== me && <button className="min-h-11 px-2 text-destructive" onClick={() => remove(r.email)}>Hapus</button>}
+            {r.email !== me && <button className="min-h-11 px-2 text-destructive" onClick={() => setToDelete(r.email)}>Hapus</button>}
           </div>
         ))}
       </div>
+      <ConfirmDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)} title="Cabut akses admin?" description={`${toDelete ?? ""} akan dihapus dari daftar dan akses adminnya langsung dicabut.`} confirmLabel="Hapus & cabut" onConfirm={remove} />
     </div>
   );
 }

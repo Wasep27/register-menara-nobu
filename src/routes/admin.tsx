@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { signOutLocal, startIdleLogout, supabase } from "@/lib/supabase";
@@ -61,7 +63,8 @@ function AdminLayout() {
     return startIdleLogout(() => { setIdle(true); void signOutLocal(); });
   }, [state]);
 
-  const logout = () => signOutLocal().then(() => nav({ to: "/admin/login" }));
+  const [askLogout, setAskLogout] = useState(false);
+  const logout = async () => { await signOutLocal(); toast.success("Anda berhasil keluar"); nav({ to: "/admin/login" }); };
 
   if (isLogin) return <Outlet />;
   if (idle) return <p className="p-8 text-muted-foreground">Sesi berakhir karena tidak ada aktivitas. Silakan masuk lagi.</p>;
@@ -76,7 +79,8 @@ function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-background">
-      <SiteNav items={[...links]} right={<button className="min-h-11 w-full rounded-full px-4 text-left text-sm font-medium text-muted-foreground hover:bg-brand-soft hover:text-primary md:w-auto" onClick={logout}>Keluar</button>} />
+      <SiteNav items={[...links]} right={<button className="min-h-11 w-full rounded-full px-4 text-left text-sm font-medium text-muted-foreground hover:bg-brand-soft hover:text-primary md:w-auto" onClick={() => setAskLogout(true)}>Keluar</button>} />
+      <ConfirmDialog open={askLogout} onOpenChange={setAskLogout} title="Keluar dari dashboard?" description="Sesi admin di perangkat ini akan diakhiri. Anda perlu masuk lagi untuk melanjutkan." confirmLabel="Keluar" destructive={false} onConfirm={logout} />
       <div key={loc.pathname} className="fade-up mx-auto max-w-6xl p-4 md:p-6"><Outlet /></div>
     </div>
   );

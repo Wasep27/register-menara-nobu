@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { supabase, type Employee, type Guest, type Purpose } from "@/lib/supabase";
@@ -62,11 +64,19 @@ function Guests() {
   }, [buildQuery, page]);
   useEffect(() => { load(); }, [load]);
 
-  const del = async (id: string) => { if (confirm("Hapus data tamu ini?")) { await supabase.from("guests").delete().eq("id", id); load(); } };
+  const [toDelete, setToDelete] = useState<Guest | null>(null);
+  const del = async () => {
+    if (!toDelete) return;
+    const { error } = await supabase.from("guests").delete().eq("id", toDelete.id);
+    if (error) { toast.error("Gagal menghapus data tamu"); return; }
+    toast.success(`Data tamu ${toDelete.name} dihapus`); load();
+  };
   const save = async () => {
     if (!edit) return;
-    await supabase.from("guests").update({ name: edit.name, institution: edit.institution, phone: edit.phone, notes: edit.notes, employee_id: edit.employee_id, visit_purpose_id: edit.visit_purpose_id }).eq("id", edit.id);
-    setEdit(null); load();
+    if (edit.name.trim().length < 2) { toast.error("Nama minimal 2 huruf"); return; }
+    const { error } = await supabase.from("guests").update({ name: edit.name, institution: edit.institution, phone: edit.phone, notes: edit.notes, employee_id: edit.employee_id, visit_purpose_id: edit.visit_purpose_id }).eq("id", edit.id);
+    if (error) { toast.error("Gagal menyimpan perubahan"); return; }
+    toast.success("Data tamu diperbarui"); setEdit(null); load();
   };
   const i = "rounded-lg border border-input bg-card px-3 py-2 text-sm";
 
@@ -97,7 +107,7 @@ function Guests() {
                 <td className="p-3">{new Date(r.check_in_time).toLocaleString("id-ID")}</td>
                 <td className="p-3">{r.name}</td><td className="p-3">{r.institution}</td><td className="p-3">{r.phone}</td>
                 <td className="p-3">{r.visit_purposes?.name}</td><td className="p-3">{r.employees?.name}</td>
-                <td className="whitespace-nowrap p-3"><button className="mr-3 text-primary" onClick={() => setEdit(r)}>Edit</button><button className="text-destructive" onClick={() => del(r.id)}>Hapus</button></td>
+                <td className="whitespace-nowrap p-3"><button className="mr-3 text-primary" onClick={() => setEdit(r)}>Edit</button><button className="text-destructive" onClick={() => setToDelete(r)}>Hapus</button></td>
               </tr>
             ))}
             {rows.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">Tidak ada data.</td></tr>}
@@ -111,7 +121,7 @@ function Guests() {
       </div>
 
       {edit && (
-        <div className="fixed inset-0 flex items-center justify-center bg-foreground/40 p-4">
+        <div role="dialog" aria-modal="true" aria-label="Edit Tamu" onKeyDown={(e) => e.key === "Escape" && setEdit(null)} onClick={(e) => e.target === e.currentTarget && setEdit(null)} className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md space-y-3 rounded-xl bg-card p-6">
             <h2 className="font-semibold">Edit Tamu</h2>
             <input className={`${i} w-full`} value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} />
@@ -124,6 +134,7 @@ function Guests() {
           </div>
         </div>
       )}
+      <ConfirmDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)} title="Hapus data tamu?" description={`Data kunjungan "${toDelete?.name ?? ""}" akan dihapus permanen.`} onConfirm={del} />
     </div>
   );
 }
