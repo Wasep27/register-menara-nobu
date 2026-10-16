@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import logo from "@/assets/logo.png";
-import gedung from "@/assets/gedung-nobu.jpg.asset.json";
+import gedungUrl from "@/assets/gedung-nobu.jpg";
+const gedung = { url: gedungUrl };
 import { CookieBanner } from "@/components/CookieBanner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
@@ -92,7 +93,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:description", content: "Registrasi tamu digital Menara Nobu" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
+      { name: "theme-color", content: "#07936E" },
     ],
     links: [
       {
@@ -100,6 +101,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: appCss,
       },
       { rel: "icon", href: "/favicon.png", type: "image/png" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" },
