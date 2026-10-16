@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 import logo from "@/assets/logo.png";
@@ -8,15 +8,108 @@ export type NavItem = { to: string; label: string };
 export function SiteNav({ items, right }: { items: NavItem[]; right?: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [activeAnchor, setActiveAnchor] = useState<string | null>(null);
+  const pathname = useLocation().pathname;
+
   useEffect(() => {
     const on = () => setScrolled(window.scrollY > 8);
     on();
     window.addEventListener("scroll", on, { passive: true });
     return () => window.removeEventListener("scroll", on);
   }, []);
+
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [open]);
+
+  // Scroll-spy: tandai tautan bagian halaman yang sedang terlihat
+  const anchors = items.filter((l) => l.to.startsWith("#"));
+  useEffect(() => {
+    if (anchors.length === 0) return;
+    const onScroll = () => {
+      let current: string | null = null;
+      if (window.scrollY >= 80) {
+        for (const a of anchors) {
+          const el = document.getElementById(a.to.slice(1));
+          if (el && el.getBoundingClientRect().top <= 200) current = a.to;
+        }
+      }
+      setActiveAnchor(current);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items]);
+
+  const linkBase =
+    "relative rounded-full px-4 py-2 text-sm font-medium transition-colors duration-300";
+  const idleCls = "text-muted-foreground hover:bg-brand-soft hover:text-primary";
+  const activeCls = "bg-brand-soft text-primary";
+
+  function desktopItem(l: NavItem) {
+    if (l.to.startsWith("#")) {
+      const active = activeAnchor === l.to;
+      return (
+        <a key={l.to} href={l.to} className={`${linkBase} ${active ? activeCls : idleCls}`}>
+          {l.label}
+          <span
+            aria-hidden
+            className={`absolute inset-x-4 -bottom-1 mx-auto h-1 rounded-full bg-primary transition-all duration-300 ${
+              active ? "scale-x-100 opacity-100" : "scale-x-0 opacity-0"
+            }`}
+          />
+        </a>
+      );
+    }
+    const active = activeAnchor === null && pathname === l.to;
+    return (
+      <Link key={l.to} to={l.to} className={`${linkBase} ${active ? activeCls : idleCls}`}>
+        {l.label}
+      </Link>
+    );
+  }
+
+  function mobileItem(l: NavItem, i: number) {
+    const motion = open ? "translate-x-0 opacity-100" : "-translate-x-3 opacity-0";
+    if (l.to.startsWith("#")) {
+      const active = activeAnchor === l.to;
+      return (
+        <a
+          key={l.to}
+          href={l.to}
+          onClick={() => setOpen(false)}
+          style={{ transitionDelay: open ? `${i * 40}ms` : "0ms" }}
+          className={`flex min-h-12 items-center rounded-xl px-4 text-base font-medium transition-all duration-300 hover:bg-brand-soft ${
+            active ? "bg-brand-soft text-primary" : "text-foreground"
+          } ${motion}`}
+        >
+          {l.label}
+        </a>
+      );
+    }
+    const active = activeAnchor === null && pathname === l.to;
+    return (
+      <Link
+        key={l.to}
+        to={l.to}
+        onClick={() => setOpen(false)}
+        style={{ transitionDelay: open ? `${i * 40}ms` : "0ms" }}
+        className={`flex min-h-12 items-center rounded-xl px-4 text-base font-medium transition-all duration-300 hover:bg-brand-soft ${
+          active ? "bg-brand-soft text-primary" : "text-foreground"
+        } ${motion}`}
+      >
+        {l.label}
+      </Link>
+    );
+  }
 
   return (
     <header className="app-header sticky top-0 z-40 px-3 pt-3 md:px-6 md:pt-4">
@@ -33,36 +126,36 @@ export function SiteNav({ items, right }: { items: NavItem[]; right?: React.Reac
           <span className="hidden truncate text-sm font-semibold text-foreground sm:inline">Menara Nobu</span>
         </Link>
 
-        <nav className="hidden items-center gap-1 md:flex">
-          {items.map((l) => (
-            <Link key={l.to} to={l.to} activeOptions={{ exact: true }}
-              className="relative rounded-full px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-brand-soft hover:text-primary"
-              activeProps={{ className: "bg-brand-soft text-primary" }}>
-              {l.label}
-            </Link>
-          ))}
-          {right}
-        </nav>
+        <nav className="hidden items-center gap-1 md:flex">{items.map(desktopItem)}</nav>
 
-        <button aria-label={open ? "Tutup menu" : "Buka menu"} onClick={() => setOpen(!open)}
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-soft text-primary transition-transform active:scale-90 md:hidden">
+        <button
+          aria-label={open ? "Tutup menu" : "Buka menu"}
+          aria-expanded={open}
+          onClick={() => setOpen(!open)}
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border transition-all active:scale-90 md:hidden ${
+            open ? "border-transparent bg-primary text-primary-foreground" : "border-border bg-card text-primary hover:bg-brand-soft"
+          }`}
+        >
           {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
       </div>
 
-      {/* menu ponsel */}
-      <div className={`fixed inset-0 top-[84px] z-30 md:hidden ${open ? "pointer-events-auto" : "pointer-events-none"}`}>
-        <div onClick={() => setOpen(false)} className={`absolute inset-0 bg-foreground/30 transition-opacity duration-300 ${open ? "opacity-100" : "opacity-0"}`} />
-        <div className={`absolute inset-x-3 top-2 rounded-3xl bg-card p-3 shadow-soft transition-all duration-300 ease-out ${open ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"}`}>
-          {items.map((l, i) => (
-            <Link key={l.to} to={l.to} activeOptions={{ exact: true }} onClick={() => setOpen(false)}
-              style={{ transitionDelay: open ? `${i * 40}ms` : "0ms" }}
-              className={`flex min-h-12 items-center rounded-xl px-4 text-base font-medium text-foreground transition-all duration-300 hover:bg-brand-soft ${open ? "translate-x-0 opacity-100" : "-translate-x-3 opacity-0"}`}
-              activeProps={{ className: "bg-brand-soft text-primary" }}>
-              {l.label}
-            </Link>
-          ))}
-          {right && <div className="mt-2 border-t border-border pt-2" onClick={() => setOpen(false)}>{right}</div>}
+      {/* menu ponsel — tanpa latar gelap, panel mengapung */}
+      <div
+        className={`fixed inset-0 top-[84px] z-30 md:hidden ${open ? "pointer-events-auto" : "pointer-events-none"}`}
+        onClick={() => setOpen(false)}
+      >
+        <div
+          className={`absolute inset-x-3 top-2 rounded-3xl border border-border/60 bg-card p-3 shadow-soft transition-all duration-300 ease-out ${
+            open ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"
+          }`}
+        >
+          <div onClick={(e) => e.stopPropagation()}>{items.map(mobileItem)}</div>
+          {right && (
+            <div className="mt-2 border-t border-border pt-2" onClick={() => setOpen(false)}>
+              {right}
+            </div>
+          )}
         </div>
       </div>
     </header>

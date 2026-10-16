@@ -19,6 +19,8 @@ export const Route = createFileRoute("/")({
 
 const nav = [
   { to: "/", label: "Beranda" },
+  { to: "#fitur", label: "Fitur" },
+  { to: "#cara", label: "Cara Kerja" },
   { to: "/registrasi", label: "Registrasi Tamu" },
   { to: "/panduan", label: "Panduan" },
   { to: "/admin/login", label: "Admin" },
@@ -39,7 +41,7 @@ const steps = [
 
 function Landing() {
   return (
-    <main className="min-h-screen overflow-x-hidden bg-background">
+    <main className="min-h-screen overflow-x-clip bg-background">
       <SiteNav items={nav} />
 
       <section className="mx-auto grid max-w-6xl items-center gap-10 px-4 pb-16 pt-6 md:grid-cols-2 md:pt-12">
@@ -70,7 +72,7 @@ function Landing() {
         </div>
       </section>
 
-      <section className="bg-card py-16">
+      <section id="fitur" className="scroll-mt-24 bg-card py-16">
         <div className="mx-auto max-w-6xl px-4">
           <h2 className="text-center text-3xl text-foreground">Kenapa registrasi digital?</h2>
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -85,7 +87,7 @@ function Landing() {
         </div>
       </section>
 
-      <section id="cara" className="mx-auto max-w-6xl px-4 py-16">
+      <section id="cara" className="mx-auto max-w-6xl scroll-mt-24 px-4 py-16">
         <h2 className="text-center text-3xl text-foreground">3 langkah mudah</h2>
         <div className="mt-10 grid gap-5 md:grid-cols-3">
           {steps.map((s, i) => (
