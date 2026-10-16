@@ -13,7 +13,9 @@ export function PolicyPage({
   title,
   updated,
   sections,
+  children,
 }: {
+  children?: React.ReactNode;
   title: string;
   updated: string;
   sections: { h: string; p: string[] }[];
@@ -35,6 +37,7 @@ export function PolicyPage({
             </section>
           ))}
         </div>
+        {children}
       </main>
       <SiteFooter />
     </div>
