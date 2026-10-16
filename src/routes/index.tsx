@@ -78,7 +78,7 @@ function Landing() {
         </div>
         <div className="fade-up relative [animation-delay:150ms]">
           <div className="absolute -inset-4 -z-10 rounded-[2.5rem] bg-brand/25 blur-2xl" />
-          <img src={gedung.url} alt="Gedung Menara Nobu dari depan" width={1200} height={900} className="h-full w-full rounded-[2rem] object-cover shadow-soft" />
+          <img src={gedung.url} alt="Gedung Menara Nobu dari depan" width={1200} height={900} className="w-full rounded-[2rem] object-cover shadow-soft" />
           <div className="absolute -bottom-5 left-4 flex items-center gap-3 rounded-2xl bg-card px-4 py-3 shadow-soft sm:left-6">
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand text-foreground"><Clock className="h-5 w-5" /></span>
             <div><p className="font-display font-bold text-foreground">± 1 menit</p><p className="text-xs text-muted-foreground">rata-rata waktu registrasi</p></div>
