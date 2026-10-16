@@ -56,7 +56,7 @@ function Guests() {
   };
 
   const load = useCallback(async () => {
-    const { data, count } = await buildQuery()("check_in_time", { ascending: asc }).range(page * PAGE, page * PAGE + PAGE - 1);
+    const { data, count } = await buildQuery().range(page * PAGE, page * PAGE + PAGE - 1);
     setRows((data as Guest[]) ?? []);
     setCount(count ?? 0);
   }, [buildQuery, page]);
