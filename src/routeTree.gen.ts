@@ -11,8 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as CookiesRouteImport } from './routes/cookies'
 import { Route as KaryawanRouteImport } from './routes/karyawan'
 import { Route as PanduanRouteImport } from './routes/panduan'
+import { Route as PrivasiRouteImport } from './routes/privasi'
 import { Route as RegistrasiRouteImport } from './routes/registrasi'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
@@ -33,6 +35,11 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CookiesRoute = CookiesRouteImport.update({
+  id: '/cookies',
+  path: '/cookies',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const KaryawanRoute = KaryawanRouteImport.update({
   id: '/karyawan',
   path: '/karyawan',
@@ -41,6 +48,11 @@ const KaryawanRoute = KaryawanRouteImport.update({
 const PanduanRoute = PanduanRouteImport.update({
   id: '/panduan',
   path: '/panduan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivasiRoute = PrivasiRouteImport.update({
+  id: '/privasi',
+  path: '/privasi',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RegistrasiRoute = RegistrasiRouteImport.update({
@@ -92,8 +104,10 @@ const AdminLoginRoute = AdminLoginRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/cookies': typeof CookiesRoute
   '/karyawan': typeof KaryawanRoute
   '/panduan': typeof PanduanRoute
+  '/privasi': typeof PrivasiRoute
   '/registrasi': typeof RegistrasiRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin/email-admin': typeof AdminEmailAdminRoute
@@ -106,8 +120,10 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/cookies': typeof CookiesRoute
   '/karyawan': typeof KaryawanRoute
   '/panduan': typeof PanduanRoute
+  '/privasi': typeof PrivasiRoute
   '/registrasi': typeof RegistrasiRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin/email-admin': typeof AdminEmailAdminRoute
@@ -122,8 +138,10 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/cookies': typeof CookiesRoute
   '/karyawan': typeof KaryawanRoute
   '/panduan': typeof PanduanRoute
+  '/privasi': typeof PrivasiRoute
   '/registrasi': typeof RegistrasiRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin/email-admin': typeof AdminEmailAdminRoute
@@ -139,8 +157,10 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/cookies'
     | '/karyawan'
     | '/panduan'
+    | '/privasi'
     | '/registrasi'
     | '/reset-password'
     | '/admin/email-admin'
@@ -153,8 +173,10 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/cookies'
     | '/karyawan'
     | '/panduan'
+    | '/privasi'
     | '/registrasi'
     | '/reset-password'
     | '/admin/email-admin'
@@ -168,8 +190,10 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/cookies'
     | '/karyawan'
     | '/panduan'
+    | '/privasi'
     | '/registrasi'
     | '/reset-password'
     | '/admin/email-admin'
@@ -184,8 +208,10 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
+  CookiesRoute: typeof CookiesRoute
   KaryawanRoute: typeof KaryawanRoute
   PanduanRoute: typeof PanduanRoute
+  PrivasiRoute: typeof PrivasiRoute
   RegistrasiRoute: typeof RegistrasiRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   AdminLoginRoute: typeof AdminLoginRoute
@@ -207,6 +233,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cookies': {
+      id: '/cookies'
+      path: '/cookies'
+      fullPath: '/cookies'
+      preLoaderRoute: typeof CookiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/karyawan': {
       id: '/karyawan'
       path: '/karyawan'
@@ -219,6 +252,13 @@ declare module '@tanstack/react-router' {
       path: '/panduan'
       fullPath: '/panduan'
       preLoaderRoute: typeof PanduanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privasi': {
+      id: '/privasi'
+      path: '/privasi'
+      fullPath: '/privasi'
+      preLoaderRoute: typeof PrivasiRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/registrasi': {
@@ -310,8 +350,10 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
+  CookiesRoute: CookiesRoute,
   KaryawanRoute: KaryawanRoute,
   PanduanRoute: PanduanRoute,
+  PrivasiRoute: PrivasiRoute,
   RegistrasiRoute: RegistrasiRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   AdminLoginRoute: AdminLoginRoute,
