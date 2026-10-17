@@ -541,31 +541,32 @@ export function AdminActivityLogPage() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          {isAdmin && logs.length > 0 && (
-            <button
-              onClick={() => setToClearLogs(true)}
-              className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-destructive/30 bg-destructive/10 px-3.5 text-xs font-semibold text-destructive shadow-sm transition-all hover:bg-destructive hover:text-destructive-foreground active:scale-95"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-              Bersihkan Log
-            </button>
-          )}
-          <button
-            onClick={exportLogCsv}
-            className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-border bg-card px-4 text-xs font-semibold text-foreground shadow-sm transition-all hover:bg-muted active:scale-95"
-          >
-            <Download className="h-3.5 w-3.5 text-muted-foreground" />
-            Ekspor CSV
-          </button>
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
           <button
             onClick={loadActivities}
             disabled={loading}
-            className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95 disabled:opacity-60"
+            className="flex-1 sm:flex-initial inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-primary px-3.5 sm:px-4 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95 disabled:opacity-60 whitespace-nowrap"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-            Segarkan
+            <span>Segarkan</span>
           </button>
+          <button
+            onClick={exportLogCsv}
+            className="flex-1 sm:flex-initial inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3.5 sm:px-4 text-xs font-semibold text-foreground shadow-sm transition-all hover:bg-muted active:scale-95 whitespace-nowrap"
+          >
+            <Download className="h-3.5 w-3.5 text-muted-foreground" />
+            <span>Ekspor CSV</span>
+          </button>
+          {isAdmin && logs.length > 0 && (
+            <button
+              onClick={() => setToClearLogs(true)}
+              title="Bersihkan catatan riwayat log aktivitas"
+              className="w-full sm:w-auto inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-destructive/30 bg-destructive/10 px-3.5 text-xs font-semibold text-destructive shadow-sm transition-all hover:bg-destructive hover:text-destructive-foreground active:scale-95 shrink-0 whitespace-nowrap"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              <span>Bersihkan Log</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -583,9 +584,9 @@ export function AdminActivityLogPage() {
       />
 
       {/* Filter Toolbar */}
-      <div className="flex flex-col gap-3 rounded-2xl border border-border/80 bg-card p-4 shadow-soft sm:p-5">
+      <div className="flex flex-col gap-3 rounded-2xl border border-border/80 bg-card p-3.5 shadow-soft sm:p-5">
         {/* Search Bar Row */}
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
@@ -639,66 +640,14 @@ export function AdminActivityLogPage() {
           </div>
         </div>
 
-        {/* Date Range & Time Preset Row */}
-        <div className="flex flex-col gap-2.5 border-t border-border/80 pt-3 lg:flex-row lg:items-center lg:justify-between">
-          {/* Custom Date Range Filter */}
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-              <Calendar className="h-3.5 w-3.5 text-primary" />
-              <span>Rentang Tanggal:</span>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <label className="flex items-center gap-1.5 rounded-xl border border-input bg-background px-3 py-1.5 text-xs text-muted-foreground focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/25">
-                <span className="font-medium shrink-0">Dari</span>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => {
-                    setStartDate(e.target.value);
-                    setTimeFilter("all");
-                  }}
-                  className="bg-transparent text-foreground focus:outline-none"
-                />
-              </label>
-
-              <label className="flex items-center gap-1.5 rounded-xl border border-input bg-background px-3 py-1.5 text-xs text-muted-foreground focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/25">
-                <span className="font-medium shrink-0">Sampai</span>
-                <input
-                  type="date"
-                  value={endDate}
-                  min={startDate || undefined}
-                  onChange={(e) => {
-                    setEndDate(e.target.value);
-                    setTimeFilter("all");
-                  }}
-                  className="bg-transparent text-foreground focus:outline-none"
-                />
-              </label>
-
-              {(startDate || endDate) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStartDate("");
-                    setEndDate("");
-                    setTimeFilter("today");
-                  }}
-                  className="rounded-lg border border-border bg-muted/60 px-2 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-                  title="Hapus filter rentang tanggal"
-                >
-                  Clear Rentang
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Quick Presets */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0">
-            <span className="text-xs font-semibold text-muted-foreground shrink-0 hidden sm:inline">
-              Preset:
+        {/* Date Range & Time Preset Row - Fully Mobile Responsive */}
+        <div className="flex flex-col gap-3 border-t border-border/80 pt-3 lg:flex-row lg:items-center lg:justify-between">
+          {/* Quick Presets: Full width on mobile, inline on desktop */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span className="text-xs font-semibold text-muted-foreground shrink-0">
+              Filter Waktu:
             </span>
-            <div className="flex rounded-xl bg-muted p-1 shrink-0">
+            <div className="grid grid-cols-4 sm:flex rounded-xl bg-muted p-1 w-full sm:w-auto gap-1">
               {(
                 [
                   { id: "today", label: "Hari Ini" },
@@ -709,20 +658,90 @@ export function AdminActivityLogPage() {
               ).map((t) => (
                 <button
                   key={t.id}
+                  type="button"
                   onClick={() => {
                     setTimeFilter(t.id);
                     setStartDate("");
                     setEndDate("");
                   }}
-                  className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
+                  className={`rounded-lg py-1.5 sm:px-3 text-center text-xs font-semibold transition-all ${
                     timeFilter === t.id && !startDate && !endDate
-                      ? "bg-card text-primary shadow-sm"
+                      ? "bg-card text-primary shadow-xs"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   {t.label}
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* Custom Date Range Filter: Responsive on mobile */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full lg:w-auto">
+            <div className="flex items-center justify-between sm:justify-start gap-1.5 text-xs font-semibold text-muted-foreground">
+              <div className="flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5 text-primary" />
+                <span>Rentang Tanggal:</span>
+              </div>
+              {(startDate || endDate) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStartDate("");
+                    setEndDate("");
+                    setTimeFilter("today");
+                  }}
+                  className="sm:hidden text-xs font-semibold text-primary hover:underline"
+                >
+                  Clear Rentang
+                </button>
+              )}
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+              <div className="grid grid-cols-2 gap-2 w-full sm:w-auto">
+                <label className="flex items-center gap-1.5 rounded-xl border border-input bg-background px-2.5 sm:px-3 py-1.5 text-xs text-muted-foreground focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/25 min-w-0">
+                  <span className="font-semibold text-foreground shrink-0">Dari</span>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => {
+                      setStartDate(e.target.value);
+                      setTimeFilter("all");
+                    }}
+                    className="w-full min-w-0 bg-transparent text-foreground text-xs focus:outline-none"
+                  />
+                </label>
+
+                <label className="flex items-center gap-1.5 rounded-xl border border-input bg-background px-2.5 sm:px-3 py-1.5 text-xs text-muted-foreground focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/25 min-w-0">
+                  <span className="font-semibold text-foreground shrink-0">Sampai</span>
+                  <input
+                    type="date"
+                    value={endDate}
+                    min={startDate || undefined}
+                    onChange={(e) => {
+                      setEndDate(e.target.value);
+                      setTimeFilter("all");
+                    }}
+                    className="w-full min-w-0 bg-transparent text-foreground text-xs focus:outline-none"
+                  />
+                </label>
+              </div>
+
+              {(startDate || endDate) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStartDate("");
+                    setEndDate("");
+                    setTimeFilter("today");
+                  }}
+                  className="hidden sm:inline-flex rounded-xl border border-border bg-muted/60 px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground shrink-0"
+                  title="Hapus filter rentang tanggal"
+                >
+                  Clear Rentang
+                </button>
+              )}
             </div>
           </div>
         </div>
