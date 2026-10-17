@@ -148,7 +148,7 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-badge-title"
-      className="fixed inset-0 z-[100] flex items-start justify-center p-2 sm:p-4 pt-2 sm:pt-4 pb-24 md:pb-8 overflow-y-auto overscroll-contain bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
+      className="fixed inset-0 z-[100] flex sm:items-center sm:justify-center overflow-hidden bg-black/80 backdrop-blur-sm sm:p-4 animate-in fade-in duration-200"
     >
       {/* Print-specific style override: hide all ambient UI during print */}
       <style>{`
@@ -176,16 +176,20 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
         }
       `}</style>
 
-      {/* Accessible Backdrop with click to dismiss covering full viewport */}
-      <div className="fixed inset-0 bg-transparent" aria-hidden="true" onClick={onClose} />
-
-      {/* Responsive Modal Dialog Card positioned at top for mobile clearance */}
+      {/* Accessible Backdrop with click to dismiss covering full viewport (desktop) */}
       <div
-        className="relative w-full max-w-lg md:max-w-xl max-h-[96dvh] flex flex-col rounded-3xl border border-border/80 bg-card shadow-2xl z-10 overflow-hidden my-0 animate-in zoom-in-95 duration-200"
+        className="hidden sm:block fixed inset-0 bg-transparent"
+        aria-hidden="true"
+        onClick={onClose}
+      />
+
+      {/* Modal Dialog: Full page on mobile, centered modal card on sm+ */}
+      <div
+        className="relative w-full h-[100dvh] sm:h-auto sm:max-h-[92dvh] sm:max-w-xl flex flex-col rounded-none sm:rounded-3xl border-0 sm:border border-border/80 bg-card shadow-2xl z-10 overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Top Header Bar */}
-        <div className="flex items-center justify-between border-b border-border/60 px-4 py-3 sm:px-6 sm:py-4 shrink-0 bg-card">
+        <div className="flex items-center justify-between border-b border-border/60 px-4 py-3 sm:px-6 sm:py-4 pt-[max(0.75rem,env(safe-area-inset-top))] sm:pt-4 shrink-0 bg-card">
           <div className="flex items-center gap-2.5 min-w-0">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-primary font-bold shadow-xs">
               <ShieldCheck className="h-5 w-5" />
@@ -214,9 +218,11 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
         </div>
 
         {/* Toolbar / Options: Layout format selector & copy pass button */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-border/50 bg-muted/30 px-4 py-2.5 sm:px-6 text-xs shrink-0">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/50 bg-muted/30 px-3.5 py-2 sm:px-6 sm:py-2.5 text-xs shrink-0">
           <div className="flex items-center gap-1.5">
-            <span className="font-semibold text-muted-foreground">Format:</span>
+            <span className="font-semibold text-muted-foreground text-[11px] sm:text-xs">
+              Format:
+            </span>
             <div className="inline-flex rounded-xl border border-border/80 bg-card p-0.5 shadow-2xs">
               <button
                 type="button"
@@ -227,7 +233,7 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                Lanyard (Vertikal)
+                Lanyard
               </button>
               <button
                 type="button"
@@ -238,7 +244,7 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                Stiker (Horizontal)
+                Stiker
               </button>
             </div>
           </div>
@@ -247,17 +253,17 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
             <button
               type="button"
               onClick={() => setShowQr(!showQr)}
-              className="inline-flex items-center gap-1 rounded-xl border border-border/80 bg-card px-2.5 py-1 font-medium text-foreground hover:bg-brand-soft hover:text-primary transition-colors active:scale-95 shadow-2xs"
+              className="inline-flex items-center gap-1 rounded-xl border border-border/80 bg-card px-2.5 py-1 font-medium text-foreground hover:bg-brand-soft hover:text-primary transition-colors active:scale-95 shadow-2xs text-[11px] sm:text-xs"
             >
               <QrCode className="h-3.5 w-3.5" />
-              <span className="hidden xs:inline">{showQr ? "Sembunyikan QR" : "Tampilkan QR"}</span>
+              <span>{showQr ? "Sembunyikan QR" : "Tampilkan QR"}</span>
             </button>
 
             <button
               type="button"
               onClick={handleCopyCode}
               title="Salin nomor pass pengunjung"
-              className="inline-flex items-center gap-1 rounded-xl border border-border/80 bg-card px-2.5 py-1 font-mono font-bold text-foreground hover:bg-brand-soft hover:text-primary transition-colors active:scale-95 shadow-2xs"
+              className="inline-flex items-center gap-1 rounded-xl border border-border/80 bg-card px-2.5 py-1 font-mono font-bold text-foreground hover:bg-brand-soft hover:text-primary transition-colors active:scale-95 shadow-2xs text-[11px] sm:text-xs"
             >
               {copied ? (
                 <Check className="h-3.5 w-3.5 text-primary" />
@@ -270,7 +276,7 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
         </div>
 
         {/* Scrollable Preview Area */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-4 py-5 sm:px-6 flex justify-center items-start">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-4 sm:px-6 sm:py-6 flex justify-center items-start">
           <div
             id="printable-visitor-badge"
             ref={badgeCardRef}
@@ -432,33 +438,33 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
         </div>
 
         {/* Modal Bottom Action Controls */}
-        <div className="border-t border-border/60 bg-card px-4 py-3 sm:px-6 sm:py-4 flex flex-col-reverse sm:flex-row items-stretch sm:items-center sm:justify-between gap-2.5 shrink-0">
+        <div className="border-t border-border/60 bg-card px-3.5 py-3 sm:px-6 sm:py-4 pb-[max(0.85rem,env(safe-area-inset-bottom))] sm:pb-4 flex flex-col-reverse sm:flex-row items-stretch sm:items-center sm:justify-between gap-2 shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="w-full sm:w-auto rounded-xl border border-border px-4 py-2.5 text-xs font-semibold text-foreground hover:bg-muted transition-colors active:scale-95 text-center"
+            className="w-full sm:w-auto rounded-xl border border-border px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted transition-colors active:scale-95 text-center"
           >
             Tutup
           </button>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
             <button
               type="button"
               disabled={downloading}
               onClick={handleDownloadImage}
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-primary/40 bg-brand-soft px-4 py-2 text-xs font-bold text-primary transition-all hover:bg-brand-soft/80 active:scale-95 disabled:opacity-50"
+              className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-primary/40 bg-brand-soft px-3 sm:px-4 py-2 text-xs font-bold text-primary transition-all hover:bg-brand-soft/80 active:scale-95 disabled:opacity-50"
             >
-              <Download className="h-4 w-4" />
-              <span>{downloading ? "Memproses..." : "Unduh Gambar (PNG)"}</span>
+              <Download className="h-4 w-4 shrink-0" />
+              <span>{downloading ? "Mengunduh…" : "Unduh PNG"}</span>
             </button>
 
             <button
               type="button"
               onClick={handlePrint}
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95"
+              className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 sm:px-4 py-2 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95"
             >
-              <Printer className="h-4 w-4" />
-              <span>Cetak Kartu (Print / PDF)</span>
+              <Printer className="h-4 w-4 shrink-0" />
+              <span>Cetak (Print)</span>
             </button>
           </div>
         </div>
