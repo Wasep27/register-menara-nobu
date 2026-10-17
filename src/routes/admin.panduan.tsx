@@ -38,7 +38,9 @@ type Check = { label: string; ok: boolean | null; note: string };
 function AdminTechnicalGuide() {
   const [checks, setChecks] = useState<Check[]>([]);
   const [running, setRunning] = useState(false);
-  const [activeSqlTab, setActiveSqlTab] = useState<"housekeeping" | "monitoring" | "indexes">("housekeeping");
+  const [activeSqlTab, setActiveSqlTab] = useState<"housekeeping" | "monitoring" | "indexes">(
+    "housekeeping",
+  );
 
   const getActiveSqlSnippet = () => {
     switch (activeSqlTab) {

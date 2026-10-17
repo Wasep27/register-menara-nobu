@@ -21,7 +21,15 @@ const NOBU_AVATAR_PALETTES = [
 ];
 
 /** Avatar inisial dengan warna harmonis dan konsisten berdasarkan nama. */
-export function Avatar({ name, size = "md" }: { name: string; size?: "sm" | "md" }) {
+export function Avatar({
+  name,
+  size = "md",
+  className = "",
+}: {
+  name: string;
+  size?: "xs" | "sm" | "md" | "lg";
+  className?: string;
+}) {
   const initials =
     name
       .trim()
@@ -38,11 +46,18 @@ export function Avatar({ name, size = "md" }: { name: string; size?: "sm" | "md"
   const palette =
     NOBU_AVATAR_PALETTES[hash % NOBU_AVATAR_PALETTES.length] ?? NOBU_AVATAR_PALETTES[0]!;
 
-  const cls = size === "sm" ? "h-8 w-8 text-xs" : "h-10 w-10 text-sm";
+  const cls =
+    size === "xs"
+      ? "h-6 w-6 text-[10px]"
+      : size === "sm"
+        ? "h-8 w-8 text-xs"
+        : size === "lg"
+          ? "h-12 w-12 text-base"
+          : "h-10 w-10 text-sm";
   return (
     <span
       aria-hidden
-      className={`grid ${cls} shrink-0 select-none place-items-center rounded-full font-display font-bold text-white shadow-xs`}
+      className={`grid ${cls} shrink-0 select-none place-items-center rounded-full font-display font-bold text-white shadow-xs ${className}`}
       style={{
         background: palette.bg,
         boxShadow: `inset 0 0 0 1px ${palette.border}, 0 2px 6px -1px rgba(7, 147, 110, 0.25)`,
