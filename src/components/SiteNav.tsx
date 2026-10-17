@@ -23,6 +23,7 @@ import {
   UserCheck,
   Users,
   X,
+  Plus,
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { Avatar } from "@/components/Avatar";
@@ -424,19 +425,93 @@ export function SiteNav({
     );
   }
 
-  const bottomDockLinks = useMemo(() => {
-    if (!isDashboardMode) return CORE_PUBLIC_LINKS;
+  // Resize observer to ensure the curved notch SVG is always pixel-perfect on any mobile screen width
+  const [barWidth, setBarWidth] = useState(380);
+  const barRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!barRef.current) return;
+    const updateWidth = () => {
+      if (barRef.current) {
+        const w = barRef.current.offsetWidth;
+        if (w > 0) setBarWidth(w);
+      }
+    };
+    updateWidth();
+    const ro = new ResizeObserver(updateWidth);
+    ro.observe(barRef.current);
+    window.addEventListener("resize", updateWidth);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", updateWidth);
+    };
+  }, []);
+
+  // Split mobile bottom dock items: Left 2 items, Center protruding item, Right items + Menu button
+  const { leftDockItems, centerDockItem, rightDockItems } = useMemo(() => {
+    if (!isDashboardMode) {
+      return {
+        leftDockItems: [
+          { to: "/", label: "Beranda", icon: Home },
+          { to: "/panduan", label: "Panduan", icon: BookOpen },
+        ],
+        centerDockItem: {
+          to: "/registrasi",
+          label: "Registrasi",
+          icon: Plus,
+        },
+        rightDockItems: [{ to: "/karyawan", label: "Karyawan", icon: UserCheck }],
+      };
+    }
+
     const permittedRoutes = new Set(items.map((it) => it.to));
-    const allCandidates = [
+
+    // Dashboard navigation:
+    const leftCandidates = [
       { to: "/admin", label: "Ringkasan", icon: LayoutDashboard },
-      { to: "/admin/scan", label: "Pindai Pass", icon: QrCode },
       { to: "/admin/tamu", label: "Tamu", icon: Users },
-      { to: "/admin/karyawan", label: "Karyawan", icon: UserCheck },
-      { to: "/admin/laporan", label: "Laporan", icon: BarChart3 },
     ];
-    const filtered = allCandidates.filter((cand) => permittedRoutes.has(cand.to));
-    return filtered.length >= 3 ? filtered.slice(0, 4) : allCandidates.slice(0, 4);
+    const center = {
+      to: "/admin/scan",
+      label: "Pindai",
+      icon: QrCode,
+    };
+    const right = permittedRoutes.has("/admin/karyawan")
+      ? { to: "/admin/karyawan", label: "Karyawan", icon: UserCheck }
+      : permittedRoutes.has("/admin/laporan")
+        ? { to: "/admin/laporan", label: "Laporan", icon: BarChart3 }
+        : { to: "/admin/tamu", label: "Tamu", icon: Users };
+
+    const validLeft = leftCandidates.filter((c) => permittedRoutes.has(c.to));
+
+    return {
+      leftDockItems:
+        validLeft.length >= 2
+          ? leftCandidates
+          : [
+              { to: "/admin/tamu", label: "Tamu", icon: Users },
+              { to: "/admin/karyawan", label: "Karyawan", icon: UserCheck },
+            ],
+      centerDockItem: center,
+      rightDockItems: [right],
+    };
   }, [isDashboardMode, items]);
+
+  // SVG curved notch path calculation:
+  // Smooth organic scoop curve in the center for the protruding FAB button
+  const notchPath = useMemo(() => {
+    const w = barWidth;
+    const h = 64;
+    const r = 28; // full radius on pill ends
+    const cx = w / 2;
+
+    // Organic scoop curve around the center circle:
+    // Shoulder starts at cx - 44, dips smoothly to depth 39, and rises back to cx + 44
+    return `M ${r} 0 L ${cx - 44} 0 C ${cx - 30} 0, ${cx - 32} 20, ${cx - 22} 30 C ${cx - 12} 39, ${cx + 12} 39, ${cx + 22} 30 C ${cx + 32} 20, ${cx + 30} 0, ${cx + 44} 0 L ${w - r} 0 A ${r} ${r} 0 0 1 ${w} ${r} L ${w} ${h - r} A ${r} ${r} 0 0 1 ${w - r} ${h} L ${r} ${h} A ${r} ${r} 0 0 1 0 ${h - r} L 0 ${r} A ${r} ${r} 0 0 1 ${r} 0 Z`;
+  }, [barWidth]);
+
+  const centerActive = isItemActive(centerDockItem.to);
+  const CenterIcon = centerDockItem.icon || Plus;
 
   const avatarName = userName || (isDashboardMode ? "Admin" : "Tamu");
 
@@ -534,62 +609,165 @@ export function SiteNav({
         </div>
       </header>
 
-      {/* Modern Native Mobile Floating Bottom Navigation Bar with rounded-full pill radius */}
+      {/* Modern Curved-Notch Mobile Floating Bottom Navigation Bar (Scooped Center FAB Style) */}
       <aside
         aria-label="Navigasi cepat ponsel"
-        className="fixed bottom-3.5 inset-x-3.5 z-40 mx-auto max-w-md md:hidden pointer-events-none"
+        className="fixed bottom-[max(0.85rem,env(safe-area-inset-bottom))] inset-x-3 z-40 mx-auto max-w-[430px] md:hidden pointer-events-none"
       >
-        <nav className="pointer-events-auto flex items-center justify-around gap-1 rounded-full border border-border/80 bg-card/95 p-1.5 shadow-[0_12px_32px_-4px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-          {bottomDockLinks.map((item) => {
-            const active = isItemActive(item.to);
-            const IconComp = item.icon;
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                onClick={() => setOpen(false)}
-                className={`${focusRing} relative flex flex-1 flex-col items-center justify-center rounded-full py-2 px-1 text-center transition-all duration-200 active:scale-95 ${
-                  active
-                    ? "bg-brand-soft text-primary font-bold shadow-xs"
-                    : "text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+        <div ref={barRef} className="pointer-events-auto relative w-full h-[64px]">
+          {/* Custom Organic Curved-Notch SVG Background */}
+          <svg
+            className="absolute inset-0 w-full h-full pointer-events-none drop-shadow-[0_12px_28px_rgba(0,0,0,0.15)] dark:drop-shadow-[0_14px_32px_rgba(0,0,0,0.5)]"
+            width={barWidth}
+            height={64}
+            viewBox={`0 0 ${barWidth} 64`}
+            fill="none"
+          >
+            <path
+              d={notchPath}
+              className="fill-card/95 dark:fill-card/95 stroke-border/80"
+              strokeWidth="1.25"
+            />
+          </svg>
+
+          {/* Central Protruding Floating Action Button (FAB) nestled in the curved notch */}
+          <div className="absolute left-1/2 -translate-x-1/2 -top-5 z-20 flex flex-col items-center">
+            <Link
+              to={centerDockItem.to}
+              onClick={() => setOpen(false)}
+              aria-label={centerDockItem.label}
+              className={`${focusRing} group relative flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_10px_24px_-4px_rgba(16,36,30,0.4)] dark:shadow-[0_10px_28px_-4px_rgba(16,185,129,0.45)] transition-all duration-200 active:scale-90 hover:brightness-110 ${
+                centerActive ? "ring-4 ring-primary/25 scale-105" : ""
+              }`}
+            >
+              <CenterIcon
+                className={`h-6 w-6 ${
+                  isDashboardMode ? "stroke-[2.25]" : "stroke-[2.5]"
+                } transition-transform group-hover:scale-110`}
+              />
+            </Link>
+          </div>
+
+          {/* 5-Column Grid: Flanking items on left & right of the center curved notch */}
+          <nav className="relative z-10 grid grid-cols-5 h-full items-center px-1">
+            {/* Left 2 items */}
+            {leftDockItems.map((item) => {
+              const active = isItemActive(item.to);
+              const IconComp = item.icon || Compass;
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => setOpen(false)}
+                  className={`${focusRing} relative flex flex-col items-center justify-center py-1.5 px-0.5 text-center transition-all duration-200 active:scale-95 ${
+                    active
+                      ? "text-primary font-bold"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <div
+                    className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
+                      active ? "bg-brand-soft shadow-2xs" : ""
+                    }`}
+                  >
+                    <IconComp className={`h-5 w-5 ${active ? "stroke-[2.25]" : "stroke-[1.75]"}`} />
+                  </div>
+                  <span className="mt-0.5 text-[10px] leading-tight tracking-tight">
+                    {item.label}
+                  </span>
+                  {active && (
+                    <span
+                      aria-hidden
+                      className="absolute bottom-1 h-1 w-2.5 rounded-full bg-primary"
+                    />
+                  )}
+                </Link>
+              );
+            })}
+
+            {/* Center Column: spacing under the protruding FAB button with label */}
+            <div className="flex flex-col items-center justify-end pb-1.5 pointer-events-none">
+              <span
+                className={`text-[9.5px] font-bold tracking-tight leading-tight transition-colors ${
+                  centerActive ? "text-primary" : "text-muted-foreground"
                 }`}
               >
-                <IconComp className={`h-5 w-5 ${active ? "stroke-[2.25]" : "stroke-[1.75]"}`} />
-                <span className="mt-0.5 text-[10px] leading-tight tracking-tight">
-                  {item.label}
-                </span>
-                {active && (
-                  <span aria-hidden className="absolute bottom-1 h-1 w-3 rounded-full bg-primary" />
-                )}
-              </Link>
-            );
-          })}
+                {centerDockItem.label}
+              </span>
+              {centerActive && (
+                <span aria-hidden className="mt-0.5 h-1 w-2.5 rounded-full bg-primary" />
+              )}
+            </div>
 
-          {/* Menu Button to toggle full floating drawer */}
-          <button
-            type="button"
-            onClick={() => setOpen(!open)}
-            aria-label={open ? "Tutup drawer menu" : "Buka semua menu"}
-            aria-expanded={open}
-            className={`${focusRing} relative flex flex-1 flex-col items-center justify-center rounded-full py-2 px-1 text-center transition-all duration-200 active:scale-95 ${
-              open || isSecondaryMenuActive
-                ? "bg-brand-soft text-primary font-bold shadow-xs"
-                : "text-muted-foreground hover:bg-muted/40 hover:text-foreground"
-            }`}
-          >
-            {open ? (
-              <X className="h-5 w-5 stroke-[2.25]" />
-            ) : (
-              <Menu className="h-5 w-5 stroke-[1.75]" />
-            )}
-            <span className="mt-0.5 text-[10px] leading-tight tracking-tight">
-              {open ? "Tutup" : "Menu"}
-            </span>
-            {(open || isSecondaryMenuActive) && (
-              <span aria-hidden className="absolute bottom-1 h-1 w-3 rounded-full bg-primary" />
-            )}
-          </button>
-        </nav>
+            {/* Right Item 1 (e.g. Karyawan) */}
+            {rightDockItems.map((item) => {
+              const active = isItemActive(item.to);
+              const IconComp = item.icon || Compass;
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => setOpen(false)}
+                  className={`${focusRing} relative flex flex-col items-center justify-center py-1.5 px-0.5 text-center transition-all duration-200 active:scale-95 ${
+                    active
+                      ? "text-primary font-bold"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <div
+                    className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
+                      active ? "bg-brand-soft shadow-2xs" : ""
+                    }`}
+                  >
+                    <IconComp className={`h-5 w-5 ${active ? "stroke-[2.25]" : "stroke-[1.75]"}`} />
+                  </div>
+                  <span className="mt-0.5 text-[10px] leading-tight tracking-tight">
+                    {item.label}
+                  </span>
+                  {active && (
+                    <span
+                      aria-hidden
+                      className="absolute bottom-1 h-1 w-2.5 rounded-full bg-primary"
+                    />
+                  )}
+                </Link>
+              );
+            })}
+
+            {/* Right Item 2: Menu Drawer Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setOpen(!open)}
+              aria-label={open ? "Tutup drawer menu" : "Buka semua menu"}
+              aria-expanded={open}
+              className={`${focusRing} relative flex flex-col items-center justify-center py-1.5 px-0.5 text-center transition-all duration-200 active:scale-95 ${
+                open || isSecondaryMenuActive
+                  ? "text-primary font-bold"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <div
+                className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
+                  open || isSecondaryMenuActive ? "bg-brand-soft shadow-2xs" : ""
+                }`}
+              >
+                {open ? (
+                  <X className="h-5 w-5 stroke-[2.25]" />
+                ) : isDashboardMode ? (
+                  <LayoutGrid className="h-5 w-5 stroke-[1.75]" />
+                ) : (
+                  <Menu className="h-5 w-5 stroke-[1.75]" />
+                )}
+              </div>
+              <span className="mt-0.5 text-[10px] leading-tight tracking-tight">
+                {open ? "Tutup" : "Menu"}
+              </span>
+              {(open || isSecondaryMenuActive) && (
+                <span aria-hidden className="absolute bottom-1 h-1 w-2.5 rounded-full bg-primary" />
+              )}
+            </button>
+          </nav>
+        </div>
       </aside>
 
       {/* Modern Native App Menu Drawer / Sheet (Mobile Bottom Sheet & Desktop Command Modal) */}
