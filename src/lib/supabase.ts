@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
-export const supabaseUrl = import.meta.env["VITE_SUPABASE_URL"] || "https://uugqkbwpjlprtxnjdpcm.supabase.co";
+export const supabaseUrl =
+  import.meta.env["VITE_SUPABASE_URL"] || "https://uugqkbwpjlprtxnjdpcm.supabase.co";
 const key =
   import.meta.env["VITE_SUPABASE_ANON_KEY"] ||
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1Z3FrYndwamxwcnR4bmpkcGNtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxNTQ0NDQsImV4cCI6MjEwNzczMDQ0NH0.iKDIQks2uO0o2oNCCwqqMCv7QngZAQOYb12aCtjpXFg";
@@ -21,17 +22,27 @@ export const supabase = createClient(supabaseUrl, key, {
 /** Keluar dari perangkat ini dan bersihkan data sementara. */
 export async function signOutLocal() {
   await supabase.auth.signOut({ scope: "local" });
-  try { sessionStorage.clear(); } catch { /* abaikan */ }
+  try {
+    sessionStorage.clear();
+  } catch {
+    /* abaikan */
+  }
 }
 
 /** Keluar otomatis setelah tidak ada aktivitas. Mengembalikan fungsi pembersih. */
 export function startIdleLogout(onTimeout: () => void, minutes = 30) {
   let t: ReturnType<typeof setTimeout>;
-  const reset = () => { clearTimeout(t); t = setTimeout(onTimeout, minutes * 60_000); };
+  const reset = () => {
+    clearTimeout(t);
+    t = setTimeout(onTimeout, minutes * 60_000);
+  };
   const evs = ["mousemove", "keydown", "pointerdown", "scroll", "touchstart"] as const;
   evs.forEach((e) => window.addEventListener(e, reset, { passive: true }));
   reset();
-  return () => { clearTimeout(t); evs.forEach((e) => window.removeEventListener(e, reset)); };
+  return () => {
+    clearTimeout(t);
+    evs.forEach((e) => window.removeEventListener(e, reset));
+  };
 }
 
 export type Employee = { id: string; name: string; department: string | null; is_active: boolean };

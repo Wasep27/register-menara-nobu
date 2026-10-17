@@ -1,4 +1,9 @@
-export type Consent = { necessary: true; preferences: boolean; analytics: boolean; decided: boolean };
+export type Consent = {
+  necessary: true;
+  preferences: boolean;
+  analytics: boolean;
+  decided: boolean;
+};
 const KEY = "nobu-cookie-consent";
 export const EVENT = "nobu-consent-change";
 

@@ -114,7 +114,12 @@ begin
   values (trim(_payload->>'name'), trim(_payload->>'institution'), trim(_payload->>'phone'),
     (_payload->>'employee_id')::uuid, (_payload->>'visit_purpose_id')::uuid,
     nullif(trim(coalesce(_payload->>'notes','')),''), opened,
-    case when opened is not null then greatest(0, extract(epoch from now()-opened))::int end)
+    case
+      when _payload->>'fill_duration_seconds' is not null and (_payload->>'fill_duration_seconds')::int > 0
+        then least(360, greatest(10, (_payload->>'fill_duration_seconds')::int))
+      when opened is not null
+        then least(360, greatest(10, extract(epoch from now()-opened)::int))
+    end)
   returning id into new_id;
   if _token is not null then delete from guest_drafts where draft_token=_token; end if;
   return new_id;

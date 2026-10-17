@@ -28,22 +28,39 @@ export function CookieBanner() {
       <div className="flex gap-3">
         <Cookie aria-hidden className="mt-0.5 h-6 w-6 shrink-0 text-primary" />
         <div>
-          <h2 className="text-sm font-bold text-foreground sm:text-base">Kami menghargai privasi Anda</h2>
+          <h2 className="text-sm font-bold text-foreground sm:text-base">
+            Kami menghargai privasi Anda
+          </h2>
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground sm:text-sm">
-            Kami memakai penyimpanan yang diperlukan agar formulir dan login berfungsi. Penyimpanan tambahan hanya dipakai jika Anda setuju.{" "}
-            <Link to="/cookies" className="font-medium text-primary underline">Kebijakan Cookie</Link>
+            Kami memakai penyimpanan yang diperlukan agar formulir dan login berfungsi. Penyimpanan
+            tambahan hanya dipakai jika Anda setuju.{" "}
+            <Link to="/cookies" className="font-medium text-primary underline">
+              Kebijakan Cookie
+            </Link>
           </p>
         </div>
       </div>
       <div className="mt-3 flex flex-col gap-2 sm:mt-4 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
-        <Link to="/cookies" hash="pengaturan" className="min-h-8 text-center text-sm font-medium text-primary underline outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:order-1">
+        <Link
+          to="/cookies"
+          hash="pengaturan"
+          className="min-h-8 text-center text-sm font-medium text-primary underline outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:order-1"
+        >
           Atur preferensi
         </Link>
         <div className="flex gap-2 sm:order-2">
-          <button type="button" onClick={() => saveConsent({ preferences: false, analytics: false })} className={`${btn} flex-1 border border-border bg-card px-4 text-foreground hover:bg-brand-soft sm:flex-none`}>
+          <button
+            type="button"
+            onClick={() => saveConsent({ preferences: false, analytics: false })}
+            className={`${btn} flex-1 border border-border bg-card px-4 text-foreground hover:bg-brand-soft sm:flex-none`}
+          >
             Tolak
           </button>
-          <button type="button" onClick={() => saveConsent({ preferences: true, analytics: true })} className={`${btn} flex-1 bg-primary px-4 text-primary-foreground hover:brightness-110 sm:flex-none`}>
+          <button
+            type="button"
+            onClick={() => saveConsent({ preferences: true, analytics: true })}
+            className={`${btn} flex-1 bg-primary px-4 text-primary-foreground hover:brightness-110 sm:flex-none`}
+          >
             Terima semua
           </button>
         </div>

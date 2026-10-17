@@ -51,12 +51,14 @@ Mengikuti PRD dan Design Spec yang diunggah, dengan satu perubahan: backend Lara
 ## Detail Teknis
 
 **Tabel**
+
 - `employees` (name, department, is_active), `visit_purposes` (name, is_active)
 - `guests` (name, institution, phone, employee_id, visit_purpose_id, notes, check_in_time default now(), form_opened_at, fill_duration_seconds)
 - `guest_drafts` (draft_token uuid unik, payload jsonb, updated_at, expires_at)
 - `user_roles` (user_id, role enum `admin`) + fungsi `has_role` (security definer)
 
 **Akses (RLS)**
+
 - Publik (anon): baca karyawan aktif & tujuan aktif saja.
 - Tamu tidak bisa membaca tabel `guests` / `guest_drafts` langsung; hanya lewat RPC:
   - `submit_guest(payload, draft_token)` — validasi, insert, set check_in_time di server, hapus draft.
@@ -66,10 +68,12 @@ Mengikuti PRD dan Design Spec yang diunggah, dengan satu perubahan: backend Lara
 - `pg_cron` untuk menghapus draft kedaluwarsa.
 
 **Frontend**
+
 - TanStack Router + Query, React Hook Form + Zod, Tailwind token, shadcn.
 - Semua akses data lewat klien Cloud di browser (tanpa server function), sehingga mudah di-deploy ke Vercel.
 - Admin pertama: dibuat lewat halaman daftar sekali, lalu diberi role admin via migrasi/SQL; pendaftaran publik bisa dimatikan setelahnya.
 - Data contoh: beberapa karyawan dan tujuan kunjungan diisi lewat migrasi.
 
 **Catatan Vercel**
+
 - Disiapkan panduan singkat deploy (variabel `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`). Deploy ke Vercel dilakukan sendiri melalui GitHub; dari Lovable juga bisa langsung publish.

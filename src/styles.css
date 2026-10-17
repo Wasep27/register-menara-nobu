@@ -144,21 +144,21 @@
 }
 
 :root {
-  --background: #F4FBF8;
-  --foreground: #10241E;
-  --card: #FFFFFF;
-  --primary: #07936E;
-  --primary-foreground: #FFFFFF;
-  --brand: #10D5A0;
-  --brand-soft: #E3FAF3;
-  --accent: #07936E;
-  --muted: #EAF3EF;
-  --muted-foreground: #4F625C;
-  --border: #D6E7E0;
-  --input: #C3D9D0;
-  --ring: #10D5A0;
-  --destructive: #C62828;
-  --shadow-soft: 0 10px 30px -12px color-mix(in oklab, #07936E 35%, transparent);
+  --background: #f4fbf8;
+  --foreground: #10241e;
+  --card: #ffffff;
+  --primary: #07936e;
+  --primary-foreground: #ffffff;
+  --brand: #10d5a0;
+  --brand-soft: #e3faf3;
+  --accent: #07936e;
+  --muted: #eaf3ef;
+  --muted-foreground: #4f625c;
+  --border: #d6e7e0;
+  --input: #c3d9d0;
+  --ring: #10d5a0;
+  --destructive: #c62828;
+  --shadow-soft: 0 10px 30px -12px color-mix(in oklab, #07936e 35%, transparent);
 }
 @theme inline {
   --color-brand: var(--brand);
@@ -166,12 +166,90 @@
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Nunito", ui-rounded, system-ui, sans-serif;
 }
-body { font-family: var(--font-sans); }
-h1, h2, h3, button, .font-display { font-family: var(--font-display); letter-spacing: -0.01em; }
-h1 { font-weight: 800; }
-@utility shadow-soft { box-shadow: var(--shadow-soft); }
-@utility fade-up { animation: fadeUp .5s cubic-bezier(.2,.8,.2,1) both; }
-@keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
-@media print { nav, header.app-header { display: none; } }
-html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-sans);
+}
+h1,
+h2,
+h3,
+button,
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+h1 {
+  font-weight: 800;
+}
+@utility shadow-soft {
+  box-shadow: var(--shadow-soft);
+}
+@utility fade-up {
+  animation: fadeUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@utility skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--muted) 85%, transparent) 0%,
+    color-mix(in oklab, var(--brand-soft) 85%, white) 50%,
+    color-mix(in oklab, var(--muted) 85%, transparent) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeletonWave 1.6s ease-in-out infinite;
+}
+@keyframes skeletonWave {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+@utility pulse-glow {
+  animation: pulseGlow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+@keyframes pulseGlow {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+@utility float-subtle {
+  animation: floatSubtle 3.5s ease-in-out infinite;
+}
+@keyframes floatSubtle {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+@media print {
+  nav,
+  header.app-header {
+    display: none;
+  }
+}
+html {
+  scroll-behavior: smooth;
+}

@@ -1,7 +1,8 @@
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
+import { RefreshCw, RotateCcw, SearchX, UserPlus, Users } from "lucide-react";
 import { supabase, type Employee, type Guest, type Purpose } from "@/lib/supabase";
 
 export const Route = createFileRoute("/admin/tamu")({ component: Guests });
@@ -9,6 +10,7 @@ const PAGE = 20;
 
 function Guests() {
   const [rows, setRows] = useState<Guest[]>([]);
+  const [loading, setLoading] = useState(true);
   const [count, setCount] = useState(0);
   const [page, setPage] = useState(0);
   const [q, setQ] = useState("");
@@ -22,16 +24,30 @@ function Guests() {
   const [edit, setEdit] = useState<Guest | null>(null);
 
   useEffect(() => {
-    supabase.from("employees").select("*").order("name").then(({ data }) => setEmps(data ?? []));
-    supabase.from("visit_purposes").select("*").order("name").then(({ data }) => setPurps(data ?? []));
+    supabase
+      .from("employees")
+      .select("*")
+      .order("name")
+      .then(({ data }) => setEmps(data ?? []));
+    supabase
+      .from("visit_purposes")
+      .select("*")
+      .order("name")
+      .then(({ data }) => setPurps(data ?? []));
   }, []);
 
   const buildQuery = useCallback(() => {
-    let qb = supabase.from("guests").select("*, employees(name), visit_purposes(name)", { count: "exact" });
+    let qb = supabase
+      .from("guests")
+      .select("*, employees(name), visit_purposes(name)", { count: "exact" });
     const term = q.replace(/[,()%*]/g, " ").trim();
     if (term) qb = qb.or(`name.ilike.%${term}%,institution.ilike.%${term}%,phone.ilike.%${term}%`);
     if (date) qb = qb.gte("check_in_time", new Date(`${date}T00:00:00`).toISOString());
-    if (dateTo || date) { const e = new Date(`${dateTo || date}T00:00:00`); e.setDate(e.getDate() + 1); qb = qb.lt("check_in_time", e.toISOString()); }
+    if (dateTo || date) {
+      const e = new Date(`${dateTo || date}T00:00:00`);
+      e.setDate(e.getDate() + 1);
+      qb = qb.lt("check_in_time", e.toISOString());
+    }
     if (purpose) qb = qb.eq("visit_purpose_id", purpose);
     if (emp) qb = qb.eq("employee_id", emp);
     return qb.order("check_in_time", { ascending: asc });
@@ -46,37 +62,98 @@ function Guests() {
       all.push(...((data as Guest[]) ?? []));
       if (!data || data.length < 1000) break;
     }
-    const esc = (v: unknown) => { let t = String(v ?? ""); if (/^[=+\-@]/.test(t)) t = "'" + t; return `"${t.replace(/"/g, '""')}"`; };
-    const lines = [["Waktu", "Nama", "Instansi", "Telepon", "Tujuan", "Dituju", "Catatan", "Durasi isi (detik)"].join(",")];
-    all.forEach((r) => lines.push([new Date(r.check_in_time).toLocaleString("id-ID"), r.name, r.institution, r.phone, r.visit_purposes?.name, r.employees?.name, r.notes, r.fill_duration_seconds].map(esc).join(",")));
-    const url = URL.createObjectURL(new Blob(["\ufeff" + lines.join("\n")], { type: "text/csv;charset=utf-8" }));
+    const esc = (v: unknown) => {
+      let t = String(v ?? "");
+      if (/^[=+\-@]/.test(t)) t = "'" + t;
+      return `"${t.replace(/"/g, '""')}"`;
+    };
+    const lines = [
+      [
+        "Waktu",
+        "Nama",
+        "Instansi",
+        "Telepon",
+        "Tujuan",
+        "Dituju",
+        "Catatan",
+        "Durasi isi (detik)",
+      ].join(","),
+    ];
+    all.forEach((r) =>
+      lines.push(
+        [
+          new Date(r.check_in_time).toLocaleString("id-ID"),
+          r.name,
+          r.institution,
+          r.phone,
+          r.visit_purposes?.name,
+          r.employees?.name,
+          r.notes,
+          r.fill_duration_seconds,
+        ]
+          .map(esc)
+          .join(","),
+      ),
+    );
+    const url = URL.createObjectURL(
+      new Blob(["\ufeff" + lines.join("\n")], { type: "text/csv;charset=utf-8" }),
+    );
     const a = document.createElement("a");
-    a.href = url; a.download = `data-tamu-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(a); a.click(); a.remove();
+    a.href = url;
+    a.download = `data-tamu-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 30000);
     setExporting(false);
   };
 
   const load = useCallback(async () => {
+    setLoading(true);
     const { data, count } = await buildQuery().range(page * PAGE, page * PAGE + PAGE - 1);
     setRows((data as Guest[]) ?? []);
     setCount(count ?? 0);
+    setLoading(false);
   }, [buildQuery, page]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const [toDelete, setToDelete] = useState<Guest | null>(null);
   const del = async () => {
     if (!toDelete) return;
     const { error } = await supabase.from("guests").delete().eq("id", toDelete.id);
-    if (error) { toast.error("Gagal menghapus data tamu"); return; }
-    toast.success(`Data tamu ${toDelete.name} dihapus`); load();
+    if (error) {
+      toast.error("Gagal menghapus data tamu");
+      return;
+    }
+    toast.success(`Data tamu ${toDelete.name} dihapus`);
+    load();
   };
   const save = async () => {
     if (!edit) return;
-    if (edit.name.trim().length < 2) { toast.error("Nama minimal 2 huruf"); return; }
-    const { error } = await supabase.from("guests").update({ name: edit.name, institution: edit.institution, phone: edit.phone, notes: edit.notes, employee_id: edit.employee_id, visit_purpose_id: edit.visit_purpose_id }).eq("id", edit.id);
-    if (error) { toast.error("Gagal menyimpan perubahan"); return; }
-    toast.success("Data tamu diperbarui"); setEdit(null); load();
+    if (edit.name.trim().length < 2) {
+      toast.error("Nama minimal 2 huruf");
+      return;
+    }
+    const { error } = await supabase
+      .from("guests")
+      .update({
+        name: edit.name,
+        institution: edit.institution,
+        phone: edit.phone,
+        notes: edit.notes,
+        employee_id: edit.employee_id,
+        visit_purpose_id: edit.visit_purpose_id,
+      })
+      .eq("id", edit.id);
+    if (error) {
+      toast.error("Gagal menyimpan perubahan");
+      return;
+    }
+    toast.success("Data tamu diperbarui");
+    setEdit(null);
+    load();
   };
   const i = "rounded-lg border border-input bg-card px-3 py-2 text-sm";
 
@@ -84,57 +161,320 @@ function Guests() {
     <div className="space-y-4">
       <h1 className="text-2xl font-bold text-foreground">Data Tamu</h1>
       <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-        <input className={`${i} col-span-2 w-full sm:w-64`} type="search" placeholder="Cari nama / instansi / telepon" value={q} onChange={(e) => { setQ(e.target.value); setPage(0); }} />
-        <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">Dari<input className={`${i} w-full`} type="date" value={date} onChange={(e) => { setDate(e.target.value); setPage(0); }} /></label>
-        <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">Sampai<input className={`${i} w-full`} type="date" value={dateTo} min={date || undefined} onChange={(e) => { setDateTo(e.target.value); setPage(0); }} /></label>
-        <select className={`${i} col-span-2 w-full sm:col-span-1 sm:w-auto`} value={purpose} onChange={(e) => { setPurpose(e.target.value); setPage(0); }}><option value="">Semua tujuan</option>{purps.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
-        <select className={`${i} col-span-2 w-full sm:col-span-1 sm:w-auto`} value={emp} onChange={(e) => { setEmp(e.target.value); setPage(0); }}><option value="">Semua karyawan</option>{emps.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
-        <button className={`${i} col-span-2 sm:col-span-1`} onClick={() => { setQ(""); setDate(""); setDateTo(""); setPurpose(""); setEmp(""); setPage(0); }}>Reset filter</button>
+        <input
+          className={`${i} col-span-2 w-full sm:w-64`}
+          type="search"
+          placeholder="Cari nama / instansi / telepon"
+          value={q}
+          onChange={(e) => {
+            setQ(e.target.value);
+            setPage(0);
+          }}
+        />
+        <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
+          Dari
+          <input
+            className={`${i} w-full`}
+            type="date"
+            value={date}
+            onChange={(e) => {
+              setDate(e.target.value);
+              setPage(0);
+            }}
+          />
+        </label>
+        <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
+          Sampai
+          <input
+            className={`${i} w-full`}
+            type="date"
+            value={dateTo}
+            min={date || undefined}
+            onChange={(e) => {
+              setDateTo(e.target.value);
+              setPage(0);
+            }}
+          />
+        </label>
+        <select
+          className={`${i} col-span-2 w-full sm:col-span-1 sm:w-auto`}
+          value={purpose}
+          onChange={(e) => {
+            setPurpose(e.target.value);
+            setPage(0);
+          }}
+        >
+          <option value="">Semua tujuan</option>
+          {purps.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+        <select
+          className={`${i} col-span-2 w-full sm:col-span-1 sm:w-auto`}
+          value={emp}
+          onChange={(e) => {
+            setEmp(e.target.value);
+            setPage(0);
+          }}
+        >
+          <option value="">Semua karyawan</option>
+          {emps.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+        <button
+          className={`${i} col-span-2 sm:col-span-1`}
+          onClick={() => {
+            setQ("");
+            setDate("");
+            setDateTo("");
+            setPurpose("");
+            setEmp("");
+            setPage(0);
+          }}
+        >
+          Reset filter
+        </button>
       </div>
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">{count} kunjungan ditemukan</p>
-        <button disabled={exporting || count === 0} onClick={exportCsv} className="min-h-10 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-all active:scale-95 disabled:opacity-50">{exporting ? "Menyiapkan…" : "Ekspor CSV"}</button>
+        <button
+          disabled={exporting || count === 0}
+          onClick={exportCsv}
+          className="min-h-10 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-all active:scale-95 disabled:opacity-50"
+        >
+          {exporting ? "Menyiapkan…" : "Ekspor CSV"}
+        </button>
       </div>
       <div className="overflow-x-auto rounded-xl bg-card">
         <table className="w-full text-sm">
-          <thead className="bg-muted text-left"><tr>
-            <th className="cursor-pointer p-3" onClick={() => setAsc(!asc)}>Waktu {asc ? "↑" : "↓"}</th>
-            <th className="p-3">Nama</th><th className="p-3">Instansi</th><th className="p-3">Telepon</th><th className="p-3">Tujuan</th><th className="p-3">Dituju</th><th className="p-3"></th>
-          </tr></thead>
+          <thead className="bg-muted text-left">
+            <tr>
+              <th className="cursor-pointer p-3" onClick={() => setAsc(!asc)}>
+                Waktu {asc ? "↑" : "↓"}
+              </th>
+              <th className="p-3">Nama</th>
+              <th className="p-3">Instansi</th>
+              <th className="p-3">Telepon</th>
+              <th className="p-3">Tujuan</th>
+              <th className="p-3">Dituju</th>
+              <th className="p-3"></th>
+            </tr>
+          </thead>
           <tbody>
-            {rows.map((r) => (
-              <tr key={r.id} className="border-t border-border">
-                <td className="p-3">{new Date(r.check_in_time).toLocaleString("id-ID")}</td>
-                <td className="p-3">{r.name}</td><td className="p-3">{r.institution}</td><td className="p-3">{r.phone}</td>
-                <td className="p-3">{r.visit_purposes?.name}</td><td className="p-3">{r.employees?.name}</td>
-                <td className="whitespace-nowrap p-3"><button className="mr-3 text-primary" onClick={() => setEdit(r)}>Edit</button><button className="text-destructive" onClick={() => setToDelete(r)}>Hapus</button></td>
+            {loading
+              ? Array.from({ length: 6 }).map((_, idx) => (
+                  <tr key={idx} className="border-t border-border">
+                    <td className="p-3">
+                      <div className="h-4 w-28 rounded-full skeleton-shimmer" />
+                    </td>
+                    <td className="p-3">
+                      <div className="h-4 w-32 rounded-full skeleton-shimmer" />
+                    </td>
+                    <td className="p-3">
+                      <div className="h-4 w-24 rounded-full skeleton-shimmer opacity-80" />
+                    </td>
+                    <td className="p-3">
+                      <div className="h-4 w-24 rounded-full skeleton-shimmer opacity-70" />
+                    </td>
+                    <td className="p-3">
+                      <div className="h-5 w-20 rounded-full skeleton-shimmer opacity-85" />
+                    </td>
+                    <td className="p-3">
+                      <div className="h-4 w-24 rounded-full skeleton-shimmer opacity-70" />
+                    </td>
+                    <td className="p-3">
+                      <div className="h-4 w-12 rounded-full skeleton-shimmer opacity-50" />
+                    </td>
+                  </tr>
+                ))
+              : rows.map((r) => (
+                  <tr key={r.id} className="border-t border-border hover:bg-muted/30">
+                    <td className="p-3 font-medium text-foreground">
+                      {new Date(r.check_in_time).toLocaleString("id-ID")}
+                    </td>
+                    <td className="p-3 font-semibold text-foreground">{r.name}</td>
+                    <td className="p-3 text-muted-foreground">{r.institution}</td>
+                    <td className="p-3 text-muted-foreground">{r.phone}</td>
+                    <td className="p-3">
+                      <span className="inline-block rounded-full bg-brand-soft px-2.5 py-0.5 text-xs font-medium text-primary">
+                        {r.visit_purposes?.name ?? "-"}
+                      </span>
+                    </td>
+                    <td className="p-3 text-muted-foreground">{r.employees?.name ?? "-"}</td>
+                    <td className="whitespace-nowrap p-3">
+                      <button
+                        className="mr-3 font-medium text-primary transition-colors hover:underline"
+                        onClick={() => setEdit(r)}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="font-medium text-destructive transition-colors hover:underline"
+                        onClick={() => setToDelete(r)}
+                      >
+                        Hapus
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+            {!loading && rows.length === 0 && (
+              <tr>
+                <td colSpan={7} className="p-10 text-center">
+                  <div className="mx-auto flex max-w-sm flex-col items-center justify-center">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-soft text-primary shadow-sm">
+                      {q || date || dateTo || purpose || emp ? (
+                        <SearchX className="h-7 w-7" />
+                      ) : (
+                        <Users className="h-7 w-7" />
+                      )}
+                    </div>
+                    <p className="mt-4 font-display text-base font-bold text-foreground">
+                      {q || date || dateTo || purpose || emp
+                        ? "Tamu tidak ditemukan"
+                        : "Belum ada catatan tamu"}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {q || date || dateTo || purpose || emp
+                        ? "Tidak ada data kunjungan yang cocok dengan filter atau kata kunci yang Anda masukkan."
+                        : "Data kunjungan tamu akan otomatis tercatat setelah pengunjung mengisi formulir registrasi."}
+                    </p>
+                    <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                      {q || date || dateTo || purpose || emp ? (
+                        <button
+                          onClick={() => {
+                            setQ("");
+                            setDate("");
+                            setDateTo("");
+                            setPurpose("");
+                            setEmp("");
+                            setPage(0);
+                          }}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-brand-soft px-4 py-2 text-xs font-semibold text-primary transition-all hover:bg-primary hover:text-primary-foreground active:scale-95"
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" />
+                          Reset Filter
+                        </button>
+                      ) : (
+                        <>
+                          <Link
+                            to="/registrasi"
+                            className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground transition-transform hover:brightness-110 active:scale-95"
+                          >
+                            <UserPlus className="h-3.5 w-3.5" />
+                            Isi Registrasi Tamu
+                          </Link>
+                          <button
+                            onClick={load}
+                            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-xs font-medium text-foreground transition-colors hover:bg-muted active:scale-95"
+                          >
+                            <RefreshCw className="h-3.5 w-3.5" />
+                            Segarkan Data
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </td>
               </tr>
-            ))}
-            {rows.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">Tidak ada data.</td></tr>}
+            )}
           </tbody>
         </table>
       </div>
       <div className="flex items-center gap-3 text-sm">
-        <button disabled={page === 0} className={i} onClick={() => setPage(page - 1)}>Sebelumnya</button>
-        <span>Halaman {page + 1} dari {Math.max(1, Math.ceil(count / PAGE))}</span>
-        <button disabled={(page + 1) * PAGE >= count} className={i} onClick={() => setPage(page + 1)}>Berikutnya</button>
+        <button disabled={page === 0} className={i} onClick={() => setPage(page - 1)}>
+          Sebelumnya
+        </button>
+        <span>
+          Halaman {page + 1} dari {Math.max(1, Math.ceil(count / PAGE))}
+        </span>
+        <button
+          disabled={(page + 1) * PAGE >= count}
+          className={i}
+          onClick={() => setPage(page + 1)}
+        >
+          Berikutnya
+        </button>
       </div>
 
       {edit && (
-        <div role="dialog" aria-modal="true" aria-label="Edit Tamu" onKeyDown={(e) => e.key === "Escape" && setEdit(null)} onClick={(e) => e.target === e.currentTarget && setEdit(null)} className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 p-4 backdrop-blur-sm">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Edit Tamu"
+          onKeyDown={(e) => e.key === "Escape" && setEdit(null)}
+          onClick={(e) => e.target === e.currentTarget && setEdit(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 p-4 backdrop-blur-sm"
+        >
           <div className="w-full max-w-md space-y-3 rounded-xl bg-card p-6">
             <h2 className="font-semibold">Edit Tamu</h2>
-            <input className={`${i} w-full`} value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} />
-            <input className={`${i} w-full`} value={edit.institution} onChange={(e) => setEdit({ ...edit, institution: e.target.value })} />
-            <input className={`${i} w-full`} value={edit.phone} onChange={(e) => setEdit({ ...edit, phone: e.target.value })} />
-            <select className={`${i} w-full`} value={edit.visit_purpose_id ?? ""} onChange={(e) => setEdit({ ...edit, visit_purpose_id: e.target.value })}>{purps.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
-            <select className={`${i} w-full`} value={edit.employee_id ?? ""} onChange={(e) => setEdit({ ...edit, employee_id: e.target.value })}>{emps.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
-            <textarea className={`${i} w-full`} value={edit.notes ?? ""} onChange={(e) => setEdit({ ...edit, notes: e.target.value })} />
-            <div className="flex justify-end gap-2"><button className={i} onClick={() => setEdit(null)}>Batal</button><button className="rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground" onClick={save}>Simpan</button></div>
+            <input
+              className={`${i} w-full`}
+              value={edit.name}
+              onChange={(e) => setEdit({ ...edit, name: e.target.value })}
+            />
+            <input
+              className={`${i} w-full`}
+              value={edit.institution}
+              onChange={(e) => setEdit({ ...edit, institution: e.target.value })}
+            />
+            <input
+              className={`${i} w-full`}
+              value={edit.phone}
+              onChange={(e) => setEdit({ ...edit, phone: e.target.value })}
+            />
+            <select
+              className={`${i} w-full`}
+              value={edit.visit_purpose_id ?? ""}
+              onChange={(e) => setEdit({ ...edit, visit_purpose_id: e.target.value })}
+            >
+              {purps.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            <select
+              className={`${i} w-full`}
+              value={edit.employee_id ?? ""}
+              onChange={(e) => setEdit({ ...edit, employee_id: e.target.value })}
+            >
+              {emps.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            <textarea
+              className={`${i} w-full`}
+              value={edit.notes ?? ""}
+              onChange={(e) => setEdit({ ...edit, notes: e.target.value })}
+            />
+            <div className="flex justify-end gap-2">
+              <button className={i} onClick={() => setEdit(null)}>
+                Batal
+              </button>
+              <button
+                className="rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground"
+                onClick={save}
+              >
+                Simpan
+              </button>
+            </div>
           </div>
         </div>
       )}
-      <ConfirmDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)} title="Hapus data tamu?" description={`Data kunjungan "${toDelete?.name ?? ""}" akan dihapus permanen.`} onConfirm={del} />
+      <ConfirmDialog
+        open={!!toDelete}
+        onOpenChange={(o) => !o && setToDelete(null)}
+        title="Hapus data tamu?"
+        description={`Data kunjungan "${toDelete?.name ?? ""}" akan dihapus permanen.`}
+        onConfirm={del}
+      />
     </div>
   );
 }

@@ -21,12 +21,23 @@ export function SiteNav({ items, right }: { items: NavItem[]; right?: React.Reac
       const first = panelRef.current?.querySelector<HTMLElement>("a,button");
       first?.focus();
       const onKey = (e: KeyboardEvent) => {
-        if (e.key === "Escape") { setOpen(false); return; }
+        if (e.key === "Escape") {
+          setOpen(false);
+          return;
+        }
         if (e.key !== "Tab" || !panelRef.current) return;
-        const els = [btnRef.current, ...panelRef.current.querySelectorAll<HTMLElement>("a,button")].filter(Boolean) as HTMLElement[];
+        const els = [
+          btnRef.current,
+          ...panelRef.current.querySelectorAll<HTMLElement>("a,button"),
+        ].filter(Boolean) as HTMLElement[];
         const i = els.indexOf(document.activeElement as HTMLElement);
-        if (e.shiftKey && i <= 0) { e.preventDefault(); els[els.length - 1]?.focus(); }
-        else if (!e.shiftKey && i === els.length - 1) { e.preventDefault(); els[0]?.focus(); }
+        if (e.shiftKey && i <= 0) {
+          e.preventDefault();
+          els[els.length - 1]?.focus();
+        } else if (!e.shiftKey && i === els.length - 1) {
+          e.preventDefault();
+          els[0]?.focus();
+        }
       };
       document.addEventListener("keydown", onKey);
       return () => document.removeEventListener("keydown", onKey);
@@ -75,9 +86,11 @@ export function SiteNav({ items, right }: { items: NavItem[]; right?: React.Reac
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items]);
 
-  const focusRing = "outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+  const focusRing =
+    "outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background";
   const linkBase =
-    focusRing + " relative rounded-full px-4 py-2 text-sm font-medium transition-colors duration-300";
+    focusRing +
+    " relative rounded-full px-4 py-2 text-sm font-medium transition-colors duration-300";
   const idleCls = "text-muted-foreground hover:bg-brand-soft hover:text-primary";
   const activeCls = "bg-brand-soft text-primary";
 
@@ -85,7 +98,12 @@ export function SiteNav({ items, right }: { items: NavItem[]; right?: React.Reac
     if (l.to.startsWith("#")) {
       const active = activeAnchor === l.to;
       return (
-        <a key={l.to} href={l.to} aria-current={active ? "location" : undefined} className={`${linkBase} ${active ? activeCls : idleCls}`}>
+        <a
+          key={l.to}
+          href={l.to}
+          aria-current={active ? "location" : undefined}
+          className={`${linkBase} ${active ? activeCls : idleCls}`}
+        >
           {l.label}
           <span
             aria-hidden
@@ -98,7 +116,12 @@ export function SiteNav({ items, right }: { items: NavItem[]; right?: React.Reac
     }
     const active = activeAnchor === null && pathname === l.to;
     return (
-      <Link key={l.to} to={l.to} aria-current={active ? "page" : undefined} className={`${linkBase} ${active ? activeCls : idleCls}`}>
+      <Link
+        key={l.to}
+        to={l.to}
+        aria-current={active ? "page" : undefined}
+        className={`${linkBase} ${active ? activeCls : idleCls}`}
+      >
         {l.label}
       </Link>
     );
@@ -142,7 +165,10 @@ export function SiteNav({ items, right }: { items: NavItem[]; right?: React.Reac
 
   return (
     <header className="app-header sticky top-0 z-40 px-3 pt-3 md:px-6 md:pt-4">
-      <a href="#konten" className="sr-only rounded-full bg-primary px-4 py-2 text-primary-foreground focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50">
+      <a
+        href="#konten"
+        className="sr-only rounded-full bg-primary px-4 py-2 text-primary-foreground focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50"
+      >
         Lewati ke konten utama
       </a>
       {/* kapsul melayang */}
@@ -153,12 +179,25 @@ export function SiteNav({ items, right }: { items: NavItem[]; right?: React.Reac
             : "border-transparent bg-card/50 backdrop-blur-md"
         }`}
       >
-        <Link to="/" aria-label="Menara Nobu — Beranda" className={`${focusRing} rounded-full flex min-w-0 items-center gap-2.5`} onClick={() => setOpen(false)}>
-          <img src={logo} alt="Nobu" className="h-7 w-auto shrink-0 transition-transform duration-300 hover:scale-105 md:h-8" />
-          <span className="hidden truncate text-sm font-semibold text-foreground sm:inline">Menara Nobu</span>
+        <Link
+          to="/"
+          aria-label="Menara Nobu — Beranda"
+          className={`${focusRing} rounded-full flex min-w-0 items-center gap-2.5`}
+          onClick={() => setOpen(false)}
+        >
+          <img
+            src={logo}
+            alt="Nobu"
+            className="h-7 w-auto shrink-0 transition-transform duration-300 hover:scale-105 md:h-8"
+          />
+          <span className="hidden truncate text-sm font-semibold text-foreground sm:inline">
+            Menara Nobu
+          </span>
         </Link>
 
-        <nav aria-label="Navigasi utama" className="hidden items-center gap-1 md:flex">{items.map(desktopItem)}</nav>
+        <nav aria-label="Navigasi utama" className="hidden items-center gap-1 md:flex">
+          {items.map(desktopItem)}
+        </nav>
 
         <button
           ref={btnRef}
@@ -168,7 +207,9 @@ export function SiteNav({ items, right }: { items: NavItem[]; right?: React.Reac
           aria-expanded={open}
           onClick={() => setOpen(!open)}
           className={`${focusRing} flex h-11 w-11 shrink-0 items-center justify-center rounded-full border transition-all active:scale-90 md:hidden ${
-            open ? "border-transparent bg-primary text-primary-foreground" : "border-border bg-card text-primary hover:bg-brand-soft"
+            open
+              ? "border-transparent bg-primary text-primary-foreground"
+              : "border-border bg-card text-primary hover:bg-brand-soft"
           }`}
         >
           {open ? <X aria-hidden className="h-5 w-5" /> : <Menu aria-hidden className="h-5 w-5" />}

@@ -2,13 +2,15 @@
 
 Aplikasi registrasi tamu digital untuk gedung **Menara Nobu (Bank Nobu)**. Tamu mengisi data kunjungan dari ponsel, karyawan yang dituju langsung mendapat notifikasi, dan admin memantau semua kunjungan lewat dashboard.
 
-Live: https://register-menara-nobu.lovable.app
+- **Live Aplikasi**: https://register-menara-nobu.vercel.app
+- **Menu Laporan Admin**: https://register-menara-nobu.vercel.app/admin/laporan
 
 ---
 
 ## Fitur
 
 ### Untuk tamu
+
 - **Beranda** dengan foto bergerak otomatis (carousel), penjelasan fitur, langkah registrasi, dan FAQ.
 - **Formulir registrasi** (`/registrasi`): nama, instansi, nomor HP, tujuan kunjungan, karyawan yang dituju, jadwal (opsional), tanda kunjungan penting, dan catatan.
   - Isian tersimpan otomatis (juga saat offline) dan bisa dilanjutkan kembali.
@@ -16,11 +18,13 @@ Live: https://register-menara-nobu.lovable.app
 - Halaman **Panduan**, **Kebijakan Privasi**, **Kebijakan Cookie**, banner persetujuan cookie, tombol kembali ke atas, dan halaman 404 khusus.
 
 ### Untuk karyawan (`/karyawan`)
+
 - Login dengan email yang terdaftar di data karyawan.
 - Notifikasi langsung saat tamu baru datang atau kunjungan dijadwalkan.
 - Pengingat kunjungan penting: 30 menit sebelumnya dan tepat waktu.
 
 ### Untuk admin (`/admin`)
+
 - **Ringkasan**: grafik kunjungan per hari, per tujuan, dan per karyawan (7 / 30 / 90 hari), jam tersibuk.
 - **Data tamu**: cari, filter (nama, tanggal, tujuan), hapus dengan konfirmasi, dan **ekspor CSV**.
 - **Karyawan** dan **Tujuan kunjungan**: tambah / ubah lewat jendela pop-up dengan validasi, aktif / nonaktif, hapus dengan konfirmasi.
@@ -32,14 +36,14 @@ Live: https://register-menara-nobu.lovable.app
 
 ## Teknologi
 
-| Bagian | Teknologi |
-| --- | --- |
-| Tampilan | React 19, TanStack Start / Router, Vite 7 |
-| Gaya | Tailwind CSS v4, shadcn/ui, font Nunito + Plus Jakarta Sans |
-| Grafik | Recharts |
-| Validasi | Zod (`src/lib/validation.ts`) |
-| Backend | Supabase (database, login, realtime, pg_cron) |
-| Hosting | Vercel |
+| Bagian   | Teknologi                                                   |
+| -------- | ----------------------------------------------------------- |
+| Tampilan | React 19, TanStack Start / Router, Vite 7                   |
+| Gaya     | Tailwind CSS v4, shadcn/ui, font Nunito + Plus Jakarta Sans |
+| Grafik   | Recharts                                                    |
+| Validasi | Zod (`src/lib/validation.ts`)                               |
+| Backend  | Supabase (database, login, realtime, pg_cron)               |
+| Hosting  | Vercel                                                      |
 
 Warna brand: hijau `#10D5A0` (aksen) dan `#07936E` (tombol / teks).
 
@@ -68,7 +72,7 @@ vercel.json        Pengaturan deploy Vercel
 ```bash
 npm install
 cp .env.example .env   # atau buat file .env, lihat di bawah
-npm run dev            # http://localhost:8080
+npm run dev            # http://localhost:3000
 npm test               # menjalankan tes
 ```
 

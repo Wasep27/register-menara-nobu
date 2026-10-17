@@ -33,7 +33,17 @@ export function BackToTop() {
       }`}
     >
       <svg aria-hidden className="absolute inset-0 -rotate-90" viewBox="0 0 48 48">
-        <circle cx="24" cy="24" r="22" fill="none" stroke="var(--brand)" strokeWidth="3" strokeDasharray={c} strokeDashoffset={c * (1 - progress)} strokeLinecap="round" />
+        <circle
+          cx="24"
+          cy="24"
+          r="22"
+          fill="none"
+          stroke="var(--brand)"
+          strokeWidth="3"
+          strokeDasharray={c}
+          strokeDashoffset={c * (1 - progress)}
+          strokeLinecap="round"
+        />
       </svg>
       <ArrowUp aria-hidden className="h-5 w-5 transition-transform group-hover:-translate-y-0.5" />
     </button>
