@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Activity,
+  Calendar,
   CheckCircle2,
   Clock,
   Download,
@@ -22,6 +23,7 @@ import {
   FileSpreadsheet,
   ChevronDown,
   ChevronUp,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -46,6 +48,8 @@ export function AdminActivityLogPage() {
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [timeFilter, setTimeFilter] = useState<"today" | "7d" | "30d" | "all">("today");
   const [viewMode, setViewMode] = useState<"timeline" | "table">("timeline");
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
@@ -251,33 +255,65 @@ export function AdminActivityLogPage() {
         return false;
       }
 
-      // Time filter
+      // Explicit Date Range filter
       const logDate = new Date(l.created_at);
-      if (timeFilter === "today" && logDate.toDateString() !== todayStr) {
-        return false;
-      }
-      if (timeFilter === "7d") {
-        const diffDays = (now.getTime() - logDate.getTime()) / (1000 * 3600 * 24);
-        if (diffDays > 7) return false;
-      }
-      if (timeFilter === "30d") {
-        const diffDays = (now.getTime() - logDate.getTime()) / (1000 * 3600 * 24);
-        if (diffDays > 30) return false;
+
+      if (startDate) {
+        const start = new Date(`${startDate}T00:00:00`);
+        if (logDate < start) return false;
       }
 
-      // Search filter
+      if (endDate) {
+        const end = new Date(`${endDate}T23:59:59.999`);
+        if (logDate > end) return false;
+      }
+
+      // Quick time preset (applies when no custom date range is set)
+      if (!startDate && !endDate) {
+        if (timeFilter === "today" && logDate.toDateString() !== todayStr) {
+          return false;
+        }
+        if (timeFilter === "7d") {
+          const diffDays = (now.getTime() - logDate.getTime()) / (1000 * 3600 * 24);
+          if (diffDays > 7) return false;
+        }
+        if (timeFilter === "30d") {
+          const diffDays = (now.getTime() - logDate.getTime()) / (1000 * 3600 * 24);
+          if (diffDays > 30) return false;
+        }
+      }
+
+      // Search filter with special support for guest registration fields
       const term = searchQuery.trim().toLowerCase();
       if (term) {
         const matchesTitle = l.title.toLowerCase().includes(term);
         const matchesAction = l.action.toLowerCase().includes(term);
-        const matchesActor = (l.actor_email || "").toLowerCase().includes(term);
-        const matchesDetails = JSON.stringify(l.details).toLowerCase().includes(term);
-        return matchesTitle || matchesAction || matchesActor || matchesDetails;
+        const matchesActor = (l.actor_email || l.actor_type || "").toLowerCase().includes(term);
+
+        // Guest registration specific detail fields
+        const guestName = String(l.details?.["guest_name"] || "").toLowerCase();
+        const guestInst = String(l.details?.["institution"] || "").toLowerCase();
+        const guestPhone = String(l.details?.["phone"] || "").toLowerCase();
+        const employeeName = String(l.details?.["employee_name"] || "").toLowerCase();
+        const purposeName = String(l.details?.["purpose_name"] || "").toLowerCase();
+        const detailsJson = JSON.stringify(l.details || {}).toLowerCase();
+
+        return (
+          matchesTitle ||
+          matchesAction ||
+          matchesActor ||
+          guestName.includes(term) ||
+          guestInst.includes(term) ||
+          guestPhone.includes(term) ||
+          employeeName.includes(term) ||
+          purposeName.includes(term) ||
+          detailsJson.includes(term)
+        );
       }
 
       return true;
     });
-  }, [logs, selectedCategory, timeFilter, searchQuery]);
+  }, [logs, selectedCategory, timeFilter, startDate, endDate, searchQuery]);
 
   // Statistics calculation
   const stats = useMemo(() => {
@@ -537,44 +573,35 @@ export function AdminActivityLogPage() {
 
       {/* Filter Toolbar */}
       <div className="flex flex-col gap-3 rounded-2xl border border-border/80 bg-card p-4 shadow-soft sm:p-5">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:flex lg:items-center lg:justify-between">
-          {/* Search Box */}
-          <div className="relative flex-1 sm:max-w-md">
+        {/* Search Bar Row */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
             <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
               type="search"
-              placeholder="Cari aktivitas, nama tamu, aksi, pelaku..."
+              placeholder="Cari tamu (nama, instansi, nomor telepon, tujuan), aktivitas, pelaku..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-xl border border-input bg-background pl-9 pr-4 py-2 text-sm text-foreground focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/25"
+              className="w-full rounded-xl border border-input bg-background pl-9 pr-9 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/70 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/25"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                aria-label="Hapus pencarian"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
 
-          {/* Time & View Mode Controls */}
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex rounded-xl bg-muted p-1">
-              {(
-                [
-                  { id: "today", label: "Hari Ini" },
-                  { id: "7d", label: "7 Hari" },
-                  { id: "30d", label: "30 Hari" },
-                  { id: "all", label: "Semua" },
-                ] as const
-              ).map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => setTimeFilter(t.id)}
-                  className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
-                    timeFilter === t.id
-                      ? "bg-card text-primary shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
+          <div className="flex items-center justify-between gap-2 sm:justify-start">
+            <span className="inline-flex items-center rounded-lg bg-muted px-2.5 py-1.5 text-xs font-medium text-muted-foreground whitespace-nowrap">
+              {filteredLogs.length} aktivitas ditemukan
+            </span>
 
+            {/* View Mode Toggle */}
             <div className="flex rounded-xl bg-muted p-1">
               <button
                 onClick={() => setViewMode("timeline")}
@@ -600,8 +627,96 @@ export function AdminActivityLogPage() {
           </div>
         </div>
 
-        {/* Category Filter Pills */}
-        <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
+        {/* Date Range & Time Preset Row */}
+        <div className="flex flex-col gap-2.5 border-t border-border/80 pt-3 lg:flex-row lg:items-center lg:justify-between">
+          {/* Custom Date Range Filter */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+              <Calendar className="h-3.5 w-3.5 text-primary" />
+              <span>Rentang Tanggal:</span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="flex items-center gap-1.5 rounded-xl border border-input bg-background px-3 py-1.5 text-xs text-muted-foreground focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/25">
+                <span className="font-medium shrink-0">Dari</span>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    setTimeFilter("all");
+                  }}
+                  className="bg-transparent text-foreground focus:outline-none"
+                />
+              </label>
+
+              <label className="flex items-center gap-1.5 rounded-xl border border-input bg-background px-3 py-1.5 text-xs text-muted-foreground focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/25">
+                <span className="font-medium shrink-0">Sampai</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  min={startDate || undefined}
+                  onChange={(e) => {
+                    setEndDate(e.target.value);
+                    setTimeFilter("all");
+                  }}
+                  className="bg-transparent text-foreground focus:outline-none"
+                />
+              </label>
+
+              {(startDate || endDate) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStartDate("");
+                    setEndDate("");
+                    setTimeFilter("today");
+                  }}
+                  className="rounded-lg border border-border bg-muted/60 px-2 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                  title="Hapus filter rentang tanggal"
+                >
+                  Clear Rentang
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Quick Presets */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0">
+            <span className="text-xs font-semibold text-muted-foreground shrink-0 hidden sm:inline">
+              Preset:
+            </span>
+            <div className="flex rounded-xl bg-muted p-1 shrink-0">
+              {(
+                [
+                  { id: "today", label: "Hari Ini" },
+                  { id: "7d", label: "7 Hari" },
+                  { id: "30d", label: "30 Hari" },
+                  { id: "all", label: "Semua" },
+                ] as const
+              ).map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => {
+                    setTimeFilter(t.id);
+                    setStartDate("");
+                    setEndDate("");
+                  }}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
+                    timeFilter === t.id && !startDate && !endDate
+                      ? "bg-card text-primary shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Category Filter Pills & Reset */}
+        <div className="flex flex-wrap items-center gap-2 border-t border-border/80 pt-3">
           <span className="text-xs font-semibold text-muted-foreground">Kategori:</span>
           {[
             { id: "all", label: "Semua Kategori" },
@@ -623,16 +738,22 @@ export function AdminActivityLogPage() {
             </button>
           ))}
 
-          {(searchQuery || selectedCategory !== "all" || timeFilter !== "today") && (
+          {(searchQuery ||
+            selectedCategory !== "all" ||
+            startDate ||
+            endDate ||
+            timeFilter !== "today") && (
             <button
               onClick={() => {
                 setSearchQuery("");
                 setSelectedCategory("all");
+                setStartDate("");
+                setEndDate("");
                 setTimeFilter("today");
               }}
-              className="ml-auto text-xs font-medium text-primary hover:underline"
+              className="ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-primary transition-colors hover:bg-brand-soft"
             >
-              Reset Filter
+              Reset Semua Filter
             </button>
           )}
         </div>
@@ -673,41 +794,41 @@ export function AdminActivityLogPage() {
         </div>
       ) : viewMode === "timeline" ? (
         /* TIMELINE VIEW */
-        <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-soft sm:p-7">
-          <div className="relative pl-6 sm:pl-8">
+        <div className="overflow-hidden rounded-2xl border border-border/80 bg-card p-3.5 shadow-soft sm:p-7">
+          <div className="relative pl-5 sm:pl-8">
             {/* Vertical timeline line */}
-            <div className="absolute bottom-4 left-3.5 top-4 w-0.5 bg-border sm:left-4" />
+            <div className="absolute bottom-4 left-2.5 top-4 w-0.5 bg-border sm:left-4" />
 
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {filteredLogs.map((log) => {
                 const badge = getCategoryBadge(log.category);
                 const IconComponent = badge.icon;
                 const isExpanded = expandedLogId === log.id;
 
                 return (
-                  <div key={log.id} className="relative group">
+                  <div key={log.id} className="group relative">
                     {/* Bead Icon */}
                     <div
-                      className={`absolute -left-6 sm:-left-8 flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full border-2 border-card shadow-sm transition-transform group-hover:scale-110 ${badge.bg}`}
+                      className={`absolute -left-5 sm:-left-8 flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-full border-2 border-card shadow-sm transition-transform group-hover:scale-110 ${badge.bg}`}
                     >
-                      <IconComponent className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                      <IconComponent className="h-3 w-3 sm:h-4 sm:w-4" />
                     </div>
 
                     {/* Content Box */}
-                    <div className="rounded-2xl border border-border/80 bg-background/80 p-4 transition-all hover:border-brand/40 hover:shadow-sm">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
-                        <div className="flex items-center gap-2 flex-wrap">
+                    <div className="min-w-0 max-w-full overflow-hidden rounded-xl border border-border/80 bg-background/80 p-3 transition-all hover:border-brand/40 hover:shadow-sm sm:rounded-2xl sm:p-4">
+                      <div className="flex min-w-0 flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex min-w-0 flex-wrap items-center gap-2">
                           <span
-                            className={`inline-block rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${badge.bg}`}
+                            className={`inline-block shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${badge.bg}`}
                           >
                             {badge.label}
                           </span>
-                          <span className="font-display text-sm font-bold text-foreground">
+                          <span className="min-w-0 break-words font-display text-sm font-bold text-foreground">
                             {log.title}
                           </span>
                         </div>
 
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
+                        <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
                           <Clock className="h-3 w-3" />
                           {new Date(log.created_at).toLocaleString("id-ID", {
                             day: "numeric",
@@ -720,14 +841,14 @@ export function AdminActivityLogPage() {
                       </div>
 
                       {/* Actor & Action Description */}
-                      <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-foreground">Pelaku:</span>
-                          <span className="rounded-md bg-muted px-2 py-0.5 text-xs text-foreground">
+                      <div className="mt-2.5 flex min-w-0 max-w-full flex-col gap-2 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex min-w-0 max-w-full flex-wrap items-center gap-1.5">
+                          <span className="shrink-0 font-semibold text-foreground">Pelaku:</span>
+                          <span className="max-w-full break-words rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-foreground">
                             {log.actor_email || log.actor_type}
                           </span>
-                          <span className="text-muted-foreground/50">•</span>
-                          <span className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                          <span className="shrink-0 text-muted-foreground/40">•</span>
+                          <span className="break-all rounded border border-border/70 bg-card/70 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground sm:text-[11px]">
                             {log.action}
                           </span>
                         </div>
@@ -735,7 +856,7 @@ export function AdminActivityLogPage() {
                         {log.details && Object.keys(log.details).length > 0 && (
                           <button
                             onClick={() => setExpandedLogId(isExpanded ? null : log.id)}
-                            className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
+                            className="inline-flex shrink-0 self-start items-center gap-1 text-xs font-semibold text-primary hover:underline sm:self-auto"
                           >
                             {isExpanded ? (
                               <>
@@ -752,15 +873,18 @@ export function AdminActivityLogPage() {
 
                       {/* Expandable JSON details */}
                       {isExpanded && log.details && (
-                        <div className="fade-up mt-3 rounded-xl border border-border bg-card p-3.5 text-xs">
-                          <p className="font-bold text-foreground mb-1">Rincian Data Aktivitas:</p>
-                          <div className="grid gap-2 sm:grid-cols-2">
+                        <div className="fade-up mt-3 max-w-full overflow-hidden rounded-xl border border-border bg-card p-3 text-xs sm:p-3.5">
+                          <p className="mb-1 font-bold text-foreground">Rincian Data Aktivitas:</p>
+                          <div className="grid min-w-0 max-w-full gap-2 sm:grid-cols-2">
                             {Object.entries(log.details).map(([k, v]) => (
-                              <div key={k} className="flex flex-col">
-                                <span className="font-mono text-[11px] text-muted-foreground">
+                              <div
+                                key={k}
+                                className="flex min-w-0 max-w-full flex-col overflow-hidden"
+                              >
+                                <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
                                   {k}:
                                 </span>
-                                <span className="font-semibold text-foreground break-all">
+                                <span className="break-all text-xs font-semibold text-foreground">
                                   {typeof v === "object" ? JSON.stringify(v) : String(v)}
                                 </span>
                               </div>

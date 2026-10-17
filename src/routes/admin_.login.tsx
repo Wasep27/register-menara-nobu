@@ -77,13 +77,19 @@ function Login() {
     });
     setInfo("Jika email terdaftar, tautan untuk mengatur ulang password sudah dikirim.");
   };
-  const f = "mt-1 w-full rounded-lg border border-input bg-card px-3 py-3 text-foreground";
   if (checking)
     return (
       <main className="flex min-h-screen items-center justify-center bg-background p-4">
-        <p className="text-muted-foreground">Memeriksa sesi…</p>
+        <div className="flex flex-col items-center justify-center text-center">
+          <div className="relative mb-3 flex h-10 w-10 items-center justify-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-primary" />
+          </div>
+          <p className="text-sm font-medium text-foreground">Memeriksa sesi…</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">Mohon tunggu sebentar</p>
+        </div>
       </main>
     );
+  const f = "mt-1 w-full rounded-lg border border-input bg-card px-3 py-3 text-foreground";
   return (
     <main className="relative flex min-h-screen items-center justify-center bg-background p-4">
       <Link

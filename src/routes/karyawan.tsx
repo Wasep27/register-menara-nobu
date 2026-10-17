@@ -52,7 +52,19 @@ function StaffPortal() {
     });
     return () => data.subscription.unsubscribe();
   }, []);
-  if (user === undefined) return <p className="p-8 text-muted-foreground">Memuat…</p>;
+
+  if (user === undefined)
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-background p-4">
+        <div className="flex flex-col items-center justify-center text-center">
+          <div className="relative mb-3 flex h-10 w-10 items-center justify-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-primary" />
+          </div>
+          <p className="text-sm font-medium text-foreground">Memuat portal…</p>
+        </div>
+      </main>
+    );
+
   return user ? <Inbox user={user} /> : <StaffLogin />;
 }
 
