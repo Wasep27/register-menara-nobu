@@ -802,18 +802,14 @@ export function SiteNav({
 
           {/* Header Bar */}
           <div className="flex items-center justify-between border-b border-border/50 px-4 py-2.5 shrink-0">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <img src={logo} alt="Nobu" className="h-6 w-auto shrink-0" />
-              <div className="min-w-0">
-                <span className="block truncate text-sm font-bold text-foreground leading-none">
-                  Menara Nobu
-                </span>
-                <span className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  {isDashboardMode ? "Dashboard Admin" : "Sistem Tamu"}
-                </span>
-              </div>
-            </div>
+            <Link
+              to="/"
+              onClick={() => setOpen(false)}
+              aria-label="Menara Nobu"
+              className="flex items-center"
+            >
+              <img src={logo} alt="Menara Nobu" className="h-7 w-auto shrink-0" />
+            </Link>
 
             <button
               type="button"

@@ -205,14 +205,6 @@ export function AdminSidebar({ userName, onLogout, userRoles = ["admin"] }: Admi
         ? STAFF_NAV_GROUPS
         : ADMIN_NAV_GROUPS;
 
-  const roleLabel = isAdmin
-    ? "Admin Portal"
-    : isSecurityOnly
-      ? "Pos Keamanan"
-      : isStaffOnly
-        ? "Staf Front Desk"
-        : "Staff Portal";
-
   const userRoleDescription = isAdmin
     ? "Admin Menara Nobu"
     : isSecurityOnly
@@ -240,38 +232,14 @@ export function AdminSidebar({ userName, onLogout, userRoles = ["admin"] }: Admi
       <div className="flex items-center justify-between pb-3.5 mb-2 border-b border-border/60 shrink-0">
         <Link
           to="/admin"
-          className={`${focusRing} flex items-center gap-3 rounded-2xl group transition-all`}
+          aria-label="Menara Nobu"
+          className={`${focusRing} flex items-center rounded-2xl group transition-all`}
         >
           <img
             src={logo}
             alt="Menara Nobu"
             className="h-8 w-auto shrink-0 transition-transform duration-300 group-hover:scale-105"
           />
-          <div className="min-w-0">
-            <span className="block truncate font-display text-sm font-bold text-foreground tracking-tight leading-none">
-              Menara Nobu
-            </span>
-            <span
-              className={`mt-1 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                isSecurityOnly
-                  ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
-                  : isStaffOnly
-                    ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
-                    : "bg-brand-soft text-primary"
-              }`}
-            >
-              <span
-                className={`h-1.5 w-1.5 rounded-full ${
-                  isSecurityOnly
-                    ? "bg-emerald-500 animate-pulse"
-                    : isStaffOnly
-                      ? "bg-amber-500"
-                      : "bg-primary"
-                }`}
-              />
-              {roleLabel}
-            </span>
-          </div>
         </Link>
       </div>
 
