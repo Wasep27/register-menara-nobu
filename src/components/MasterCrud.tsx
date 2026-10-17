@@ -31,6 +31,7 @@ export function MasterCrud({
   withDept?: boolean;
 }) {
   const [rows, setRows] = useState<Row[]>([]);
+  const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [dept, setDept] = useState("");
   const [email, setEmail] = useState("");
@@ -42,9 +43,11 @@ export function MasterCrud({
   const label = table === "employees" ? "karyawan" : "tujuan kunjungan";
 
   const load = useCallback(async () => {
+    setLoading(true);
     const { data, error } = await supabase.from(table).select("*").order("name");
     if (error) toast.error("Gagal memuat data");
     setRows((data as Row[]) ?? []);
+    setLoading(false);
   }, [table]);
   useEffect(() => {
     load();
@@ -139,35 +142,26 @@ export function MasterCrud({
         </button>
       </div>
       <div className="rounded-xl bg-card">
-        {rows.map((r) => (
-          <div
-            key={r.id}
-            className="flex flex-wrap items-center gap-3 border-b border-border p-3 text-sm last:border-0"
-          >
-            <span className="min-w-0 flex-1">
-              {r.name}
-              {r.department ? (
-                <span className="text-muted-foreground"> · {r.department}</span>
-              ) : null}
-              {r.email ? (
-                <span className="block text-xs text-muted-foreground">{r.email}</span>
-              ) : null}
-            </span>
-            <button
-              className={`rounded-full px-3 py-1 text-xs ${r.is_active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
-              onClick={() => toggle(r)}
-            >
-              {r.is_active ? "Aktif" : "Nonaktif"}
-            </button>
-            <button className="text-primary" onClick={() => openForm(r)}>
-              Edit
-            </button>
-            <button className="text-destructive" onClick={() => setToDelete(r)}>
-              Hapus
-            </button>
+        {loading ? (
+          <div className="space-y-1 p-2">
+            {[1, 2, 3, 4, 5].map((k) => (
+              <div
+                key={k}
+                className="flex items-center gap-3 border-b border-border/60 p-3 last:border-0"
+              >
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <div className="h-4 w-36 rounded-full skeleton-shimmer" />
+                  {withDept && (
+                    <div className="h-3 w-24 rounded-full skeleton-shimmer opacity-70" />
+                  )}
+                </div>
+                <div className="h-6 w-16 rounded-full skeleton-shimmer opacity-85" />
+                <div className="h-4 w-10 rounded-full skeleton-shimmer opacity-60" />
+                <div className="h-4 w-12 rounded-full skeleton-shimmer opacity-60" />
+              </div>
+            ))}
           </div>
-        ))}
-        {rows.length === 0 && (
+        ) : rows.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-8 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-soft text-primary shadow-sm">
               <FolderKanban className="h-6 w-6" />
@@ -184,6 +178,35 @@ export function MasterCrud({
               Tambah {label} Sekarang
             </button>
           </div>
+        ) : (
+          rows.map((r) => (
+            <div
+              key={r.id}
+              className="flex flex-wrap items-center gap-3 border-b border-border p-3 text-sm last:border-0"
+            >
+              <span className="min-w-0 flex-1">
+                {r.name}
+                {r.department ? (
+                  <span className="text-muted-foreground"> · {r.department}</span>
+                ) : null}
+                {r.email ? (
+                  <span className="block text-xs text-muted-foreground">{r.email}</span>
+                ) : null}
+              </span>
+              <button
+                className={`rounded-full px-3 py-1 text-xs ${r.is_active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
+                onClick={() => toggle(r)}
+              >
+                {r.is_active ? "Aktif" : "Nonaktif"}
+              </button>
+              <button className="text-primary" onClick={() => openForm(r)}>
+                Edit
+              </button>
+              <button className="text-destructive" onClick={() => setToDelete(r)}>
+                Hapus
+              </button>
+            </div>
+          ))
         )}
       </div>
 

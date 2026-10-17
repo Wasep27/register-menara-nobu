@@ -13,12 +13,15 @@ type Row = { email: string; created_at: string };
 
 function AdminEmails() {
   const [rows, setRows] = useState<Row[]>([]);
+  const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
   const [me, setMe] = useState("");
   const [msg, setMsg] = useState("");
   const load = useCallback(async () => {
+    setLoading(true);
     const { data } = await supabase.from("admin_emails").select("*").order("email");
     setRows((data as Row[]) ?? []);
+    setLoading(false);
   }, []);
   useEffect(() => {
     load();
@@ -76,26 +79,43 @@ function AdminEmails() {
       </form>
       {msg && <p className="text-sm text-primary">{msg}</p>}
       <div className="rounded-xl bg-card">
-        {rows.length === 0 && <p className="p-3 text-sm text-muted-foreground">Belum ada email.</p>}
-        {rows.map((r) => (
-          <div
-            key={r.email}
-            className="flex items-center gap-3 border-b border-border p-3 text-sm last:border-0"
-          >
-            <span className="flex-1 break-all text-foreground">
-              {r.email}
-              {r.email === me && <span className="ml-2 text-xs text-muted-foreground">(Anda)</span>}
-            </span>
-            {r.email !== me && (
-              <button
-                className="min-h-11 px-2 text-destructive"
-                onClick={() => setToDelete(r.email)}
+        {loading ? (
+          <div className="space-y-1 p-2">
+            {[1, 2, 3].map((k) => (
+              <div
+                key={k}
+                className="flex items-center gap-3 border-b border-border/60 p-3 last:border-0"
               >
-                Hapus
-              </button>
-            )}
+                <div className="h-4 w-52 rounded-full skeleton-shimmer" />
+                <div className="ml-auto h-4 w-12 rounded-full skeleton-shimmer opacity-60" />
+              </div>
+            ))}
           </div>
-        ))}
+        ) : rows.length === 0 ? (
+          <p className="p-4 text-sm text-muted-foreground">Belum ada email admin terdaftar.</p>
+        ) : (
+          rows.map((r) => (
+            <div
+              key={r.email}
+              className="flex items-center gap-3 border-b border-border p-3 text-sm last:border-0"
+            >
+              <span className="flex-1 break-all text-foreground">
+                {r.email}
+                {r.email === me && (
+                  <span className="ml-2 text-xs text-muted-foreground">(Anda)</span>
+                )}
+              </span>
+              {r.email !== me && (
+                <button
+                  className="min-h-11 px-2 text-destructive transition-colors hover:underline"
+                  onClick={() => setToDelete(r.email)}
+                >
+                  Hapus
+                </button>
+              )}
+            </div>
+          ))
+        )}
       </div>
       <ConfirmDialog
         open={!!toDelete}

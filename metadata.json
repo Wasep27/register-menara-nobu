@@ -1,8 +1,6 @@
 {
   "name": "Buku Tamu Menara Nobu",
   "description": "Registrasi tamu digital Menara Nobu",
-  "capabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ],
+  "capabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"],
   "permissions": []
 }

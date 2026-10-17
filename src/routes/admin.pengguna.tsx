@@ -64,7 +64,38 @@ function UsersPage() {
           {err}
         </p>
       )}
-      {!rows && !err && <p className="text-muted-foreground">Memuat…</p>}
+      {!rows && !err && (
+        <div className="overflow-x-auto rounded-2xl border border-border bg-card shadow-soft">
+          <table className="w-full text-sm">
+            <thead className="bg-brand-soft text-left text-foreground">
+              <tr>
+                <th className="p-3">Nama</th>
+                <th className="p-3">Email</th>
+                <th className="p-3">Role</th>
+                <th className="p-3">Terdaftar</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[1, 2, 3, 4, 5].map((k) => (
+                <tr key={k} className="border-t border-border">
+                  <td className="p-3">
+                    <div className="h-4 w-32 rounded-full skeleton-shimmer" />
+                  </td>
+                  <td className="p-3">
+                    <div className="h-4 w-44 rounded-full skeleton-shimmer opacity-80" />
+                  </td>
+                  <td className="p-3">
+                    <div className="h-5 w-20 rounded-full skeleton-shimmer opacity-85" />
+                  </td>
+                  <td className="p-3">
+                    <div className="h-4 w-24 rounded-full skeleton-shimmer opacity-70" />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       {rows && (
         <div className="overflow-x-auto rounded-2xl border border-border bg-card shadow-soft">
           <table className="w-full text-sm">

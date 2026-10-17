@@ -401,3 +401,67 @@ begin
 end $$;
 revoke all on function public.list_users_with_roles() from public, anon;
 grant execute on function public.list_users_with_roles() to authenticated;
+
+-- ============================================================
+-- FEEDBACK TAMU (CSAT & KEPUASAN PENGISIAN BUKU TAMU)
+-- Tamu (anon) hanya bisa INSERT via RPC; SELECT & DELETE khusus Admin
+-- ============================================================
+create table if not exists public.guest_feedback (
+  id uuid primary key default gen_random_uuid(),
+  guest_name text,
+  institution text,
+  rating integer not null check (rating >= 1 and rating <= 5),
+  tags text[] not null default '{}',
+  comment text,
+  fill_duration_seconds integer,
+  created_at timestamptz not null default now()
+);
+
+alter table public.guest_feedback enable row level security;
+grant all on public.guest_feedback to service_role;
+
+-- Kebijakan RLS: Hanya admin yang dapat melihat dan menghapus feedback
+drop policy if exists "admin_manage_feedback" on public.guest_feedback;
+create policy "admin_manage_feedback" on public.guest_feedback
+for all to authenticated
+using (public.has_role(auth.uid(), 'admin'))
+with check (public.has_role(auth.uid(), 'admin'));
+
+-- Fungsi RPC kirim feedback oleh tamu anonim dengan aman
+create or replace function public.submit_guest_feedback(_payload jsonb)
+returns uuid language plpgsql security definer set search_path = public as $$
+declare
+  v_id uuid;
+  v_rating int;
+  v_tags text[];
+begin
+  v_rating := coalesce((_payload->>'rating')::int, 5);
+  if v_rating < 1 or v_rating > 5 then
+    v_rating := 5;
+  end if;
+
+  select coalesce(array_agg(elem::text), '{}')
+  into v_tags
+  from jsonb_array_elements_text(coalesce(_payload->'tags', '[]'::jsonb)) as elem;
+
+  insert into public.guest_feedback (
+    guest_name,
+    institution,
+    rating,
+    tags,
+    comment,
+    fill_duration_seconds
+  ) values (
+    nullif(trim(_payload->>'guest_name'), ''),
+    nullif(trim(_payload->>'institution'), ''),
+    v_rating,
+    v_tags,
+    nullif(trim(_payload->>'comment'), ''),
+    nullif((_payload->>'fill_duration_seconds')::int, 0)
+  ) returning id into v_id;
+
+  return v_id;
+end $$;
+
+grant execute on function public.submit_guest_feedback(jsonb) to anon, authenticated;
+

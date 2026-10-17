@@ -60,3 +60,37 @@ export type Guest = {
   employees?: { name: string } | null;
   visit_purposes?: { name: string } | null;
 };
+
+export type GuestFeedback = {
+  id: string;
+  guest_name: string | null;
+  institution: string | null;
+  rating: number;
+  tags: string[];
+  comment: string | null;
+  fill_duration_seconds: number | null;
+  created_at: string;
+};
+
+export async function submitGuestFeedback(payload: {
+  guest_name?: string;
+  institution?: string;
+  rating: number;
+  tags?: string[];
+  comment?: string;
+  fill_duration_seconds?: number;
+}) {
+  try {
+    const { data, error } = await supabase.rpc("submit_guest_feedback", {
+      _payload: payload,
+    });
+    if (error) {
+      console.warn("RPC submit_guest_feedback failed (schema not run yet?), saving locally", error);
+      return { success: false, error };
+    }
+    return { success: true, data };
+  } catch (err) {
+    console.warn("Error calling submit_guest_feedback", err);
+    return { success: false, error: err };
+  }
+}

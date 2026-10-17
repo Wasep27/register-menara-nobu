@@ -4,6 +4,10 @@ import type { z } from "zod";
 import { guestSchema } from "@/lib/validation";
 import { supabase, type Employee, type Purpose } from "@/lib/supabase";
 import { SiteNav } from "@/components/SiteNav";
+import {
+  RegistrationSuccess,
+  type RegistrationSuccessData,
+} from "@/components/RegistrationSuccess";
 
 const navItems = [
   { to: "/", label: "Beranda" },
@@ -57,6 +61,7 @@ function GuestForm() {
   const [submitting, setSubmitting] = useState(false);
   const [submitErr, setSubmitErr] = useState("");
   const [done, setDone] = useState(false);
+  const [successData, setSuccessData] = useState<RegistrationSuccessData | null>(null);
   const [empSearch, setEmpSearch] = useState("");
   const dirty = useRef(false);
   const token = useRef<string>("");
@@ -243,17 +248,37 @@ function GuestForm() {
       );
       return;
     }
+    const targetEmployee = employees.find((x) => x.id === r.data.employee_id);
+    const targetPurpose = purposes.find((x) => x.id === r.data.visit_purpose_id);
+    const nowTime = new Date().toLocaleTimeString("id-ID", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    setSuccessData({
+      name: r.data.name,
+      institution: r.data.institution,
+      phone: r.data.phone,
+      employeeName: targetEmployee?.name,
+      purposeName: targetPurpose?.name,
+      scheduledAt: r.data.scheduled_at || undefined,
+      checkInTime: nowTime,
+      fillDurationSeconds: safeDuration,
+    });
+
     clearAll();
     dirty.current = false;
     syncPending.current = false;
     setDone(true);
-    setTimeout(() => {
-      setDone(false);
-      setForm(empty);
-      setStatus("idle");
-      token.current = crypto.randomUUID();
-      localStorage.setItem(LS_TOKEN, token.current);
-    }, 8000);
+  };
+
+  const handleReset = () => {
+    setDone(false);
+    setSuccessData(null);
+    setForm(empty);
+    setStatus("idle");
+    token.current = crypto.randomUUID();
+    localStorage.setItem(LS_TOKEN, token.current);
   };
 
   const filteredEmp = employees.filter((x) =>
@@ -267,21 +292,11 @@ function GuestForm() {
     error: "Gagal sinkron, mencoba lagi",
   }[status];
 
-  if (done) {
+  if (done && successData) {
     return (
       <main className="min-h-screen bg-background">
         <SiteNav items={navItems} />
-        <div className="flex items-center justify-center p-6 pt-16">
-          <div className="fade-up max-w-md rounded-3xl bg-card p-10 text-center shadow-soft">
-            <div className="mx-auto mb-4 flex h-16 w-16 animate-in zoom-in items-center justify-center rounded-full bg-brand text-3xl text-foreground duration-500">
-              ✓
-            </div>
-            <h1 className="text-2xl font-bold text-foreground">Terima kasih!</h1>
-            <p className="mt-2 text-muted-foreground">
-              Registrasi berhasil. Silakan menunggu, pihak yang Anda tuju akan segera dihubungi.
-            </p>
-          </div>
-        </div>
+        <RegistrationSuccess data={successData} onReset={handleReset} />
       </main>
     );
   }
