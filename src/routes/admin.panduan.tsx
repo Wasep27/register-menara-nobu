@@ -38,13 +38,24 @@ type Check = { label: string; ok: boolean | null; note: string };
 function AdminTechnicalGuide() {
   const [checks, setChecks] = useState<Check[]>([]);
   const [running, setRunning] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [activeSqlTab, setActiveSqlTab] = useState<"housekeeping" | "monitoring" | "indexes">("housekeeping");
+
+  const getActiveSqlSnippet = () => {
+    switch (activeSqlTab) {
+      case "housekeeping":
+        return SQL_HOUSEKEEPING_SNIPPET;
+      case "monitoring":
+        return SQL_MONITORING_SNIPPET;
+      case "indexes":
+        return SQL_INDEXES_SNIPPET;
+    }
+  };
 
   const copySql = async () => {
     try {
-      await navigator.clipboard.writeText(SQL_OPTIMIZATION_SNIPPET);
+      await navigator.clipboard.writeText(getActiveSqlSnippet());
       setCopied(true);
-      toast.success("Skrip SQL berhasil disalin ke clipboard!");
+      toast.success("Skrip SQL pemeliharaan berhasil disalin ke clipboard!");
       setTimeout(() => setCopied(false), 2500);
     } catch {
       toast.error("Gagal menyalin otomatis, silakan salin manual.");
