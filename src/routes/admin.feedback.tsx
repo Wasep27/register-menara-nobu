@@ -17,6 +17,7 @@ import {
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { supabase, type GuestFeedback } from "@/lib/supabase";
+import { formatWibDateTime } from "@/lib/date-utils";
 
 export const Route = createFileRoute("/admin/feedback")({
   head: () => ({
@@ -505,12 +506,7 @@ export function AdminFeedbackPage() {
               filteredRows.map((r) => (
                 <tr key={r.id} className="border-b border-border/60 hover:bg-muted/20">
                   <td className="whitespace-nowrap p-3.5 text-xs text-muted-foreground">
-                    {new Date(r.created_at).toLocaleString("id-ID", {
-                      day: "numeric",
-                      month: "short",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                    {formatWibDateTime(r.created_at, false)}
                   </td>
                   <td className="p-3.5">
                     <p className="font-bold text-foreground">{r.guest_name || "Tamu Anonim"}</p>

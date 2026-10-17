@@ -30,7 +30,13 @@ import { supabase, type Guest } from "@/lib/supabase";
 import { useAdminRole } from "@/hooks/useAdminRole";
 import { VisitorBadgeModal } from "@/components/VisitorBadgeModal";
 import { createVisitorBadgeFromGuest, type VisitorBadgeData } from "@/lib/badge-utils";
-import { formatWibTime, formatWibWeekdayDate, getGreeting } from "@/lib/date-utils";
+import {
+  formatWibDateTime,
+  formatWibTime,
+  formatWibWeekdayDate,
+  getGreeting,
+} from "@/lib/date-utils";
+import { calculateDashboardStats, calculatePeriodDiff } from "@/lib/dashboard-analytics";
 
 export const Route = createFileRoute("/admin/")({ component: Dashboard });
 
@@ -127,64 +133,8 @@ function Dashboard() {
     ]).finally(() => setLoading(false));
   }, [days]);
 
-  const stats = useMemo(() => {
-    const today = new Date().toDateString();
-    const perDay = new Map<string, number>();
-    for (let i = days - 1; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      perDay.set(d.toDateString(), 0);
-    }
-    const purpose: Record<string, number> = {};
-    const emp: Record<string, number> = {};
-    const hour: Record<number, number> = {};
-    let todayCount = 0;
-    const rawDurs: number[] = [];
-
-    rows.forEach((r) => {
-      const dt = new Date(r.check_in_time);
-      const k = dt.toDateString();
-      perDay.set(k, (perDay.get(k) ?? 0) + 1);
-      if (k === today) todayCount++;
-      const p = r.visit_purposes?.name ?? "Lainnya";
-      purpose[p] = (purpose[p] ?? 0) + 1;
-      const e = r.employees?.name ?? "-";
-      emp[e] = (emp[e] ?? 0) + 1;
-      hour[dt.getHours()] = (hour[dt.getHours()] ?? 0) + 1;
-      if (r.fill_duration_seconds != null && r.fill_duration_seconds > 0) {
-        rawDurs.push(r.fill_duration_seconds);
-      }
-    });
-
-    const validDurs = rawDurs.filter((d) => d >= 10 && d <= 360);
-    let calculatedAvg: number | null = null;
-    if (validDurs.length > 0) {
-      calculatedAvg = Math.round(validDurs.reduce((a, b) => a + b, 0) / validDurs.length);
-    } else if (rawDurs.length > 0) {
-      const normalizedDurs = rawDurs.map((d) => Math.min(Math.max(d, 15), 120));
-      calculatedAvg = Math.round(normalizedDurs.reduce((a, b) => a + b, 0) / normalizedDurs.length);
-    }
-
-    const busiest = Object.entries(hour).sort((a, b) => b[1] - a[1])[0];
-    const toArr = (o: Record<string, number>) =>
-      Object.entries(o)
-        .map(([name, value]) => ({ name, value }))
-        .sort((a, b) => b.value - a.value);
-
-    return {
-      todayCount,
-      busiest,
-      avg: calculatedAvg,
-      trend: [...perDay.entries()].map(([k, v]) => ({
-        name: new Date(k).toLocaleDateString("id-ID", { day: "numeric", month: "short" }),
-        value: v,
-      })),
-      purpose: toArr(purpose),
-      emp: toArr(emp).slice(0, 8),
-    };
-  }, [rows, days]);
-
-  const diff = prevCount ? Math.round(((rows.length - prevCount) / prevCount) * 100) : null;
+  const stats = useMemo(() => calculateDashboardStats(rows, days), [rows, days]);
+  const diff = calculatePeriodDiff(rows.length, prevCount);
 
   const roleTitle = isSecurity
     ? "Pos Jaga & Keamanan Gedung"
@@ -893,13 +843,7 @@ function Dashboard() {
 
                       <div className="flex items-center justify-between sm:justify-end gap-2.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/50 shrink-0">
                         <span className="text-muted-foreground whitespace-nowrap text-[11px]">
-                          {new Date(r.check_in_time).toLocaleString("id-ID", {
-                            day: "numeric",
-                            month: "short",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}{" "}
-                          WIB
+                          {formatWibDateTime(r.check_in_time, false)}
                         </span>
                         <button
                           type="button"

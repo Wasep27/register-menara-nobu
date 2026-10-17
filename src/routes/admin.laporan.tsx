@@ -360,7 +360,7 @@ function Report() {
                     </div>
                     <p className="mt-1 truncate text-sm text-muted-foreground">{r.institution}</p>
                     <p className="mt-2 text-xs text-muted-foreground">
-                      {new Date(r.check_in_time).toLocaleString("id-ID")}
+                      {formatWibDateTime(r.check_in_time, false)}
                       {r.employees?.name ? ` · bertemu ${r.employees.name}` : ""}
                     </p>
                   </li>
@@ -383,7 +383,7 @@ function Report() {
                     {rows.map((r) => (
                       <tr key={r.id} className="border-t border-border hover:bg-muted/30">
                         <td className="p-3 font-medium text-foreground">
-                          {new Date(r.check_in_time).toLocaleString("id-ID")}
+                          {formatWibDateTime(r.check_in_time)}
                         </td>
                         <td className="p-3 font-semibold text-foreground">{r.name}</td>
                         <td className="p-3 text-muted-foreground">{r.institution}</td>

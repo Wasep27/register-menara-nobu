@@ -373,13 +373,7 @@ function Guests() {
                   </div>
                   <div className="col-span-2 pt-1 border-t border-border/40 flex items-center justify-between text-[11px]">
                     <span className="text-muted-foreground">
-                      {new Date(r.check_in_time).toLocaleString("id-ID", {
-                        day: "numeric",
-                        month: "short",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}{" "}
-                      WIB
+                      {formatWibDateTime(r.check_in_time, false)}
                     </span>
                     {r.phone && <span className="font-mono text-muted-foreground">{r.phone}</span>}
                   </div>
@@ -498,7 +492,7 @@ function Guests() {
               : rows.map((r) => (
                   <tr key={r.id} className="border-t border-border hover:bg-muted/30">
                     <td className="p-3 font-medium text-foreground">
-                      {new Date(r.check_in_time).toLocaleString("id-ID")}
+                      {formatWibDateTime(r.check_in_time)}
                     </td>
                     <td className="p-3 font-semibold text-foreground">{r.name}</td>
                     <td className="p-3 text-muted-foreground">{r.institution}</td>

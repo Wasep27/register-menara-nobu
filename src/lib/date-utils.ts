@@ -72,10 +72,13 @@ export function formatWibDate(
 /**
  * Format lengkap tanggal dan waktu: "17 Okt 2026, 14:30 WIB"
  */
-export function formatWibDateTime(input: Date | string | number | null | undefined): string {
+export function formatWibDateTime(
+  input: Date | string | number | null | undefined,
+  includeYear = true,
+): string {
   const d = parseValidDate(input);
   if (!d) return "-";
-  const datePart = formatWibDate(d, true);
+  const datePart = formatWibDate(d, includeYear);
   const timePart = formatWibTime(d);
   return `${datePart}, ${timePart} WIB`;
 }
