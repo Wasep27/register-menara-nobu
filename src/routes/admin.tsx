@@ -147,6 +147,8 @@ function AdminLayout() {
     <div className="min-h-screen bg-background">
       <SiteNav
         items={[...links]}
+        userName={name}
+        onLogout={() => setAskLogout(true)}
         right={
           <div className="flex w-full items-center gap-2 md:w-auto">
             <span className="flex min-w-0 items-center gap-2 rounded-full bg-brand-soft py-1 pl-1 pr-3">
@@ -187,7 +189,7 @@ function AdminLayout() {
         destructive={false}
         onConfirm={logout}
       />
-      <div key={loc.pathname} className="fade-up mx-auto max-w-6xl p-4 md:p-6">
+      <div key={loc.pathname} className="fade-up mx-auto max-w-6xl p-4 pb-28 md:p-6 md:pb-8">
         <Outlet />
       </div>
     </div>
