@@ -282,17 +282,82 @@ export function SiteNav({
     return groups;
   }, [items, isDashboardMode]);
 
-  // Check if current route is a secondary menu (outside the 4 bottom-nav core items)
+  // Split mobile bottom dock items: Left 2 items, Center protruding item, Right items + Menu button
+  const { leftDockItems, centerDockItem, rightDockItems } = useMemo(() => {
+    if (!isDashboardMode) {
+      return {
+        leftDockItems: [
+          { to: "/", label: "Beranda", icon: Home },
+          { to: "/panduan", label: "Panduan", icon: BookOpen },
+        ],
+        centerDockItem: {
+          to: "/registrasi",
+          label: "Registrasi",
+          icon: Plus,
+        },
+        rightDockItems: [{ to: "/karyawan", label: "Karyawan", icon: UserCheck }],
+      };
+    }
+
+    const permittedRoutes = new Set(items.map((it) => it.to));
+
+    // Dashboard navigation:
+    const leftCandidates = [
+      { to: "/admin", label: "Ringkasan", icon: LayoutDashboard },
+      { to: "/admin/tamu", label: "Tamu", icon: Users },
+    ];
+    const center = {
+      to: "/admin/scan",
+      label: "Pindai",
+      icon: QrCode,
+    };
+    const right = permittedRoutes.has("/admin/karyawan")
+      ? { to: "/admin/karyawan", label: "Karyawan", icon: UserCheck }
+      : permittedRoutes.has("/admin/laporan")
+        ? { to: "/admin/laporan", label: "Laporan", icon: BarChart3 }
+        : { to: "/admin/tamu", label: "Tamu", icon: Users };
+
+    const validLeft = leftCandidates.filter((c) => permittedRoutes.has(c.to));
+
+    return {
+      leftDockItems:
+        validLeft.length >= 2
+          ? leftCandidates
+          : [
+              { to: "/admin/tamu", label: "Tamu", icon: Users },
+              { to: "/admin/karyawan", label: "Karyawan", icon: UserCheck },
+            ],
+      centerDockItem: center,
+      rightDockItems: [right],
+    };
+  }, [isDashboardMode, items]);
+
+  // Check if current route is directly represented in the bottom dock items
+  const isRouteInMobileDock = useMemo(() => {
+    const dockRoutes = [
+      ...leftDockItems.map((i) => i.to),
+      centerDockItem.to,
+      ...rightDockItems.map((i) => i.to),
+    ];
+    return dockRoutes.some((route) => isItemActive(route));
+  }, [leftDockItems, centerDockItem, rightDockItems, isItemActive]);
+
+  // Check if current route is a secondary menu (outside the visible bottom-nav dock items)
   const isSecondaryMenuActive = useMemo(() => {
     if (!isDashboardMode) return false;
-    const coreRoutes = ["/admin", "/admin/tamu", "/admin/laporan", "/admin/aktivitas"];
-    return !coreRoutes.includes(pathname);
-  }, [isDashboardMode, pathname]);
+    return !isRouteInMobileDock;
+  }, [isDashboardMode, isRouteInMobileDock]);
 
   // Primary 4 items shown directly in desktop navbar to keep layout uncluttered
   const primaryDesktopItems = useMemo(() => {
     if (!isDashboardMode || items.length <= 5) return items;
-    const coreRoutes = ["/admin", "/admin/tamu", "/admin/laporan", "/admin/aktivitas"];
+    const coreRoutes = [
+      "/admin",
+      "/admin/tamu",
+      "/admin/karyawan",
+      "/admin/laporan",
+      "/admin/aktivitas",
+    ];
     const preferred = items.filter((it) => coreRoutes.includes(it.to));
     return preferred.length >= 3 ? preferred : items.slice(0, 4);
   }, [items, isDashboardMode]);
@@ -446,56 +511,6 @@ export function SiteNav({
       window.removeEventListener("resize", updateWidth);
     };
   }, []);
-
-  // Split mobile bottom dock items: Left 2 items, Center protruding item, Right items + Menu button
-  const { leftDockItems, centerDockItem, rightDockItems } = useMemo(() => {
-    if (!isDashboardMode) {
-      return {
-        leftDockItems: [
-          { to: "/", label: "Beranda", icon: Home },
-          { to: "/panduan", label: "Panduan", icon: BookOpen },
-        ],
-        centerDockItem: {
-          to: "/registrasi",
-          label: "Registrasi",
-          icon: Plus,
-        },
-        rightDockItems: [{ to: "/karyawan", label: "Karyawan", icon: UserCheck }],
-      };
-    }
-
-    const permittedRoutes = new Set(items.map((it) => it.to));
-
-    // Dashboard navigation:
-    const leftCandidates = [
-      { to: "/admin", label: "Ringkasan", icon: LayoutDashboard },
-      { to: "/admin/tamu", label: "Tamu", icon: Users },
-    ];
-    const center = {
-      to: "/admin/scan",
-      label: "Pindai",
-      icon: QrCode,
-    };
-    const right = permittedRoutes.has("/admin/karyawan")
-      ? { to: "/admin/karyawan", label: "Karyawan", icon: UserCheck }
-      : permittedRoutes.has("/admin/laporan")
-        ? { to: "/admin/laporan", label: "Laporan", icon: BarChart3 }
-        : { to: "/admin/tamu", label: "Tamu", icon: Users };
-
-    const validLeft = leftCandidates.filter((c) => permittedRoutes.has(c.to));
-
-    return {
-      leftDockItems:
-        validLeft.length >= 2
-          ? leftCandidates
-          : [
-              { to: "/admin/tamu", label: "Tamu", icon: Users },
-              { to: "/admin/karyawan", label: "Karyawan", icon: UserCheck },
-            ],
-      centerDockItem: center,
-      rightDockItems: [right],
-    };
-  }, [isDashboardMode, items]);
 
   // For public desktop navbar: cleanly separate content navigation from actions (Registrasi CTA & Admin link)
   const { publicContentItems, publicCtaItem, publicAdminItem } = useMemo(() => {
@@ -725,12 +740,6 @@ export function SiteNav({
                   <span className="mt-0.5 text-[10px] leading-tight tracking-tight">
                     {item.label}
                   </span>
-                  {active && (
-                    <span
-                      aria-hidden
-                      className="absolute bottom-1 h-1 w-2.5 rounded-full bg-primary"
-                    />
-                  )}
                 </Link>
               );
             })}
@@ -740,7 +749,7 @@ export function SiteNav({
               to={centerDockItem.to}
               onClick={() => setOpen(false)}
               aria-label={centerDockItem.label}
-              className={`${focusRing} flex h-full flex-col items-center justify-end pb-1.5 text-center transition-all duration-200 active:scale-95`}
+              className={`${focusRing} flex h-full flex-col items-center justify-end pb-2 text-center transition-all duration-200 active:scale-95`}
             >
               <span
                 className={`max-w-[72px] truncate text-[9.5px] font-bold tracking-tight text-center leading-tight transition-colors ${
@@ -749,9 +758,6 @@ export function SiteNav({
               >
                 {centerDockItem.label}
               </span>
-              {centerActive && (
-                <span aria-hidden className="mt-0.5 h-1 w-2 rounded-full bg-primary" />
-              )}
             </Link>
 
             {/* Right Item 1 (e.g. Karyawan) */}
@@ -779,12 +785,6 @@ export function SiteNav({
                   <span className="mt-0.5 text-[10px] leading-tight tracking-tight">
                     {item.label}
                   </span>
-                  {active && (
-                    <span
-                      aria-hidden
-                      className="absolute bottom-1 h-1 w-2.5 rounded-full bg-primary"
-                    />
-                  )}
                 </Link>
               );
             })}
@@ -817,9 +817,6 @@ export function SiteNav({
               <span className="mt-0.5 text-[10px] leading-tight tracking-tight">
                 {open ? "Tutup" : "Menu"}
               </span>
-              {(open || isSecondaryMenuActive) && (
-                <span aria-hidden className="absolute bottom-1 h-1 w-2.5 rounded-full bg-primary" />
-              )}
             </button>
           </nav>
         </div>
