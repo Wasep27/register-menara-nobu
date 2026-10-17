@@ -129,8 +129,14 @@ function Dashboard() {
         <Panel title="Berdasarkan tujuan"><HBar data={stats.purpose} color={PRIMARY} /></Panel>
         <Panel title="Karyawan paling banyak dikunjungi"><HBar data={stats.emp} color={BRAND} /></Panel>
       </div>
+      </>
+      )}
     </div>
   );
+}
+
+function Skel({ h }: { h: string }) {
+  return <div aria-hidden className={`${h} animate-pulse rounded-2xl bg-card shadow-soft`} />;
 }
 
 function HBar({ data, color }: { data: { name: string; value: number }[]; color: string }) {
