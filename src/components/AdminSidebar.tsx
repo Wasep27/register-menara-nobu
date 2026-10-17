@@ -126,6 +126,12 @@ const SECURITY_NAV_GROUPS: NavGroup[] = [
     title: "Pos Keamanan & Jaga",
     items: [
       {
+        to: "/admin",
+        label: "Ringkasan Pos Jaga",
+        icon: LayoutDashboard,
+        description: "Ikhtisar operasional pos",
+      },
+      {
         to: "/admin/scan",
         label: "Pos Pindai Pass",
         icon: QrCode,
@@ -151,6 +157,12 @@ const STAFF_NAV_GROUPS: NavGroup[] = [
   {
     title: "Operasional Front Desk",
     items: [
+      {
+        to: "/admin",
+        label: "Ringkasan Lobi",
+        icon: LayoutDashboard,
+        description: "Statistik harian front desk",
+      },
       {
         to: "/admin/tamu",
         label: "Buku Tamu Lobi",
@@ -325,19 +337,21 @@ export function AdminSidebar({ userName, onLogout, userRoles = ["admin"] }: Admi
 
       {/* Footer Area: Shortcut to Frontdesk + User Profile */}
       <div className="pt-3 mt-2 border-t border-border/60 shrink-0 space-y-2.5">
-        {/* Link to public front registration */}
-        <Link
-          to="/registrasi"
-          className={`${focusRing} group flex items-center justify-between rounded-2xl border border-border/60 bg-muted/30 px-3 py-2 text-xs font-medium text-foreground transition-all hover:bg-brand-soft/70 hover:border-primary/30 hover:text-primary`}
-        >
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-card text-primary shadow-xs">
-              <Users className="h-3.5 w-3.5" />
-            </span>
-            <span className="truncate font-semibold">Buku Tamu Depan</span>
-          </div>
-          <ExternalLink className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
-        </Link>
+        {/* Link to public front registration (hidden for security) */}
+        {!isSecurityOnly && (
+          <Link
+            to="/registrasi"
+            className={`${focusRing} group flex items-center justify-between rounded-2xl border border-border/60 bg-muted/30 px-3 py-2 text-xs font-medium text-foreground transition-all hover:bg-brand-soft/70 hover:border-primary/30 hover:text-primary`}
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-card text-primary shadow-xs">
+                <Users className="h-3.5 w-3.5" />
+              </span>
+              <span className="truncate font-semibold">Buku Tamu Depan</span>
+            </div>
+            <ExternalLink className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+          </Link>
+        )}
 
         {/* Profile Card & Logout */}
         <div className="flex items-center justify-between gap-2 rounded-2xl border border-border/70 bg-card p-2 shadow-xs">

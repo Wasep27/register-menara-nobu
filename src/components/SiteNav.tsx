@@ -41,6 +41,7 @@ interface SiteNavProps {
   userName?: string;
   onLogout?: () => void;
   isDashboard?: boolean;
+  hideRegistration?: boolean;
 }
 
 const ROUTE_METADATA: Record<
@@ -143,7 +144,14 @@ const ROUTE_METADATA: Record<
   },
 };
 
-export function SiteNav({ items, right, userName, onLogout, isDashboard }: SiteNavProps) {
+export function SiteNav({
+  items,
+  right,
+  userName,
+  onLogout,
+  isDashboard,
+  hideRegistration,
+}: SiteNavProps) {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [activeAnchor, setActiveAnchor] = useState<string | null>(null);
@@ -410,13 +418,6 @@ export function SiteNav({ items, right, userName, onLogout, isDashboard }: SiteN
   }
 
   // Core items for the bottom floating dock
-  const coreDashboardLinks = [
-    { to: "/admin", label: "Ringkasan", icon: LayoutDashboard },
-    { to: "/admin/tamu", label: "Tamu", icon: Users },
-    { to: "/admin/scan", label: "Pindai Pass", icon: QrCode },
-    { to: "/admin/laporan", label: "Laporan", icon: BarChart3 },
-  ];
-
   const corePublicLinks = [
     { to: "/", label: "Beranda", icon: Home },
     { to: "/registrasi", label: "Registrasi", icon: Users },
@@ -424,7 +425,19 @@ export function SiteNav({ items, right, userName, onLogout, isDashboard }: SiteN
     { to: "/karyawan", label: "Karyawan", icon: UserCheck },
   ];
 
-  const bottomDockLinks = isDashboardMode ? coreDashboardLinks : corePublicLinks;
+  const bottomDockLinks = useMemo(() => {
+    if (!isDashboardMode) return corePublicLinks;
+    const permittedRoutes = new Set(items.map((it) => it.to));
+    const allCandidates = [
+      { to: "/admin", label: "Ringkasan", icon: LayoutDashboard },
+      { to: "/admin/scan", label: "Pindai Pass", icon: QrCode },
+      { to: "/admin/tamu", label: "Tamu", icon: Users },
+      { to: "/admin/karyawan", label: "Karyawan", icon: UserCheck },
+      { to: "/admin/laporan", label: "Laporan", icon: BarChart3 },
+    ];
+    const filtered = allCandidates.filter((cand) => permittedRoutes.has(cand.to));
+    return filtered.length >= 3 ? filtered.slice(0, 4) : allCandidates.slice(0, 4);
+  }, [isDashboardMode, items]);
 
   const avatarName = userName || (isDashboardMode ? "Admin" : "Tamu");
 
@@ -700,15 +713,26 @@ export function SiteNav({ items, right, userName, onLogout, isDashboard }: SiteN
           {/* Drawer Footer with Quick Shortcuts */}
           <div className="border-t border-border/60 bg-card/60 p-3 shrink-0">
             <div className="flex items-center justify-between gap-2">
-              <Link
-                to="/registrasi"
-                onClick={() => setOpen(false)}
-                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border/70 bg-card px-3 py-2 text-xs font-semibold text-foreground transition-all hover:bg-brand-soft hover:text-primary active:scale-95"
-              >
-                <Users className="h-3.5 w-3.5 text-primary" />
-                Buku Tamu Depan
-                <ExternalLink className="h-3 w-3 text-muted-foreground" />
-              </Link>
+              {hideRegistration ? (
+                <Link
+                  to="/admin/scan"
+                  onClick={() => setOpen(false)}
+                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-primary/40 bg-brand-soft px-3 py-2 text-xs font-semibold text-primary transition-all hover:bg-primary hover:text-primary-foreground active:scale-95"
+                >
+                  <QrCode className="h-3.5 w-3.5" />
+                  Pos Pindai Pass
+                </Link>
+              ) : (
+                <Link
+                  to="/registrasi"
+                  onClick={() => setOpen(false)}
+                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border/70 bg-card px-3 py-2 text-xs font-semibold text-foreground transition-all hover:bg-brand-soft hover:text-primary active:scale-95"
+                >
+                  <Users className="h-3.5 w-3.5 text-primary" />
+                  Buku Tamu Depan
+                  <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                </Link>
+              )}
 
               {onLogout && !isDashboardMode && (
                 <button

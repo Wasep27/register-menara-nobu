@@ -13,7 +13,8 @@ req_functions(name) as (values
   ('login_lock_seconds'),('record_login_attempt'),('handle_new_user'),
   ('sync_admin_email'),('link_employee_user'),('link_user_employee'),
   ('notify_new_guest'),('generate_visit_reminders'),('list_users_with_roles'),
-  ('submit_guest_feedback'),('check_guest_status'),('quick_checkin_by_code')),
+  ('submit_guest_feedback'),('check_guest_status'),('quick_checkin_by_code'),
+  ('admin_create_user'),('admin_delete_user'),('admin_reset_user_password')),
 req_columns(tbl, col) as (values
   ('guests','scheduled_at'),('guests','is_important'),('guests','fill_duration_seconds'),('guests','badge_code'),
   ('employees','email'),('employees','user_id'),('admin_emails','created_at')),

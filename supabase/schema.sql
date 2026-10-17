@@ -3,28 +3,51 @@
 create extension if not exists pgcrypto;
 
 -- ROLES: RBAC (Role-Based Access Control) multi-peran: admin, security, staff
-do $$ begin create type public.app_role as enum ('admin', 'security', 'staff'); exception when duplicate_object then null; end $$;
-alter type public.app_role add value if not exists 'security';
-alter type public.app_role add value if not exists 'staff';
+-- Catatan migrasi: Untuk menghindari error PostgreSQL 55P04 (unsafe use of new value "security" of enum type app_role
+-- saat dijalankan dalam satu transaksi di Supabase SQL Editor), kolom role menggunakan TEXT dengan validasi CHECK constraint.
+do $$ begin
+  create type public.app_role as enum ('admin', 'security', 'staff');
+exception when duplicate_object then null;
+end $$;
 
 create table if not exists public.user_roles (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
-  role public.app_role not null,
+  role text not null check (role in ('admin', 'security', 'staff')),
   unique (user_id, role)
 );
+
+-- Jika tabel user_roles sudah dibuat sebelumnya dengan tipe enum app_role,
+-- ubah tipe kolom role ke text secara aman tanpa memicu 55P04:
+do $$ begin
+  alter table public.user_roles alter column role type text using role::text;
+  alter table public.user_roles drop constraint if exists user_roles_role_check;
+  alter table public.user_roles add constraint user_roles_role_check check (role in ('admin', 'security', 'staff'));
+exception when others then null; end $$;
+
 grant select on public.user_roles to authenticated;
 grant all on public.user_roles to service_role;
 alter table public.user_roles enable row level security;
 
+-- Dukung pemanggilan has_role baik dengan parameter TEXT maupun ENUM app_role (tanpa DROP agar tidak memicu 2BP01 pada policy yang bergantung)
+create or replace function public.has_role(_user_id uuid, _role text)
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.user_roles where user_id = _user_id and role::text = _role)
+$$;
+
 create or replace function public.has_role(_user_id uuid, _role public.app_role)
 returns boolean language sql stable security definer set search_path = public as $$
-  select exists (select 1 from public.user_roles where user_id = _user_id and role = _role)
+  select exists (select 1 from public.user_roles where user_id = _user_id and role::text = _role::text)
+$$;
+
+create or replace function public.has_any_role(_user_id uuid, _roles text[])
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.user_roles where user_id = _user_id and role::text = any(_roles))
 $$;
 
 create or replace function public.has_any_role(_user_id uuid, _roles public.app_role[])
 returns boolean language sql stable security definer set search_path = public as $$
-  select exists (select 1 from public.user_roles where user_id = _user_id and role = any(_roles))
+  select exists (select 1 from public.user_roles where user_id = _user_id and role::text = any(_roles::text[]))
 $$;
 
 drop policy if exists "own roles" on public.user_roles;
@@ -86,16 +109,16 @@ drop policy if exists "admin delete guests" on public.guests;
 
 -- Baca buku tamu: admin, security pos jaga, dan staff lobi
 create policy "staff select guests" on public.guests for select to authenticated
-using (public.has_any_role(auth.uid(), array['admin', 'security', 'staff']::public.app_role[]));
+using (public.has_any_role(auth.uid(), array['admin', 'security', 'staff']));
 
 -- Update tamu (verifikasi kedatangan / kepulangan / status pass): admin, security, staff
 create policy "staff update guests" on public.guests for update to authenticated
-using (public.has_any_role(auth.uid(), array['admin', 'security', 'staff']::public.app_role[]))
-with check (public.has_any_role(auth.uid(), array['admin', 'security', 'staff']::public.app_role[]));
+using (public.has_any_role(auth.uid(), array['admin', 'security', 'staff']))
+with check (public.has_any_role(auth.uid(), array['admin', 'security', 'staff']));
 
 -- Tambah tamu internal (walk-in dari lobi): admin dan staff
 create policy "staff insert guests" on public.guests for insert to authenticated
-with check (public.has_any_role(auth.uid(), array['admin', 'staff']::public.app_role[]));
+with check (public.has_any_role(auth.uid(), array['admin', 'staff']));
 
 -- Hapus data tamu: HANYA Super Admin gedung (Petugas security/staff tidak diizinkan menghapus rekam jejak audit)
 create policy "admin delete guests" on public.guests for delete to authenticated
@@ -437,12 +460,19 @@ end $$;
 revoke all on function public.list_users_with_roles() from public, anon;
 grant execute on function public.list_users_with_roles() to authenticated;
 
+-- Drop function overload lama dengan parameter enum app_role jika ada
+drop function if exists public.set_user_role(uuid, public.app_role, boolean);
+
 -- Mengatur peran pengguna (Admin dapat menetapkan role 'admin', 'security', atau 'staff')
-create or replace function public.set_user_role(_target_user_id uuid, _role public.app_role, _assign boolean)
+create or replace function public.set_user_role(_target_user_id uuid, _role text, _assign boolean)
 returns boolean language plpgsql security definer set search_path = public as $$
 begin
   if not public.has_role(auth.uid(), 'admin') then
     raise exception 'Hanya administrator yang dapat mengubah peran pengguna' using errcode = '42501';
+  end if;
+
+  if _role not in ('admin', 'security', 'staff') then
+    raise exception 'Peran tidak valid: %', _role;
   end if;
 
   if _assign then
@@ -459,8 +489,146 @@ begin
 
   return true;
 end $$;
-revoke all on function public.set_user_role(uuid, public.app_role, boolean) from public, anon;
-grant execute on function public.set_user_role(uuid, public.app_role, boolean) to authenticated;
+revoke all on function public.set_user_role(uuid, text, boolean) from public, anon;
+grant execute on function public.set_user_role(uuid, text, boolean) to authenticated;
+
+-- ============================================================
+-- MANAJEMEN AKUN PENGGUNA VIA DASHBOARD ADMIN
+-- Admin dapat membuat akun baru (Admin, Security, Staff) langsung
+-- dari dashboard tanpa perlu manual di tab Authentication Supabase.
+-- ============================================================
+
+create or replace function public.admin_create_user(
+  _email text,
+  _password text,
+  _full_name text default null,
+  _role text default 'staff'
+)
+returns uuid language plpgsql security definer set search_path = public, auth, extensions as $$
+declare
+  new_user_id uuid := gen_random_uuid();
+  clean_email text := lower(trim(_email));
+  enc_pw text;
+begin
+  -- 1. Verifikasi hak akses caller: Hanya Super Admin
+  if not public.has_role(auth.uid(), 'admin') then
+    raise exception 'Hanya administrator yang diizinkan membuat akun baru' using errcode = '42501';
+  end if;
+
+  -- 2. Validasi input
+  if clean_email !~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$' then
+    raise exception 'Format email tidak valid';
+  end if;
+  if length(_password) < 6 then
+    raise exception 'Password minimal 6 karakter';
+  end if;
+  if _role not in ('admin', 'security', 'staff') then
+    raise exception 'Peran (role) tidak valid: %', _role;
+  end if;
+
+  -- 3. Cek apakah email sudah terdaftar
+  if exists (select 1 from auth.users where lower(email) = clean_email) then
+    raise exception 'Email "%" sudah terdaftar di sistem', clean_email;
+  end if;
+
+  -- 4. Enkripsi password menggunakan bcrypt standar pgcrypto
+  enc_pw := crypt(_password, gen_salt('bf', 10));
+
+  -- 5. Masukkan user baru ke auth.users
+  insert into auth.users (
+    id,
+    instance_id,
+    aud,
+    role,
+    email,
+    encrypted_password,
+    email_confirmed_at,
+    raw_app_meta_data,
+    raw_user_meta_data,
+    created_at,
+    updated_at
+  ) values (
+    new_user_id,
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated',
+    'authenticated',
+    clean_email,
+    enc_pw,
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    jsonb_build_object('full_name', trim(coalesce(_full_name, ''))),
+    now(),
+    now()
+  );
+
+  -- 5b. Daftarkan ke auth.identities agar Supabase GoTrue Auth mengizinkan login email & password
+  begin
+    execute 'insert into auth.identities (id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at) values ($1, $2, $3, ''email'', $4, now(), now(), now())'
+    using new_user_id::text, new_user_id, jsonb_build_object('sub', new_user_id::text, 'email', clean_email), clean_email;
+  exception
+    when undefined_column then
+      execute 'insert into auth.identities (id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at) values ($1, $2, $3, ''email'', now(), now(), now())'
+      using new_user_id::text, new_user_id, jsonb_build_object('sub', new_user_id::text, 'email', clean_email);
+    when others then
+      null;
+  end;
+
+  -- 6. Masukkan role ke public.user_roles
+  insert into public.user_roles (user_id, role)
+  values (new_user_id, _role)
+  on conflict (user_id, role) do nothing;
+
+  -- 7. Pastikan profil terisi
+  insert into public.profiles (id, email, full_name)
+  values (new_user_id, clean_email, trim(coalesce(_full_name, '')))
+  on conflict (id) do update set
+    full_name = coalesce(excluded.full_name, profiles.full_name),
+    email = excluded.email;
+
+  return new_user_id;
+end $$;
+revoke all on function public.admin_create_user(text, text, text, text) from public, anon;
+grant execute on function public.admin_create_user(text, text, text, text) to authenticated;
+
+-- Hapus akun pengguna langsung dari dashboard admin
+create or replace function public.admin_delete_user(_target_user_id uuid)
+returns boolean language plpgsql security definer set search_path = public, auth as $$
+begin
+  if not public.has_role(auth.uid(), 'admin') then
+    raise exception 'Hanya administrator yang diizinkan menghapus akun' using errcode = '42501';
+  end if;
+
+  if _target_user_id = auth.uid() then
+    raise exception 'Tidak dapat menghapus akun Anda sendiri saat sedang login';
+  end if;
+
+  delete from auth.users where id = _target_user_id;
+  return true;
+end $$;
+revoke all on function public.admin_delete_user(uuid) from public, anon;
+grant execute on function public.admin_delete_user(uuid) to authenticated;
+
+-- Reset password akun pengguna dari dashboard admin
+create or replace function public.admin_reset_user_password(_target_user_id uuid, _new_password text)
+returns boolean language plpgsql security definer set search_path = public, auth, extensions as $$
+begin
+  if not public.has_role(auth.uid(), 'admin') then
+    raise exception 'Hanya administrator yang diizinkan mereset password akun' using errcode = '42501';
+  end if;
+
+  if length(_new_password) < 6 then
+    raise exception 'Password minimal 6 karakter';
+  end if;
+
+  update auth.users
+  set encrypted_password = crypt(_new_password, gen_salt('bf', 10)),
+      updated_at = now()
+  where id = _target_user_id;
+
+  return true;
+end $$;
+revoke all on function public.admin_reset_user_password(uuid, text) from public, anon;
+grant execute on function public.admin_reset_user_password(uuid, text) to authenticated;
 
 -- ============================================================
 -- FEEDBACK TAMU (CSAT & KEPUASAN PENGISIAN BUKU TAMU)

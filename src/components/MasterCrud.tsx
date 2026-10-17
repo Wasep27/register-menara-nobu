@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { FolderKanban, Plus } from "lucide-react";
+import { FolderKanban, Plus, Search, ShieldCheck, UserCheck, Lock } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { employeeSchema, purposeSchema, fieldErrors } from "@/lib/validation";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { useAdminRole } from "@/routes/admin";
 import {
   Dialog,
   DialogContent,
@@ -30,8 +31,10 @@ export function MasterCrud({
   title: string;
   withDept?: boolean;
 }) {
+  const { isAdmin, isSecurity, isStaff } = useAdminRole();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
+  const [q, setQ] = useState("");
   const [name, setName] = useState("");
   const [dept, setDept] = useState("");
   const [email, setEmail] = useState("");
@@ -41,6 +44,16 @@ export function MasterCrud({
   const [errs, setErrs] = useState<Partial<Record<"name" | "department" | "email", string>>>({});
   const [toDelete, setToDelete] = useState<Row | null>(null);
   const label = table === "employees" ? "karyawan" : "tujuan kunjungan";
+
+  // Perizinan CRUD otomatis berbasis role:
+  // - Admin: Akses penuh (Tambah, Edit, Toggle Aktif, Hapus)
+  // - Staff: Akses operasional front desk (Tambah, Edit, Toggle Aktif, TANPA HAPUS)
+  // - Security: Read-Only direktori kontak (Hanya cari & lihat, tanpa CRUD)
+  const canAdd = isAdmin || isStaff;
+  const canEdit = isAdmin || isStaff;
+  const canToggle = isAdmin || isStaff;
+  const canDelete = isAdmin;
+  const isReadOnly = isSecurity;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -128,20 +141,109 @@ export function MasterCrud({
     load();
   };
 
+  const filteredRows = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    if (!term) return rows;
+    return rows.filter(
+      (r) =>
+        r.name.toLowerCase().includes(term) ||
+        (r.department && r.department.toLowerCase().includes(term)) ||
+        (r.email && r.email.toLowerCase().includes(term)),
+    );
+  }, [rows, q]);
+
   const i = "min-h-11 w-full rounded-lg border border-input bg-card px-3 py-2 text-sm";
   const ic = (k: keyof typeof errs) => (errs[k] ? i + " border-destructive bg-destructive/5" : i);
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-foreground">{title}</h1>
-        <button
-          className="min-h-11 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground"
-          onClick={() => openForm()}
-        >
-          + Tambah
-        </button>
+      {/* Header with Title & Role Access Badge */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">
+              {isReadOnly && table === "employees" ? "Direktori Karyawan & Host" : title}
+            </h1>
+            {isAdmin && (
+              <span className="hidden xs:inline-flex items-center gap-1 rounded-full bg-brand-soft px-2.5 py-0.5 text-[11px] font-bold text-primary">
+                <ShieldCheck className="h-3 w-3" /> Admin
+              </span>
+            )}
+            {isStaff && (
+              <span className="hidden xs:inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[11px] font-bold text-amber-700 dark:text-amber-400">
+                <UserCheck className="h-3 w-3" /> Front Desk
+              </span>
+            )}
+            {isReadOnly && (
+              <span className="hidden xs:inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
+                <Lock className="h-3 w-3" /> Pos Jaga (Read-Only)
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {isReadOnly
+              ? "Cari data staf dan unit kerja untuk verifikasi dan konfirmasi pengunjung di pos jaga."
+              : isStaff
+                ? "Kelola data staf penerima tamu. Penghapusan data permanen dibatasi untuk Super Admin."
+                : `Kelola data master ${label} dengan hak akses administrator penuh.`}
+          </p>
+        </div>
+
+        {/* Action button - only visible if user has add permission (Admin & Staff) */}
+        {canAdd && (
+          <button
+            className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs sm:text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95 shrink-0"
+            onClick={() => openForm()}
+          >
+            <Plus className="h-4 w-4" />
+            <span>Tambah {label}</span>
+          </button>
+        )}
       </div>
-      <div className="rounded-xl bg-card">
+
+      {/* Role specific info notice for staff or security */}
+      {isStaff && (
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 px-3.5 py-2 text-xs text-amber-800 dark:text-amber-300 flex items-center justify-between gap-2">
+          <span>
+            ℹ️ <strong>Akses Staf Lobi:</strong> Anda dapat menambahkan dan memperbarui kontak
+            karyawan. Tombol hapus disembunyikan demi menjaga integritas riwayat tamu.
+          </span>
+        </div>
+      )}
+
+      {isReadOnly && (
+        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3.5 py-2 text-xs text-emerald-800 dark:text-emerald-300 flex items-center justify-between gap-2">
+          <span>
+            🛡️ <strong>Mode Direktori Pos Keamanan:</strong> Formulir pendaftaran dan tombol
+            modifikasi disembunyikan. Gunakan kolom pencarian di bawah untuk mencari kontak karyawan
+            yang dituju tamu.
+          </span>
+        </div>
+      )}
+
+      {/* Search Input for quick filtering */}
+      <div className="relative">
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <input
+          type="text"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder={`Cari nama ${label}${withDept ? ", divisi, atau email" : ""}...`}
+          className="w-full rounded-2xl border border-border bg-card pl-10 pr-4 py-2.5 text-xs sm:text-sm shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        />
+        {q && (
+          <button
+            type="button"
+            onClick={() => setQ("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground"
+          >
+            Bersihkan
+          </button>
+        )}
+      </div>
+
+      {/* Table / List Container */}
+      <div className="rounded-2xl border border-border/80 bg-card shadow-soft overflow-hidden">
         {loading ? (
           <div className="space-y-1 p-2">
             {[1, 2, 3, 4, 5].map((k) => (
@@ -161,50 +263,100 @@ export function MasterCrud({
               </div>
             ))}
           </div>
-        ) : rows.length === 0 ? (
+        ) : filteredRows.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-8 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-soft text-primary shadow-sm">
               <FolderKanban className="h-6 w-6" />
             </div>
-            <p className="mt-3 font-semibold text-foreground">Belum ada {label}</p>
-            <p className="mt-1 max-w-xs text-xs text-muted-foreground">
-              Tambahkan {label} pertama agar dapat dipilih dalam formulir registrasi tamu.
+            <p className="mt-3 font-semibold text-foreground">
+              {q ? `Tidak ada hasil pencarian "${q}"` : `Belum ada ${label}`}
             </p>
-            <button
-              onClick={() => openForm()}
-              className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-all hover:brightness-110 active:scale-95"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Tambah {label} Sekarang
-            </button>
+            <p className="mt-1 max-w-xs text-xs text-muted-foreground">
+              {q
+                ? "Coba gunakan kata kunci lain atau bersihkan filter pencarian."
+                : `Tambahkan ${label} pertama agar dapat dipilih dalam formulir registrasi tamu.`}
+            </p>
+            {canAdd && !q && (
+              <button
+                onClick={() => openForm()}
+                className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-all hover:brightness-110 active:scale-95"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Tambah {label} Sekarang
+              </button>
+            )}
           </div>
         ) : (
-          rows.map((r) => (
+          filteredRows.map((r) => (
             <div
               key={r.id}
-              className="flex flex-wrap items-center gap-3 border-b border-border p-3 text-sm last:border-0"
+              className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 p-3 sm:p-3.5 text-sm last:border-0 hover:bg-muted/30 transition-colors"
             >
-              <span className="min-w-0 flex-1">
-                {r.name}
-                {r.department ? (
-                  <span className="text-muted-foreground"> · {r.department}</span>
-                ) : null}
-                {r.email ? (
-                  <span className="block text-xs text-muted-foreground">{r.email}</span>
-                ) : null}
-              </span>
-              <button
-                className={`rounded-full px-3 py-1 text-xs ${r.is_active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
-                onClick={() => toggle(r)}
-              >
-                {r.is_active ? "Aktif" : "Nonaktif"}
-              </button>
-              <button className="text-primary" onClick={() => openForm(r)}>
-                Edit
-              </button>
-              <button className="text-destructive" onClick={() => setToDelete(r)}>
-                Hapus
-              </button>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-foreground">{r.name}</span>
+                  {r.department && (
+                    <span className="rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground font-medium">
+                      {r.department}
+                    </span>
+                  )}
+                </div>
+                {r.email && (
+                  <span className="block text-xs text-muted-foreground/80 mt-0.5 truncate">
+                    {r.email}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                {/* Active status button (or badge if read-only) */}
+                {canToggle ? (
+                  <button
+                    type="button"
+                    title={r.is_active ? "Klik untuk menonaktifkan" : "Klik untuk mengaktifkan"}
+                    className={`rounded-full px-2.5 py-1 text-xs font-semibold transition-all active:scale-95 ${
+                      r.is_active
+                        ? "bg-primary text-primary-foreground shadow-2xs hover:brightness-110"
+                        : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    }`}
+                    onClick={() => toggle(r)}
+                  >
+                    {r.is_active ? "Aktif" : "Nonaktif"}
+                  </button>
+                ) : (
+                  <span
+                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                      r.is_active
+                        ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {r.is_active ? "Aktif" : "Nonaktif"}
+                  </span>
+                )}
+
+                {/* Edit button - Admin and Staff */}
+                {canEdit && (
+                  <button
+                    type="button"
+                    className="rounded-lg px-2.5 py-1 text-xs font-semibold text-primary hover:bg-brand-soft transition-colors active:scale-95"
+                    onClick={() => openForm(r)}
+                  >
+                    Edit
+                  </button>
+                )}
+
+                {/* Delete button - Admin ONLY */}
+                {canDelete && (
+                  <button
+                    type="button"
+                    className="rounded-lg px-2.5 py-1 text-xs font-semibold text-destructive hover:bg-destructive/10 transition-colors active:scale-95"
+                    onClick={() => setToDelete(r)}
+                  >
+                    Hapus
+                  </button>
+                )}
+              </div>
             </div>
           ))
         )}

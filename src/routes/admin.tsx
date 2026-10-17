@@ -1,7 +1,7 @@
+import { createContext, useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
 import { signOutLocal, startIdleLogout, supabase, type AppRole } from "@/lib/supabase";
 import { SiteNav } from "@/components/SiteNav";
 import { LogOut, ShieldAlert, ShieldCheck, Users } from "lucide-react";
@@ -50,8 +50,34 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/panduan": "Panduan Teknis",
 };
 
-const SECURITY_ALLOWED_ROUTES = ["/admin/scan", "/admin/tamu", "/admin/karyawan"];
-const STAFF_ALLOWED_ROUTES = ["/admin/tamu", "/admin/scan", "/admin/karyawan", "/admin/feedback"];
+export interface AdminRoleContextType {
+  userRoles: AppRole[];
+  isAdmin: boolean;
+  isSecurity: boolean;
+  isStaff: boolean;
+  userName: string;
+}
+
+export const AdminRoleContext = createContext<AdminRoleContextType>({
+  userRoles: ["admin"],
+  isAdmin: true,
+  isSecurity: false,
+  isStaff: false,
+  userName: "",
+});
+
+export function useAdminRole(): AdminRoleContextType {
+  return useContext(AdminRoleContext);
+}
+
+const SECURITY_ALLOWED_ROUTES = ["/admin", "/admin/scan", "/admin/tamu", "/admin/karyawan"];
+const STAFF_ALLOWED_ROUTES = [
+  "/admin",
+  "/admin/tamu",
+  "/admin/scan",
+  "/admin/karyawan",
+  "/admin/feedback",
+];
 
 function AdminLayout() {
   const loc = useLocation();
@@ -97,13 +123,6 @@ function AdminLayout() {
       setName(prof?.full_name || data.user.email?.split("@")[0] || "Petugas");
     });
   }, [isLogin, loc.pathname, nav, state]);
-
-  // Petugas keamanan otomatis dialihkan ke pos verifikasi scan bila membuka root /admin
-  useEffect(() => {
-    if (state === "ok" && isSecurity && loc.pathname === "/admin") {
-      nav({ to: "/admin/scan" });
-    }
-  }, [state, isSecurity, loc.pathname, nav]);
 
   // Satu pendengar perubahan sesi: keluar di tab lain / token habis -> ke halaman login
   useEffect(() => {
@@ -212,6 +231,7 @@ function AdminLayout() {
           userName={name}
           onLogout={() => setAskLogout(true)}
           isDashboard={true}
+          hideRegistration={isSecurity}
           right={
             <button
               className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-destructive/30 px-3 text-xs font-semibold text-destructive transition-all hover:bg-destructive hover:text-destructive-foreground active:scale-95"
@@ -245,13 +265,15 @@ function AdminLayout() {
             </div>
 
             <div className="flex items-center gap-3 shrink-0">
-              <Link
-                to="/registrasi"
-                className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-brand-soft px-3.5 py-1.5 text-xs font-semibold text-primary transition-all hover:bg-primary hover:text-primary-foreground active:scale-95"
-              >
-                <Users className="h-3.5 w-3.5" />
-                <span>Buku Tamu Depan</span>
-              </Link>
+              {!isSecurity && (
+                <Link
+                  to="/registrasi"
+                  className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-brand-soft px-3.5 py-1.5 text-xs font-semibold text-primary transition-all hover:bg-primary hover:text-primary-foreground active:scale-95"
+                >
+                  <Users className="h-3.5 w-3.5" />
+                  <span>Buku Tamu Depan</span>
+                </Link>
+              )}
 
               <button
                 type="button"
@@ -266,29 +288,33 @@ function AdminLayout() {
 
           {/* Area Halaman */}
           <main key={loc.pathname} className="fade-up flex-1 pb-24 md:pb-6">
-            {isRouteUnauthorized ? (
-              <div className="mx-auto my-12 max-w-md rounded-3xl border border-amber-500/30 bg-card p-6 sm:p-8 text-center shadow-soft">
-                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                  <ShieldAlert className="h-7 w-7" />
+            <AdminRoleContext.Provider
+              value={{ userRoles, isAdmin, isSecurity, isStaff, userName: name }}
+            >
+              {isRouteUnauthorized ? (
+                <div className="mx-auto my-12 max-w-md rounded-3xl border border-amber-500/30 bg-card p-6 sm:p-8 text-center shadow-soft">
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                    <ShieldAlert className="h-7 w-7" />
+                  </div>
+                  <h2 className="font-display text-lg font-bold text-foreground">Akses Terbatas</h2>
+                  <p className="mt-2 text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                    Halaman ini memerlukan hak akses <strong>Administrator Gedung</strong>. Sebagai{" "}
+                    <strong>{isSecurity ? "Petugas Keamanan" : "Staf Resepsionis"}</strong>, area
+                    operasional Anda berada di pos jaga dan lobi.
+                  </p>
+                  <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-2">
+                    <Link
+                      to={isSecurity ? "/admin/scan" : "/admin/tamu"}
+                      className="inline-flex min-h-10 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-primary px-5 text-xs font-semibold text-primary-foreground hover:brightness-110 active:scale-95 transition-all"
+                    >
+                      {isSecurity ? "Buka Pos Pindai Pass" : "Buka Buku Tamu"}
+                    </Link>
+                  </div>
                 </div>
-                <h2 className="font-display text-lg font-bold text-foreground">Akses Terbatas</h2>
-                <p className="mt-2 text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                  Halaman ini memerlukan hak akses <strong>Administrator Gedung</strong>. Sebagai{" "}
-                  <strong>{isSecurity ? "Petugas Keamanan" : "Staf Resepsionis"}</strong>, area
-                  operasional Anda berada di pos jaga dan lobi.
-                </p>
-                <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-2">
-                  <Link
-                    to={isSecurity ? "/admin/scan" : "/admin/tamu"}
-                    className="inline-flex min-h-10 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-primary px-5 text-xs font-semibold text-primary-foreground hover:brightness-110 active:scale-95 transition-all"
-                  >
-                    {isSecurity ? "Buka Pos Pindai Pass" : "Buka Buku Tamu"}
-                  </Link>
-                </div>
-              </div>
-            ) : (
-              <Outlet />
-            )}
+              ) : (
+                <Outlet />
+              )}
+            </AdminRoleContext.Provider>
           </main>
         </div>
       </div>

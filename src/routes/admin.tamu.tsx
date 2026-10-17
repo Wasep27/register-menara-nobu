@@ -5,11 +5,13 @@ import { useCallback, useEffect, useState } from "react";
 import { RefreshCw, RotateCcw, SearchX, UserPlus, Users, IdCard, QrCode } from "lucide-react";
 import { supabase, type Employee, type Guest, type Purpose } from "@/lib/supabase";
 import { VisitorBadgeModal, type VisitorBadgeData } from "@/components/VisitorBadgeModal";
+import { useAdminRole } from "@/routes/admin";
 
 export const Route = createFileRoute("/admin/tamu")({ component: Guests });
 const PAGE = 20;
 
 function Guests() {
+  const { isAdmin, isSecurity, isStaff } = useAdminRole();
   const [rows, setRows] = useState<Guest[]>([]);
   const [loading, setLoading] = useState(true);
   const [count, setCount] = useState(0);
@@ -161,7 +163,25 @@ function Guests() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-foreground">Data Tamu</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Buku Tamu Menara Nobu</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {isSecurity
+              ? "Verifikasi kehadiran tamu, cek nomor tiket, dan cetak badge pengunjung di pos jaga."
+              : "Daftar kehadiran dan rekam kunjungan pengunjung gedung Menara Nobu."}
+          </p>
+        </div>
+        {!isSecurity && (
+          <Link
+            to="/registrasi"
+            className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs sm:text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95 shrink-0"
+          >
+            <UserPlus className="h-4 w-4" />
+            <span>+ Registrasi Tamu Baru</span>
+          </Link>
+        )}
+      </div>
       <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
         <input
           className={`${i} col-span-2 w-full sm:w-64`}
@@ -344,18 +364,22 @@ function Guests() {
                       >
                         Badge
                       </button>
-                      <button
-                        className="mr-3 font-medium text-primary transition-colors hover:underline"
-                        onClick={() => setEdit(r)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="font-medium text-destructive transition-colors hover:underline"
-                        onClick={() => setToDelete(r)}
-                      >
-                        Hapus
-                      </button>
+                      {!isSecurity && (
+                        <button
+                          className="mr-3 font-medium text-primary transition-colors hover:underline"
+                          onClick={() => setEdit(r)}
+                        >
+                          Edit
+                        </button>
+                      )}
+                      {isAdmin && (
+                        <button
+                          className="font-medium text-destructive transition-colors hover:underline"
+                          onClick={() => setToDelete(r)}
+                        >
+                          Hapus
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

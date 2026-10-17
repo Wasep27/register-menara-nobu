@@ -148,7 +148,7 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-badge-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 overflow-y-auto overscroll-contain animate-in fade-in duration-200"
+      className="fixed inset-0 z-[100] flex items-start justify-center p-2 sm:p-4 pt-2 sm:pt-4 pb-24 md:pb-8 overflow-y-auto overscroll-contain bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
     >
       {/* Print-specific style override: hide all ambient UI during print */}
       <style>{`
@@ -176,16 +176,12 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
         }
       `}</style>
 
-      {/* Accessible Backdrop with click to dismiss */}
-      <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
-        aria-hidden="true"
-        onClick={onClose}
-      />
+      {/* Accessible Backdrop with click to dismiss covering full viewport */}
+      <div className="fixed inset-0 bg-transparent" aria-hidden="true" onClick={onClose} />
 
-      {/* Responsive Modal Dialog Card */}
+      {/* Responsive Modal Dialog Card positioned at top for mobile clearance */}
       <div
-        className="relative w-full max-w-lg md:max-w-xl max-h-[92dvh] flex flex-col rounded-3xl border border-border/80 bg-card shadow-2xl z-10 overflow-hidden my-auto animate-in zoom-in-95 duration-200"
+        className="relative w-full max-w-lg md:max-w-xl max-h-[96dvh] flex flex-col rounded-3xl border border-border/80 bg-card shadow-2xl z-10 overflow-hidden my-0 animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Top Header Bar */}

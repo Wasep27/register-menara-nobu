@@ -259,11 +259,12 @@ Berdasarkan audit standar industri _Visitor Management System_ (VMS), regulasi U
 
 ## 6. Standar Keamanan Multi-Role (RBAC) & Pemisahan Akses Dashboard
 
-Sesuai audit standar industri keamanan gedung perkantoran (*Visitor Management System*), ISO 27001, dan prinsip *Least Privilege* (PoLP):
+Sesuai audit standar industri keamanan gedung perkantoran (_Visitor Management System_), ISO 27001, dan prinsip _Least Privilege_ (PoLP):
 
 ### 1. Mengapa Perlu Role Terpisah (`admin`, `security`, `staff`)?
+
 - **Risiko Jika Semua Menggunakan Role `admin`:** Petugas keamanan di pos jaga atau staf front desk di lobi yang menggunakan tablet bersama rentan mengekspos pengaturan master (hapus direktori karyawan, ubah email admin sistem, atau ekspor seluruh database tamu ke Excel).
-- **Pemisahan Wewenang (*Segregation of Duties*):**
+- **Pemisahan Wewenang (_Segregation of Duties_):**
   - **`admin` (Super Admin Gedung):** Memiliki wewenang penuh atas master data, konfigurasi email admin, analitik ekspor laporan, log audit, serta manajemen penugasan peran akun.
   - **`security` (Petugas Keamanan / Pos Jaga):**
     - Saat login, otomatis diarahkan langsung ke **Pos Pindai Pass (`/admin/scan`)** sebagai layar kerja utama.
@@ -274,6 +275,7 @@ Sesuai audit standar industri keamanan gedung perkantoran (*Visitor Management S
     - Mengelola antrean check-in walk-in di lobi, cetak kartu pass tamu, dan feedback kepuasan pengunjung.
 
 ### 2. Penyesuaian Skema Database Supabase (`supabase/schema.sql`):
+
 1. **Pembaruan Tipe Enum:**
    ```sql
    alter type public.app_role add value if not exists 'security';

@@ -2,7 +2,27 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase, type AppRole } from "@/lib/supabase";
 import { toast } from "sonner";
-import { Shield, ShieldAlert, ShieldCheck, UserCheck, Loader2 } from "lucide-react";
+import {
+  Shield,
+  ShieldAlert,
+  ShieldCheck,
+  UserCheck,
+  Loader2,
+  UserPlus,
+  KeyRound,
+  Trash2,
+  X,
+  Lock,
+} from "lucide-react";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/admin/pengguna")({
   head: () => ({
@@ -57,6 +77,24 @@ function UsersPage() {
   const [err, setErr] = useState("");
   const [q, setQ] = useState("");
   const [loadingRole, setLoadingRole] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // State Dialog Tambah Akun
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createName, setCreateName] = useState("");
+  const [createEmail, setCreateEmail] = useState("");
+  const [createPassword, setCreatePassword] = useState("");
+  const [createRole, setCreateRole] = useState<AppRole>("staff");
+  const [createLoading, setCreateLoading] = useState(false);
+
+  // State Dialog Reset Password
+  const [resetTarget, setResetTarget] = useState<Row | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+
+  // State Dialog Hapus Akun
+  const [deleteTarget, setDeleteTarget] = useState<Row | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const fetchUsers = () => {
     supabase.rpc("list_users_with_roles").then(({ data, error }) => {
@@ -68,6 +106,9 @@ function UsersPage() {
 
   useEffect(() => {
     fetchUsers();
+    supabase.auth.getUser().then(({ data }) => {
+      setCurrentUserId(data.user?.id ?? null);
+    });
   }, []);
 
   const handleToggleRole = async (userId: string, role: AppRole, currentlyAssigned: boolean) => {
@@ -95,6 +136,95 @@ function UsersPage() {
     }
   };
 
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!createEmail.trim()) {
+      toast.error("Email wajib diisi");
+      return;
+    }
+    if (createPassword.length < 6) {
+      toast.error("Password minimal 6 karakter");
+      return;
+    }
+
+    setCreateLoading(true);
+    try {
+      const { data, error } = await supabase.rpc("admin_create_user", {
+        _email: createEmail.trim().toLowerCase(),
+        _password: createPassword,
+        _full_name: createName.trim() || null,
+        _role: createRole,
+      });
+
+      if (error) {
+        toast.error(`Gagal membuat akun: ${error.message}`);
+      } else {
+        toast.success(`Akun baru (${createEmail}) berhasil dibuat dengan peran ${createRole.toUpperCase()}!`);
+        setCreateOpen(false);
+        setCreateName("");
+        setCreateEmail("");
+        setCreatePassword("");
+        setCreateRole("staff");
+        fetchUsers();
+      }
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setCreateLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetTarget) return;
+    if (newPassword.length < 6) {
+      toast.error("Password baru minimal 6 karakter");
+      return;
+    }
+
+    setResetLoading(true);
+    try {
+      const { error } = await supabase.rpc("admin_reset_user_password", {
+        _target_user_id: resetTarget.id,
+        _new_password: newPassword,
+      });
+
+      if (error) {
+        toast.error(`Gagal mereset password: ${error.message}`);
+      } else {
+        toast.success(`Password untuk akun ${resetTarget.email} berhasil diubah!`);
+        setResetTarget(null);
+        setNewPassword("");
+      }
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!deleteTarget) return;
+    setDeleteLoading(true);
+    try {
+      const { error } = await supabase.rpc("admin_delete_user", {
+        _target_user_id: deleteTarget.id,
+      });
+
+      if (error) {
+        toast.error(`Gagal menghapus akun: ${error.message}`);
+      } else {
+        toast.success(`Akun ${deleteTarget.email} berhasil dihapus dari sistem`);
+        setDeleteTarget(null);
+        fetchUsers();
+      }
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   const shown = useMemo(() => {
     const s = q.trim().toLowerCase();
     return (rows ?? []).filter(
@@ -105,18 +235,27 @@ function UsersPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header Info Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* Header Info Banner & Action Button */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl font-bold text-foreground">
             Pengguna & Hak Akses (RBAC)
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Kelola hak akses berjenjang: <strong>Admin</strong> (Super Admin),{" "}
-            <strong>Security</strong> (Pos Pindai Pass & Verifikasi), dan <strong>Staff</strong>{" "}
-            (Front Desk Lobi).
+          <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
+            Kelola akun petugas secara mandiri: buat akun baru, reset password, dan tentukan hak akses peran{" "}
+            <strong>Admin</strong>, <strong>Security</strong>, atau <strong>Staff</strong>.
           </p>
         </div>
+
+        {/* Tombol Buat Akun Baru */}
+        <button
+          type="button"
+          onClick={() => setCreateOpen(true)}
+          className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs sm:text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95 shrink-0"
+        >
+          <UserPlus className="h-4 w-4" />
+          <span>+ Tambah Akun Petugas</span>
+        </button>
       </div>
 
       {/* Role explanation cards */}
@@ -144,7 +283,7 @@ function UsersPage() {
           onChange={(e) => setQ(e.target.value)}
           placeholder="Cari nama atau email pengguna…"
           aria-label="Cari pengguna"
-          className="min-h-11 w-full rounded-xl border border-input bg-card px-4 sm:max-w-md shadow-xs focus:ring-2 focus:ring-primary/20"
+          className="min-h-11 w-full rounded-2xl border border-input bg-card px-4 sm:max-w-md shadow-xs focus:ring-2 focus:ring-primary/20 text-xs sm:text-sm"
         />
         <span className="text-xs text-muted-foreground shrink-0 font-medium">
           Total: {shown.length} akun
@@ -198,101 +337,136 @@ function UsersPage() {
                 <th className="p-3.5">Pengguna</th>
                 <th className="p-3.5">Email Akun</th>
                 <th className="p-3.5">Peran Saat Ini</th>
-                <th className="p-3.5 text-center">Atur Peran (Klik untuk Toggle)</th>
+                <th className="p-3.5 text-center">Atur Peran (Toggle)</th>
+                <th className="p-3.5 text-right">Tindakan</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {shown.map((r) => (
-                <tr key={r.id} className="transition-colors hover:bg-muted/30">
-                  <td className="p-3.5 font-medium text-foreground">
-                    <div>
-                      <p className="font-semibold text-foreground">{r.full_name || "Tanpa Nama"}</p>
-                      <p className="text-[11px] text-muted-foreground">
-                        Terdaftar: {new Date(r.created_at).toLocaleDateString("id-ID")}
-                      </p>
-                    </div>
-                  </td>
-                  <td className="p-3.5 text-muted-foreground font-mono text-xs">{r.email}</td>
-                  <td className="p-3.5">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {r.roles.map((role) => {
-                        const isSec = role === "security";
-                        const isAdm = role === "admin";
-                        const isStf = role === "staff";
-                        return (
-                          <span
-                            key={role}
-                            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                              isAdm
-                                ? "bg-primary text-primary-foreground"
-                                : isSec
-                                  ? "bg-emerald-600 text-white"
-                                  : isStf
-                                    ? "bg-amber-600 text-white"
-                                    : "bg-muted text-foreground"
-                            }`}
-                          >
-                            {isSec && <Shield className="h-3 w-3" />}
-                            {isAdm && <ShieldAlert className="h-3 w-3" />}
-                            {isStf && <ShieldCheck className="h-3 w-3" />}
-                            {role.toUpperCase()}
+              {shown.map((r) => {
+                const isSelf = r.id === currentUserId;
+                return (
+                  <tr key={r.id} className="transition-colors hover:bg-muted/30">
+                    <td className="p-3.5 font-medium text-foreground">
+                      <div>
+                        <p className="font-semibold text-foreground flex items-center gap-1.5">
+                          {r.full_name || "Tanpa Nama"}
+                          {isSelf && (
+                            <span className="rounded bg-primary/10 px-1.5 py-0.2 text-[10px] font-bold text-primary">
+                              Akun Anda
+                            </span>
+                          )}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          Terdaftar: {new Date(r.created_at).toLocaleDateString("id-ID")}
+                        </p>
+                      </div>
+                    </td>
+                    <td className="p-3.5 text-muted-foreground font-mono text-xs">{r.email}</td>
+                    <td className="p-3.5">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {r.roles.map((role) => {
+                          const isSec = role === "security";
+                          const isAdm = role === "admin";
+                          const isStf = role === "staff";
+                          return (
+                            <span
+                              key={role}
+                              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                isAdm
+                                  ? "bg-primary text-primary-foreground"
+                                  : isSec
+                                    ? "bg-emerald-600 text-white"
+                                    : isStf
+                                      ? "bg-amber-600 text-white"
+                                      : "bg-muted text-foreground"
+                              }`}
+                            >
+                              {isSec && <Shield className="h-3 w-3" />}
+                              {isAdm && <ShieldAlert className="h-3 w-3" />}
+                              {isStf && <ShieldCheck className="h-3 w-3" />}
+                              {role.toUpperCase()}
+                            </span>
+                          );
+                        })}
+                        {r.is_employee && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-brand-soft px-2.5 py-0.5 text-xs font-semibold text-primary">
+                            <UserCheck className="h-3 w-3" />
+                            Karyawan
                           </span>
-                        );
-                      })}
-                      {r.is_employee && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-brand-soft px-2.5 py-0.5 text-xs font-semibold text-primary">
-                          <UserCheck className="h-3 w-3" />
-                          Karyawan
-                        </span>
-                      )}
-                      {!r.roles.length && !r.is_employee && (
-                        <span className="text-xs text-muted-foreground italic">
-                          Belum ada peran
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="p-3.5">
-                    <div className="flex items-center justify-center gap-2">
-                      {AVAILABLE_ROLES.map(({ role, label }) => {
-                        const isAssigned = r.roles.includes(role);
-                        const isBusy = loadingRole === `${r.id}-${role}`;
-                        return (
-                          <button
-                            key={role}
-                            type="button"
-                            disabled={isBusy}
-                            onClick={() => handleToggleRole(r.id, role, isAssigned)}
-                            title={
-                              isAssigned
-                                ? `Klik untuk mencabut role ${label}`
-                                : `Klik untuk memberi role ${label}`
-                            }
-                            className={`inline-flex min-h-8 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-all active:scale-95 disabled:opacity-50 ${
-                              isAssigned
-                                ? role === "admin"
-                                  ? "bg-primary text-primary-foreground shadow-xs hover:brightness-110"
-                                  : role === "security"
-                                    ? "bg-emerald-600 text-white shadow-xs hover:bg-emerald-700"
-                                    : "bg-amber-600 text-white shadow-xs hover:bg-amber-700"
-                                : "border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
-                            }`}
-                          >
-                            {isBusy ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : (
-                              <span>{isAssigned ? `✓ ${label}` : `+ ${label}`}</span>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        )}
+                        {!r.roles.length && !r.is_employee && (
+                          <span className="text-xs text-muted-foreground italic">
+                            Belum ada peran
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-3.5">
+                      <div className="flex items-center justify-center gap-1.5">
+                        {AVAILABLE_ROLES.map(({ role, label }) => {
+                          const isAssigned = r.roles.includes(role);
+                          const isBusy = loadingRole === `${r.id}-${role}`;
+                          return (
+                            <button
+                              key={role}
+                              type="button"
+                              disabled={isBusy}
+                              onClick={() => handleToggleRole(r.id, role, isAssigned)}
+                              title={
+                                isAssigned
+                                  ? `Klik untuk mencabut role ${label}`
+                                  : `Klik untuk memberi role ${label}`
+                              }
+                              className={`inline-flex min-h-7 items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-all active:scale-95 disabled:opacity-50 ${
+                                isAssigned
+                                  ? role === "admin"
+                                    ? "bg-primary text-primary-foreground shadow-2xs hover:brightness-110"
+                                    : role === "security"
+                                      ? "bg-emerald-600 text-white shadow-2xs hover:bg-emerald-700"
+                                      : "bg-amber-600 text-white shadow-2xs hover:bg-amber-700"
+                                  : "border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
+                              }`}
+                            >
+                              {isBusy ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <span>{isAssigned ? `✓ ${label}` : `+ ${label}`}</span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </td>
+                    <td className="p-3.5 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setResetTarget(r);
+                            setNewPassword("");
+                          }}
+                          title="Ubah / Reset Password Akun"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:bg-brand-soft hover:text-primary transition-colors active:scale-90"
+                        >
+                          <KeyRound className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isSelf}
+                          onClick={() => setDeleteTarget(r)}
+                          title={isSelf ? "Tidak dapat menghapus akun Anda sendiri" : "Hapus Akun Pengguna"}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-destructive/20 bg-card text-destructive hover:bg-destructive/10 transition-colors active:scale-90 disabled:opacity-30 disabled:pointer-events-none"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
               {!shown.length && (
                 <tr>
-                  <td colSpan={4} className="p-8 text-center text-muted-foreground">
+                  <td colSpan={5} className="p-8 text-center text-muted-foreground">
                     Tidak ditemukan pengguna yang cocok.
                   </td>
                 </tr>
@@ -301,6 +475,176 @@ function UsersPage() {
           </table>
         </div>
       )}
+
+      {/* Dialog Buat Akun Baru */}
+      <Dialog open={createOpen} onOpenChange={(o) => !createLoading && setCreateOpen(o)}>
+        <DialogContent className="rounded-2xl max-w-md">
+          <form onSubmit={handleCreateUser} className="space-y-4">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-soft text-primary">
+                  <UserPlus className="h-4 w-4" />
+                </span>
+                Tambah Akun Petugas Baru
+              </DialogTitle>
+              <DialogDescription>
+                Buat akun login langsung dari dashboard tanpa perlu membuka konsol Supabase.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-foreground block mb-1">
+                  Nama Lengkap Petugas
+                </label>
+                <input
+                  type="text"
+                  placeholder="Contoh: Budi Santoso (Pos Jaga Lobi)"
+                  value={createName}
+                  onChange={(e) => setCreateName(e.target.value)}
+                  className="w-full rounded-xl border border-input bg-card px-3.5 py-2 text-sm shadow-xs focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-foreground block mb-1">
+                  Email Login <span className="text-destructive">*</span>
+                </label>
+                <input
+                  type="email"
+                  required
+                  placeholder="nama@nobu.id"
+                  value={createEmail}
+                  onChange={(e) => setCreateEmail(e.target.value)}
+                  className="w-full rounded-xl border border-input bg-card px-3.5 py-2 text-sm shadow-xs focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-foreground block mb-1">
+                  Password Awal <span className="text-destructive">*</span>
+                </label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  placeholder="Minimal 6 karakter"
+                  value={createPassword}
+                  onChange={(e) => setCreatePassword(e.target.value)}
+                  className="w-full rounded-xl border border-input bg-card px-3.5 py-2 text-sm shadow-xs focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-foreground block mb-1.5">
+                  Peran Akses Utama (Role)
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {AVAILABLE_ROLES.map((r) => (
+                    <button
+                      key={r.role}
+                      type="button"
+                      onClick={() => setCreateRole(r.role)}
+                      className={`flex flex-col items-center justify-center rounded-xl border p-2.5 text-center transition-all ${
+                        createRole === r.role
+                          ? "border-primary bg-brand-soft text-primary font-bold shadow-xs"
+                          : "border-border bg-card text-muted-foreground hover:bg-muted"
+                      }`}
+                    >
+                      <span className="text-xs font-bold leading-tight">{r.label}</span>
+                      <span className="text-[10px] opacity-75 mt-0.5">{r.role}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2 pt-2 border-t border-border/60">
+              <button
+                type="button"
+                disabled={createLoading}
+                onClick={() => setCreateOpen(false)}
+                className="rounded-xl border border-input px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                disabled={createLoading}
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-sm hover:brightness-110 active:scale-95 disabled:opacity-50"
+              >
+                {createLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                <span>{createLoading ? "Membuat Akun..." : "Buat Akun Sekarang"}</span>
+              </button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Reset Password */}
+      <Dialog open={!!resetTarget} onOpenChange={(o) => !resetLoading && !o && setResetTarget(null)}>
+        <DialogContent className="rounded-2xl max-w-sm">
+          <form onSubmit={handleResetPassword} className="space-y-4">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <KeyRound className="h-4 w-4" />
+                </span>
+                Reset Password Akun
+              </DialogTitle>
+              <DialogDescription>
+                Masukkan password baru untuk akun <strong>{resetTarget?.email}</strong>.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div>
+              <label className="text-xs font-semibold text-foreground block mb-1">
+                Password Baru
+              </label>
+              <input
+                type="password"
+                required
+                minLength={6}
+                autoFocus
+                placeholder="Minimal 6 karakter"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full rounded-xl border border-input bg-card px-3.5 py-2 text-sm shadow-xs focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+
+            <DialogFooter className="gap-2 pt-2 border-t border-border/60">
+              <button
+                type="button"
+                disabled={resetLoading}
+                onClick={() => setResetTarget(null)}
+                className="rounded-xl border border-input px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                disabled={resetLoading}
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-sm hover:brightness-110 active:scale-95 disabled:opacity-50"
+              >
+                {resetLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                <span>{resetLoading ? "Menyimpan..." : "Simpan Password Baru"}</span>
+              </button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Konfirmasi Hapus Akun */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(o) => !deleteLoading && !o && setDeleteTarget(null)}
+        title="Hapus akun pengguna?"
+        description={`Akun "${deleteTarget?.email ?? ""}" akan dihapus permanen dari sistem otentikasi. Akun ini tidak akan dapat login kembali.`}
+        confirmLabel={deleteLoading ? "Menghapus..." : "Hapus Akun"}
+        destructive={true}
+        onConfirm={handleDeleteUser}
+      />
     </div>
   );
 }
