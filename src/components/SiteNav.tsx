@@ -524,16 +524,16 @@ export function SiteNav({
   }, [isDashboardMode, items]);
 
   // SVG curved notch path calculation:
-  // Smooth concentric scoop curve with comfortable clearance so it cradles the center FAB button without sticking/clinging
+  // Smooth concentric scoop curve closely cradling the center FAB button with uniform clearance
   const notchPath = useMemo(() => {
     const w = barWidth;
     const h = 64;
     const r = 28; // original pill radius
     const cx = w / 2;
 
-    // Elegant, smooth cubic bezier cradle with comfortable breathing room around the 48px circular button
-    // Scoop spans from cx - 50 to cx + 50 (100px wide) and dips gracefully to y = 36 for clean, uniform clearance
-    return `M ${r} 0 H ${cx - 50} C ${cx - 35} 0, ${cx - 32} 36, ${cx} 36 C ${cx + 32} 36, ${cx + 35} 0, ${cx + 50} 0 H ${w - r} A ${r} ${r} 0 0 1 ${w} ${r} V ${h - r} A ${r} ${r} 0 0 1 ${w - r} ${h} H ${r} A ${r} ${r} 0 0 1 0 ${h - r} V ${r} A ${r} ${r} 0 0 1 ${r} 0 Z`;
+    // Elegant, snug cubic bezier cradle brought closer to the 48px circular button without feeling too distant
+    // Scoop spans from cx - 42 to cx + 42 (84px wide) and dips gracefully to y = 36 for clean, uniform clearance
+    return `M ${r} 0 H ${cx - 42} C ${cx - 29} 0, ${cx - 27} 36, ${cx} 36 C ${cx + 27} 36, ${cx + 29} 0, ${cx + 42} 0 H ${w - r} A ${r} ${r} 0 0 1 ${w} ${r} V ${h - r} A ${r} ${r} 0 0 1 ${w - r} ${h} H ${r} A ${r} ${r} 0 0 1 0 ${h - r} V ${r} A ${r} ${r} 0 0 1 ${r} 0 Z`;
   }, [barWidth]);
 
   const centerActive = isItemActive(centerDockItem.to);
