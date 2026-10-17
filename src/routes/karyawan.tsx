@@ -1,9 +1,26 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
+import {
+  RefreshCw,
+  Copy,
+  Check,
+  Mail,
+  MessageSquare,
+  ExternalLink,
+  ShieldAlert,
+  UserCheck,
+  LogOut,
+  Sparkles,
+  HelpCircle,
+  ArrowRight,
+  Link2Off,
+} from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import logo from "@/assets/logo.png";
 import { PasswordInput } from "@/components/ui/password-input";
+import { formatWibDateTime as fmt } from "@/lib/date-utils";
 
 export const Route = createFileRoute("/karyawan")({
   ssr: false,
@@ -28,6 +45,7 @@ type Notif = {
   read_at: string | null;
   created_at: string;
 };
+
 type Visit = {
   id: string;
   name: string;
@@ -36,10 +54,9 @@ type Visit = {
   is_important: boolean;
 };
 
-import { formatWibDateTime as fmt } from "@/lib/date-utils";
-
 function StaffPortal() {
   const [user, setUser] = useState<User | null | undefined>(undefined);
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
     const { data } = supabase.auth.onAuthStateChange((e, s) => {
@@ -68,6 +85,7 @@ function StaffLogin() {
   const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr("");
@@ -91,6 +109,7 @@ function StaffLogin() {
       }
     }
   };
+
   const f = "mt-1 w-full rounded-lg border border-input bg-card px-3 py-3 text-foreground";
   return (
     <main className="relative flex min-h-screen items-center justify-center bg-background p-4">
@@ -160,7 +179,9 @@ function Inbox({ user }: { user: User }) {
   const [emp, setEmp] = useState<{ id: string; name: string } | null | undefined>(undefined);
   const [notifs, setNotifs] = useState<Notif[]>([]);
   const [visits, setVisits] = useState<Visit[]>([]);
-  const [toast, setToast] = useState<string>("");
+  const [toastMsg, setToastMsg] = useState<string>("");
+  const [checkingLink, setCheckingLink] = useState(false);
+  const [copiedEmail, setCopiedEmail] = useState(false);
 
   const load = useCallback(async (empId: string) => {
     const [n, v] = await Promise.all([
@@ -182,17 +203,83 @@ function Inbox({ user }: { user: User }) {
     setVisits((v.data as Visit[]) ?? []);
   }, []);
 
+  const checkEmployeeLink = useCallback(
+    async (isManual = false) => {
+      setCheckingLink(true);
+      try {
+        // 1. Cek langsung lewat foreign key user_id
+        const { data: byUserId } = await supabase
+          .from("employees")
+          .select("id,name")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (byUserId) {
+          setEmp(byUserId);
+          load(byUserId.id);
+          if (isManual) {
+            toast.success(`Akun berhasil terhubung dengan data: ${byUserId.name}`);
+          }
+          return;
+        }
+
+        // 2. Jika user_id belum terisi, coba sambungkan lewat email
+        if (user.email) {
+          const { data: byEmail } = await supabase
+            .from("employees")
+            .select("id,name")
+            .ilike("email", user.email.trim())
+            .maybeSingle();
+
+          if (byEmail) {
+            // Tautkan user_id ke tabel employees
+            try {
+              await supabase.from("employees").update({ user_id: user.id }).eq("id", byEmail.id);
+            } catch {
+              // RLS policy mungkin membatasi update, biarkan trigger menangani
+            }
+            setEmp(byEmail);
+            load(byEmail.id);
+            if (isManual) {
+              toast.success(`Akun berhasil ditautkan ke karyawan: ${byEmail.name}!`);
+            }
+            return;
+          }
+        }
+
+        setEmp(null);
+        if (isManual) {
+          toast.info(
+            "Akun belum terhubung. Pastikan Administrator telah mengisi email Anda pada menu Karyawan.",
+          );
+        }
+      } catch (err) {
+        console.warn("Gagal mengecek akun karyawan:", err);
+        if (isManual) {
+          toast.error("Gagal memeriksa status sambungan. Silakan coba beberapa saat lagi.");
+        }
+      } finally {
+        setCheckingLink(false);
+      }
+    },
+    [user.id, user.email, load],
+  );
+
   useEffect(() => {
-    supabase
-      .from("employees")
-      .select("id,name")
-      .eq("user_id", user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        setEmp(data);
-        if (data) load(data.id);
-      });
-  }, [user.id, load]);
+    checkEmployeeLink(false);
+  }, [checkEmployeeLink]);
+
+  const copyEmailToClipboard = async () => {
+    if (!user.email) return;
+    try {
+      await navigator.clipboard.writeText(user.email);
+      setCopiedEmail(true);
+      toast.success("Email berhasil disalin ke clipboard!");
+      setTimeout(() => setCopiedEmail(false), 2500);
+    } catch {
+      toast.error("Gagal menyalin email otomatis.");
+    }
+  };
 
   useEffect(() => {
     if (!emp) return;
@@ -208,8 +295,8 @@ function Inbox({ user }: { user: User }) {
         },
         (p) => {
           const n = p.new as Notif;
-          setToast(n.title);
-          setTimeout(() => setToast(""), 6000);
+          setToastMsg(n.title);
+          setTimeout(() => setToastMsg(""), 6000);
           load(emp.id);
         },
       )
@@ -241,10 +328,12 @@ function Inbox({ user }: { user: User }) {
       .is("read_at", null);
     load(emp.id);
   };
+
   const markOne = async (id: string) => {
     await supabase.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", id);
     if (emp) load(emp.id);
   };
+
   const unread = notifs.filter((n) => !n.read_at).length;
   const today = new Date().toDateString();
   const [now, setNow] = useState(Date.now());
@@ -262,24 +351,32 @@ function Inbox({ user }: { user: User }) {
     (v) => v.is_important && new Date(v.scheduled_at).toDateString() === today,
   );
 
+  const waMessage = encodeURIComponent(
+    `Halo Admin Menara Nobu, mohon bantuannya untuk menautkan akun email saya (${user.email || ""}) ke profil Karyawan saya di menu Master Karyawan agar saya dapat menerima notifikasi kedatangan tamu. Terima kasih.`,
+  );
+  const mailtoSubject = encodeURIComponent("Permintaan Tautan Akun Karyawan — Menara Nobu");
+  const mailtoBody = encodeURIComponent(
+    `Halo Administrator Menara Nobu,\n\nMohon tautkan akun email saya:\n${user.email || ""}\n\nke data karyawan saya pada menu Karyawan (/admin/karyawan) agar saya dapat mengakses notifikasi kedatangan tamu.\n\nTerima kasih.`,
+  );
+
   return (
     <main className="min-h-screen bg-background">
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card/90 px-4 py-3 backdrop-blur">
         <img src={logo} alt="Nobu" className="h-7 w-auto" />
         <button
-          className="min-h-11 rounded-full px-4 text-sm text-muted-foreground hover:bg-brand-soft hover:text-primary"
+          className="min-h-11 rounded-full px-4 text-sm text-muted-foreground transition-colors hover:bg-brand-soft hover:text-primary"
           onClick={() => supabase.auth.signOut()}
         >
           Keluar
         </button>
       </header>
 
-      {toast && (
+      {toastMsg && (
         <div
           role="status"
           className="fade-up fixed inset-x-4 top-16 z-20 mx-auto max-w-md rounded-2xl bg-primary p-4 text-primary-foreground shadow-soft"
         >
-          🔔 {toast}
+          🔔 {toastMsg}
         </div>
       )}
 
@@ -299,13 +396,139 @@ function Inbox({ user }: { user: User }) {
             </div>
           </div>
         ) : !emp ? (
-          <div className="rounded-2xl bg-card p-6 shadow-soft">
-            <p className="text-foreground">
-              Akun <b>{user.email}</b> belum terhubung dengan data karyawan.
-            </p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Minta admin mengisi email ini pada menu Karyawan.
-            </p>
+          <div className="fade-up rounded-3xl border border-border/80 bg-card p-6 sm:p-8 shadow-soft">
+            {/* Header Status */}
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
+                <Link2Off className="h-6 w-6" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2.5 py-0.5 text-xs font-bold text-destructive">
+                  Status: Belum Terhubung
+                </span>
+                <h1 className="mt-1 font-display text-xl sm:text-2xl font-bold text-foreground">
+                  Akun Email Belum Terhubung
+                </h1>
+                <p className="mt-1 text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                  Akun login Anda berhasil diautentikasi, namun belum ditautkan ke data nama staf
+                  pada master direktori karyawan Menara Nobu.
+                </p>
+              </div>
+            </div>
+
+            {/* Email Box & Salin */}
+            <div className="mt-6 rounded-2xl border border-border bg-muted/40 p-4">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Email Akun Anda:
+              </p>
+              <div className="mt-1.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                <span className="font-mono text-sm sm:text-base font-bold text-foreground break-all">
+                  {user.email}
+                </span>
+                <button
+                  type="button"
+                  onClick={copyEmailToClipboard}
+                  className="w-full sm:w-auto inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-card border border-border px-3.5 py-1.5 text-xs font-bold text-foreground hover:bg-brand-soft hover:text-primary transition-all active:scale-95 shadow-sm"
+                >
+                  {copiedEmail ? (
+                    <Check className="h-3.5 w-3.5 text-primary" />
+                  ) : (
+                    <Copy className="h-3.5 w-3.5" />
+                  )}
+                  <span>{copiedEmail ? "Tersalin!" : "Salin Email"}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Action Buttons: Full Width di Mobile */}
+            <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => checkEmployeeLink(true)}
+                disabled={checkingLink}
+                className="w-full sm:w-auto flex-1 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-primary px-5 font-display font-bold text-sm text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95 disabled:opacity-60"
+              >
+                <RefreshCw className={`h-4 w-4 ${checkingLink ? "animate-spin" : ""}`} />
+                <span>
+                  {checkingLink ? "Memeriksa Sambungan..." : "Cek Ulang Status Sambungan"}
+                </span>
+              </button>
+
+              <a
+                href={`https://wa.me/?text=${waMessage}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:w-auto inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400 px-4 text-xs sm:text-sm font-semibold transition-all active:scale-95"
+              >
+                <MessageSquare className="h-4 w-4" />
+                <span>Hubungi Admin (WhatsApp)</span>
+              </a>
+
+              <a
+                href={`mailto:?subject=${mailtoSubject}&body=${mailtoBody}`}
+                className="w-full sm:w-auto inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 text-xs sm:text-sm font-semibold text-foreground hover:bg-muted transition-all active:scale-95"
+              >
+                <Mail className="h-4 w-4 text-muted-foreground" />
+                <span>Kirim Email</span>
+              </a>
+            </div>
+
+            {/* Panduan Langkah Singkat */}
+            <div className="mt-7 rounded-2xl border border-border/80 bg-background p-4 sm:p-5">
+              <p className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                <HelpCircle className="h-4 w-4 text-primary" />
+                Cara Menghubungkan Akun Anda:
+              </p>
+              <ol className="mt-3 space-y-2.5 text-xs text-muted-foreground">
+                <li className="flex items-start gap-2.5">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-soft text-[11px] font-bold text-primary">
+                    1
+                  </span>
+                  <span>
+                    Salin email Anda di atas dan sampaikan ke <b>Administrator / HRD Menara Nobu</b>
+                    .
+                  </span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-soft text-[11px] font-bold text-primary">
+                    2
+                  </span>
+                  <span>
+                    Administrator akan membuka menu <b>Admin &rarr; Data Karyawan</b>, mengedit nama
+                    Anda, dan mengisi kolom <b>Email Resmi</b> dengan email tersebut.
+                  </span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-soft text-[11px] font-bold text-primary">
+                    3
+                  </span>
+                  <span>
+                    Setelah admin menyimpan, tekan tombol <b>"Cek Ulang Status Sambungan"</b> di
+                    atas tanpa perlu logout.
+                  </span>
+                </li>
+              </ol>
+
+              <div className="mt-4 pt-3.5 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div className="text-muted-foreground">
+                  <span>Anda memiliki akses admin? </span>
+                  <Link
+                    to="/admin/karyawan"
+                    className="font-bold text-primary hover:underline inline-flex items-center gap-1"
+                  >
+                    Buka Menu Master Karyawan <ArrowRight className="h-3 w-3" />
+                  </Link>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => supabase.auth.signOut()}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-destructive py-1"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                  <span>Keluar & Ganti Akun</span>
+                </button>
+              </div>
+            </div>
           </div>
         ) : (
           <>

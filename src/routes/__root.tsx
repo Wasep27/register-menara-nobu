@@ -73,21 +73,21 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
         <p className="mt-2 text-sm text-muted-foreground">
           Something went wrong on our end. You can try refreshing or head back home.
         </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
+        <div className="mt-6 flex flex-col sm:flex-row justify-center gap-2.5">
           <button
             onClick={() => {
               router.invalidate();
               reset();
             }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="w-full sm:w-auto inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground transition-all hover:brightness-110 active:scale-95 shadow-sm"
           >
-            Try again
+            Muat Ulang Halaman
           </button>
           <a
             href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            className="w-full sm:w-auto inline-flex min-h-11 items-center justify-center rounded-xl border border-input bg-card px-5 text-sm font-semibold text-foreground transition-all hover:bg-muted active:scale-95 shadow-sm"
           >
-            Go home
+            Kembali ke Beranda
           </a>
         </div>
       </div>
