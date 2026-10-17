@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   Calendar,
@@ -23,6 +23,10 @@ import {
   FileSpreadsheet,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -58,6 +62,23 @@ export function AdminActivityLogPage() {
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
   const [toClearLogs, setToClearLogs] = useState(false);
 
+  // Pagination State & Scrolling Anchor
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(15);
+  const listTopRef = useRef<HTMLDivElement | null>(null);
+
+  // Auto reset to page 1 on filter or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory, timeFilter, startDate, endDate, searchQuery, pageSize]);
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    if (listTopRef.current) {
+      listTopRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   // Load activities from DB with graceful synthetic fallback
   const loadActivities = useCallback(async () => {
     setLoading(true);
@@ -76,7 +97,7 @@ export function AdminActivityLogPage() {
           .from("activity_logs")
           .select("*")
           .order("created_at", { ascending: false })
-          .limit(300),
+          .limit(1000),
       ]);
 
       if (typeof todayGuestsRes.count === "number") {
@@ -98,7 +119,7 @@ export function AdminActivityLogPage() {
           .from("guests")
           .select("*, employees(name), visit_purposes(name)")
           .order("check_in_time", { ascending: false })
-          .limit(100),
+          .limit(300),
         supabase
           .from("guest_feedback")
           .select("*")
@@ -336,6 +357,32 @@ export function AdminActivityLogPage() {
       return true;
     });
   }, [logs, selectedCategory, timeFilter, startDate, endDate, searchQuery]);
+
+  // Derived Pagination Values
+  const totalItems = filteredLogs.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const validCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+  const startIndex = (validCurrentPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalItems);
+
+  const paginatedLogs = useMemo(() => {
+    return filteredLogs.slice(startIndex, endIndex);
+  }, [filteredLogs, startIndex, endIndex]);
+
+  const pageNumbers = useMemo(() => {
+    if (totalPages <= 6) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    const pages: (number | "...")[] = [1];
+    const left = Math.max(2, validCurrentPage - 1);
+    const right = Math.min(totalPages - 1, validCurrentPage + 1);
+
+    if (left > 2) pages.push("...");
+    for (let i = left; i <= right; i++) pages.push(i);
+    if (right < totalPages - 1) pages.push("...");
+    pages.push(totalPages);
+    return pages;
+  }, [validCurrentPage, totalPages]);
 
   // Statistics calculation
   const stats = useMemo(() => {
@@ -651,7 +698,8 @@ export function AdminActivityLogPage() {
 
           <div className="flex items-center justify-between gap-2 sm:justify-start">
             <span className="inline-flex items-center rounded-lg bg-muted px-2.5 py-1.5 text-xs font-medium text-muted-foreground whitespace-nowrap">
-              {filteredLogs.length} aktivitas ditemukan
+              {filteredLogs.length} aktivitas{" "}
+              {totalPages > 1 && `(Hal. ${validCurrentPage}/${totalPages})`}
             </span>
 
             {/* View Mode Toggle */}
@@ -812,6 +860,9 @@ export function AdminActivityLogPage() {
         </div>
       </div>
 
+      {/* Anchor scroll saat navigasi pagination */}
+      <div ref={listTopRef} className="scroll-mt-24" />
+
       {/* Main Activity Content (Timeline or Table) */}
       {loading ? (
         <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-soft space-y-4">
@@ -853,7 +904,7 @@ export function AdminActivityLogPage() {
             <div className="absolute bottom-4 left-2.5 top-4 w-0.5 bg-border sm:left-4" />
 
             <div className="space-y-4 sm:space-y-6">
-              {filteredLogs.map((log) => {
+              {paginatedLogs.map((log) => {
                 const badge = getCategoryBadge(log.category);
                 const statusBadge = getActivityStatusBadge(log);
                 const IconComponent = badge.icon;
@@ -983,7 +1034,7 @@ export function AdminActivityLogPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredLogs.map((log) => {
+              {paginatedLogs.map((log) => {
                 const badge = getCategoryBadge(log.category);
                 const statusBadge = getActivityStatusBadge(log);
                 return (
@@ -1030,6 +1081,113 @@ export function AdminActivityLogPage() {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Pagination Controls Component */}
+      {filteredLogs.length > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3.5 rounded-2xl border border-border/80 bg-card p-3.5 sm:p-4 shadow-soft">
+          {/* Info Item & Page Size */}
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 text-xs text-muted-foreground">
+            <span>
+              Menampilkan{" "}
+              <span className="font-bold text-foreground">
+                {totalItems === 0 ? 0 : startIndex + 1}
+              </span>
+              –<span className="font-bold text-foreground">{endIndex}</span> dari{" "}
+              <span className="font-bold text-foreground">{totalItems}</span> aktivitas
+            </span>
+
+            <span className="hidden sm:inline text-muted-foreground/40">•</span>
+
+            <div className="inline-flex items-center gap-1.5">
+              <span>Per halaman:</span>
+              <select
+                aria-label="Jumlah log per halaman"
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  handlePageChange(1);
+                }}
+                className="rounded-lg border border-input bg-background px-2 py-1 text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+              >
+                <option value={10}>10</option>
+                <option value={15}>15</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Navigation Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => handlePageChange(1)}
+                disabled={validCurrentPage === 1}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground transition-all hover:bg-muted hover:text-foreground disabled:opacity-30 disabled:pointer-events-none"
+                title="Halaman Pertama"
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePageChange(Math.max(1, validCurrentPage - 1))}
+                disabled={validCurrentPage === 1}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground transition-all hover:bg-muted hover:text-foreground disabled:opacity-30 disabled:pointer-events-none"
+                title="Halaman Sebelumnya"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+
+              <div className="flex items-center gap-1 px-1">
+                {pageNumbers.map((p, idx) =>
+                  p === "..." ? (
+                    <span
+                      key={`dots-${idx}`}
+                      className="px-1 text-xs text-muted-foreground select-none"
+                    >
+                      …
+                    </span>
+                  ) : (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => handlePageChange(p as number)}
+                      className={`flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-xs font-bold transition-all ${
+                        validCurrentPage === p
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "border border-border bg-background text-foreground hover:bg-muted"
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  ),
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handlePageChange(Math.min(totalPages, validCurrentPage + 1))}
+                disabled={validCurrentPage === totalPages}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground transition-all hover:bg-muted hover:text-foreground disabled:opacity-30 disabled:pointer-events-none"
+                title="Halaman Berikutnya"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePageChange(totalPages)}
+                disabled={validCurrentPage === totalPages}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground transition-all hover:bg-muted hover:text-foreground disabled:opacity-30 disabled:pointer-events-none"
+                title="Halaman Terakhir"
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </button>
+            </div>
+          )}
         </div>
       )}
 

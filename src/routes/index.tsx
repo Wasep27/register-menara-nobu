@@ -1,5 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ClipboardCheck, Clock, Save, ShieldCheck, Smartphone, UserCheck } from "lucide-react";
+import {
+  ClipboardCheck,
+  Clock,
+  QrCode,
+  Save,
+  ShieldCheck,
+  Smartphone,
+  UserCheck,
+} from "lucide-react";
 import { SiteNav } from "@/components/SiteNav";
 import { BackToTop } from "@/components/BackToTop";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -39,6 +47,7 @@ export const Route = createFileRoute("/")({
 const nav = [
   { to: "/", label: "Beranda" },
   { to: "#fitur", label: "Fitur" },
+  { to: "/scan", label: "Pindai QR" },
   { to: "#cara", label: "Cara Kerja" },
   { to: "#faq", label: "FAQ" },
   { to: "/registrasi", label: "Registrasi Tamu" },
@@ -119,19 +128,20 @@ function Landing() {
               Daftarkan kunjungan Anda dalam hitungan detik. Tanpa kertas, tanpa antre, langsung
               terhubung dengan pihak yang Anda tuju.
             </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <Link
                 to="/registrasi"
-                className="inline-flex min-h-13 items-center justify-center rounded-full bg-primary px-8 py-3.5 font-display text-lg font-bold text-primary-foreground shadow-soft transition-all hover:-translate-y-0.5 hover:brightness-110 active:scale-95"
+                className="inline-flex min-h-13 items-center justify-center rounded-full bg-primary px-7 py-3.5 font-display text-base sm:text-lg font-bold text-primary-foreground shadow-soft transition-all hover:-translate-y-0.5 hover:brightness-110 active:scale-95 text-center"
               >
                 Mulai Registrasi →
               </Link>
-              <a
-                href="#cara"
-                className="inline-flex min-h-13 items-center justify-center rounded-full border border-border bg-card px-8 py-3.5 font-medium text-foreground transition-colors hover:bg-brand-soft"
+              <Link
+                to="/scan"
+                className="inline-flex min-h-13 items-center justify-center gap-2 rounded-full border border-border bg-card px-6 py-3.5 font-display text-base font-bold text-foreground transition-all hover:bg-brand-soft hover:text-primary active:scale-95 text-center"
               >
-                Lihat caranya
-              </a>
+                <QrCode className="h-5 w-5 text-primary" />
+                <span>Pindai QR / Cek Pass</span>
+              </Link>
             </div>
           </div>
           <div className="fade-up relative [animation-delay:150ms]">

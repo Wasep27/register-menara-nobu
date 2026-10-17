@@ -158,8 +158,8 @@ function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigasi Mobile (< md): Header mengambang & dock bawah */}
-      <div className="md:hidden">
+      {/* Navigasi Mobile (< md): Header mengambang & dock bawah dibuat sticky */}
+      <div className="md:hidden sticky top-0 z-40">
         <SiteNav
           items={[...links]}
           userName={name}
@@ -184,8 +184,8 @@ function AdminLayout() {
 
         {/* Viewport Konten Utama */}
         <div className="flex-1 min-w-0 flex flex-col">
-          {/* Top Bar Kontekstual Desktop */}
-          <header className="hidden md:flex items-center justify-between gap-4 mb-4 rounded-2xl border border-border/70 bg-card/85 px-5 py-3 shadow-soft backdrop-blur-md">
+          {/* Top Bar Kontekstual Desktop: STICKY mengambang tetap terlihat saat halaman discroll */}
+          <header className="sticky top-3 md:top-4 z-30 hidden md:flex items-center justify-between gap-4 mb-4 rounded-2xl border border-border/80 bg-card/95 px-5 py-3 shadow-soft backdrop-blur-xl transition-all">
             <div className="flex items-center gap-2 text-sm min-w-0">
               <Link
                 to="/admin"

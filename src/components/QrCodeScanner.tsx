@@ -1,0 +1,762 @@
+import React, { useCallback, useEffect, useRef, useState, useMemo } from "react";
+import jsQR from "jsqr";
+import {
+  Camera,
+  CheckCircle2,
+  Clock,
+  Download,
+  Flashlight,
+  FlashlightOff,
+  Keyboard,
+  Printer,
+  QrCode,
+  RefreshCw,
+  Search,
+  ShieldCheck,
+  SwitchCamera,
+  Upload,
+  User,
+  X,
+  AlertCircle,
+  Building2,
+  Barcode as BarcodeIcon,
+} from "lucide-react";
+import { checkGuestStatus, quickCheckInByCode, type GuestStatusResult } from "@/lib/supabase";
+import { encodeCode39 } from "@/lib/barcode";
+import { downloadBadgeAsPng } from "@/lib/badge-download";
+import { toast } from "sonner";
+
+export interface QrCodeScannerProps {
+  onSuccess?: (result: GuestStatusResult) => void;
+  onClose?: () => void;
+  isModal?: boolean;
+}
+
+export function QrCodeScanner({ onSuccess, onClose, isModal = false }: QrCodeScannerProps) {
+  const [cameraState, setCameraState] = useState<
+    "idle" | "requesting" | "active" | "denied" | "unsupported" | "error"
+  >("requesting");
+  const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
+  const [hasTorch, setHasTorch] = useState(false);
+  const [torchOn, setTorchOn] = useState(false);
+  const [manualCode, setManualCode] = useState("");
+  const [loadingSearch, setLoadingSearch] = useState(false);
+  const [scanResult, setScanResult] = useState<GuestStatusResult | null>(null);
+  const [scannedRawCode, setScannedRawCode] = useState<string>("");
+  const [isProcessingScan, setIsProcessingScan] = useState(false);
+  const [showManualInput, setShowManualInput] = useState(false);
+  const [downloadingPass, setDownloadingPass] = useState(false);
+
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Play subtle acoustic feedback when QR is recognized
+  const playBeep = () => {
+    try {
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.15);
+    } catch {
+      // AudioContext unavailable or blocked
+    }
+  };
+
+  // Stop active camera media stream
+  const stopCamera = useCallback(() => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setTorchOn(false);
+    setHasTorch(false);
+  }, []);
+
+  // Parse scanned raw string
+  const parseRawQrCode = (raw: string): { code: string; name?: string; institution?: string } => {
+    const trimmed = raw.trim();
+    // Format standar: MENARA-NOBU:CODE:NAME:INSTITUTION
+    if (trimmed.startsWith("MENARA-NOBU:")) {
+      const parts = trimmed.split(":");
+      return {
+        code: parts[1] || "",
+        name: parts[2] || undefined,
+        institution: parts[3] || undefined,
+      };
+    }
+    // URL format: https://domain/status?code=VTR-...
+    if (trimmed.includes("code=")) {
+      try {
+        const url = new URL(trimmed);
+        const c = url.searchParams.get("code");
+        if (c) return { code: c };
+      } catch {
+        /* ignore */
+      }
+    }
+    // Raw badge code VTR-YYMMDD-XXXX
+    return { code: trimmed };
+  };
+
+  // Process code verification
+  const processCode = useCallback(
+    async (rawString: string) => {
+      if (isProcessingScan) return;
+      setIsProcessingScan(true);
+      playBeep();
+      if ("vibrate" in navigator) {
+        try {
+          navigator.vibrate(80);
+        } catch {
+          /* ignore */
+        }
+      }
+
+      const { code, name: parsedName, institution: parsedInstitution } = parseRawQrCode(rawString);
+      setScannedRawCode(code);
+      setLoadingSearch(true);
+
+      try {
+        // Cek data di database Supabase via secure RPC
+        const res = await checkGuestStatus(code);
+        if (res.found) {
+          setScanResult(res);
+          onSuccess?.(res);
+          toast.success(`Data tamu ditemukan: ${res.name}`);
+        } else {
+          // Fallback parsing jika DB offline atau belum tersinkron
+          if (parsedName) {
+            const fallbackRes: GuestStatusResult = {
+              found: true,
+              name: parsedName,
+              institution: parsedInstitution || "Pengunjung Menara Nobu",
+              badge_code: code,
+              check_in_time: new Date().toLocaleTimeString("id-ID", {
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+              check_in_date: new Date().toLocaleDateString("id-ID", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              }),
+              status: "TERDAFTAR",
+              purpose_name: "Kunjungan Resmi",
+              employee_name: "Resepsionis Lobi",
+            };
+            setScanResult(fallbackRes);
+            onSuccess?.(fallbackRes);
+            toast.success(`Tamu diverifikasi: ${parsedName}`);
+          } else {
+            setScanResult({
+              found: false,
+              badge_code: code,
+              error: "Data tamu tidak ditemukan di sistem. Silakan registrasi ulang.",
+            });
+            toast.error("Kode QR tidak terdaftar di sistem");
+          }
+        }
+      } catch (err) {
+        setScanResult({
+          found: false,
+          badge_code: code,
+          error: (err as Error).message || "Gagal memeriksa status",
+        });
+      } finally {
+        setLoadingSearch(false);
+        stopCamera();
+      }
+    },
+    [isProcessingScan, onSuccess, stopCamera],
+  );
+
+  // Scanning loop on video element
+  const scanFrame = useCallback(() => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas || video.readyState !== video.HAVE_ENOUGH_DATA) {
+      animationFrameRef.current = requestAnimationFrame(scanFrame);
+      return;
+    }
+
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return;
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+      inversionAttempts: "dontInvert",
+    });
+
+    if (code && code.data) {
+      void processCode(code.data);
+      return;
+    }
+
+    animationFrameRef.current = requestAnimationFrame(scanFrame);
+  }, [processCode]);
+
+  // Start device camera
+  const startCamera = useCallback(async () => {
+    stopCamera();
+    setCameraState("requesting");
+    setScanResult(null);
+    setIsProcessingScan(false);
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setCameraState("unsupported");
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: facingMode },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+        audio: false,
+      });
+
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.setAttribute("playsinline", "true");
+        await videoRef.current.play();
+      }
+
+      // Check if torch/flashlight is supported
+      const track = stream.getVideoTracks()[0];
+      if (track) {
+        const capabilities = (track.getCapabilities?.() as { torch?: boolean }) || {};
+        setHasTorch(Boolean(capabilities.torch));
+      }
+
+      setCameraState("active");
+      animationFrameRef.current = requestAnimationFrame(scanFrame);
+    } catch (err: unknown) {
+      console.warn("Gagal membuka kamera:", err);
+      const errorObj = err as { name?: string };
+      if (errorObj?.name === "NotAllowedError" || errorObj?.name === "PermissionDeniedError") {
+        setCameraState("denied");
+      } else {
+        setCameraState("error");
+      }
+    }
+  }, [facingMode, scanFrame, stopCamera]);
+
+  // Initial camera startup
+  useEffect(() => {
+    if (!scanResult) {
+      void startCamera();
+    }
+    return () => stopCamera();
+  }, [startCamera, scanResult, stopCamera]);
+
+  // Toggle Torch
+  const toggleTorch = async () => {
+    if (!streamRef.current) return;
+    const track = streamRef.current.getVideoTracks()[0];
+    if (!track) return;
+    try {
+      const nextTorch = !torchOn;
+      await (track.applyConstraints as (c: unknown) => Promise<void>)({
+        advanced: [{ torch: nextTorch }],
+      });
+      setTorchOn(nextTorch);
+    } catch {
+      toast.error("Lampu senter tidak dapat diaktifkan pada perangkat ini");
+    }
+  };
+
+  // Toggle Camera Front / Back
+  const toggleCameraFacing = () => {
+    setFacingMode((prev) => (prev === "environment" ? "user" : "environment"));
+  };
+
+  // Decode QR from file upload
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const img = new Image();
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+        if (code && code.data) {
+          void processCode(code.data);
+        } else {
+          toast.error("Tidak ditemukan kode QR pada gambar yang diunggah.");
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Manual code submit
+  const handleManualSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!manualCode.trim()) return;
+    void processCode(manualCode.trim());
+  };
+
+  // Barcode elements for result display
+  const barcodeElements = useMemo(() => {
+    if (!scanResult?.badge_code) return null;
+    return encodeCode39(scanResult.badge_code, 2, 4);
+  }, [scanResult?.badge_code]);
+
+  // Download Badge PNG from scan result
+  const handleDownloadResultBadge = async () => {
+    if (!scanResult) return;
+    setDownloadingPass(true);
+    try {
+      await downloadBadgeAsPng({
+        name: scanResult.name || "Tamu",
+        institution: scanResult.institution || "Pengunjung",
+        badgeCode: scanResult.badge_code || "VTR-PASS",
+        checkInTime: scanResult.check_in_time || "12:00",
+        checkInDate: scanResult.check_in_date || "Hari Ini",
+        purposeName: scanResult.purpose_name,
+        employeeName: scanResult.employee_name,
+        format: "compact",
+      });
+      toast.success("Visitor pass berhasil diunduh!");
+    } catch {
+      toast.error("Gagal mengunduh gambar pass");
+    } finally {
+      setDownloadingPass(false);
+    }
+  };
+
+  // Quick check-in action if invite code
+  const handleConfirmQuickCheckIn = async () => {
+    if (!scannedRawCode) return;
+    setLoadingSearch(true);
+    try {
+      const res = await quickCheckInByCode(scannedRawCode);
+      if (res.found) {
+        setScanResult(res);
+        toast.success("Check-in berhasil dikonfirmasi!");
+      } else {
+        toast.error("Gagal konfirmasi check-in");
+      }
+    } catch {
+      toast.error("Terjadi kendala jaringan");
+    } finally {
+      setLoadingSearch(false);
+    }
+  };
+
+  return (
+    <div className="relative w-full max-w-lg mx-auto overflow-hidden rounded-3xl border border-border/80 bg-card p-4 sm:p-6 shadow-soft">
+      {/* Hidden Offscreen Canvas for jsQR image decoding */}
+      <canvas ref={canvasRef} className="hidden" />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileUpload}
+        className="hidden"
+      />
+
+      {/* Header Bar */}
+      <div className="flex items-center justify-between border-b border-border/60 pb-3 mb-4">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xs">
+            <QrCode className="h-4 w-4" />
+          </span>
+          <div className="min-w-0">
+            <h2 className="font-display text-base sm:text-lg font-bold text-foreground leading-tight truncate">
+              Pindai QR / Cek Status Tamu
+            </h2>
+            <p className="text-xs text-muted-foreground truncate">
+              Pindai badge pass, ID tamu, atau undangan digital
+            </p>
+          </div>
+        </div>
+
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Tutup pemindai"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-muted/60 text-muted-foreground transition-all hover:bg-muted hover:text-foreground active:scale-90 shrink-0"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
+      {/* RESULT VIEW (If QR code has been successfully decoded) */}
+      {scanResult ? (
+        <div className="fade-up space-y-4">
+          {scanResult.found ? (
+            <div className="rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-brand-soft/60 via-card to-card p-4 sm:p-5 shadow-xs">
+              <div className="flex items-center justify-between border-b border-border/70 pb-2.5">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  {scanResult.status || "TERDAFTAR & AKTIF"}
+                </span>
+                <span className="text-xs font-mono font-bold text-foreground">
+                  {scanResult.badge_code}
+                </span>
+              </div>
+
+              <div className="mt-3 text-center sm:text-left">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
+                  Nama Tamu
+                </span>
+                <h3 className="font-display text-xl sm:text-2xl font-black text-foreground">
+                  {scanResult.name}
+                </h3>
+                <p className="text-xs sm:text-sm font-semibold text-primary">
+                  {scanResult.institution}
+                </p>
+              </div>
+
+              <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl bg-card border border-border/70 p-2.5 text-xs">
+                <div>
+                  <span className="text-[10px] text-muted-foreground block font-medium">
+                    Staf Dituju:
+                  </span>
+                  <span className="font-bold text-foreground truncate block">
+                    {scanResult.employee_name || "Resepsionis"}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-muted-foreground block font-medium">
+                    Keperluan:
+                  </span>
+                  <span className="font-bold text-foreground truncate block">
+                    {scanResult.purpose_name || "Kunjungan Resmi"}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-muted-foreground block font-medium">
+                    Waktu Check-In:
+                  </span>
+                  <span className="font-bold text-primary truncate block">
+                    {scanResult.check_in_time ? `${scanResult.check_in_time} WIB` : "Hari ini"}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-muted-foreground block font-medium">
+                    Departemen:
+                  </span>
+                  <span className="font-bold text-foreground truncate block">
+                    {scanResult.department || "Lobi"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Scannable Barcode Elements */}
+              {barcodeElements && (
+                <div className="mt-3 rounded-xl border border-border/80 bg-white p-2.5 text-center shadow-xs">
+                  <div className="flex justify-center items-center overflow-x-hidden">
+                    <svg
+                      viewBox={`0 0 ${barcodeElements.totalWidth} 42`}
+                      className="w-full max-w-[280px] h-9"
+                      preserveAspectRatio="none"
+                    >
+                      {
+                        barcodeElements.elements.reduce<{ x: number; nodes: React.ReactNode[] }>(
+                          (acc, el, idx) => {
+                            if (el.isBar) {
+                              acc.nodes.push(
+                                <rect
+                                  key={idx}
+                                  x={acc.x}
+                                  y={0}
+                                  width={el.width}
+                                  height={42}
+                                  fill="#10241E"
+                                />,
+                              );
+                            }
+                            acc.x += el.width;
+                            return acc;
+                          },
+                          { x: 0, nodes: [] },
+                        ).nodes
+                      }
+                    </svg>
+                  </div>
+                  <p className="font-mono text-[11px] font-bold text-neutral-900 mt-0.5">
+                    *{scanResult.badge_code}*
+                  </p>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="mt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <button
+                  type="button"
+                  disabled={downloadingPass}
+                  onClick={handleDownloadResultBadge}
+                  className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95 disabled:opacity-60"
+                >
+                  <Download className="h-4 w-4" />
+                  <span>{downloadingPass ? "Mengunduh..." : "Unduh Visitor Pass (PNG)"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 text-xs font-semibold text-foreground shadow-xs hover:bg-muted active:scale-95"
+                >
+                  <Printer className="h-4 w-4 text-muted-foreground" />
+                  <span>Cetak</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-center">
+              <AlertCircle className="mx-auto h-8 w-8 text-destructive" />
+              <h3 className="mt-2 font-display text-sm font-bold text-foreground">
+                Tamu Tidak Ditemukan
+              </h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {scanResult.error || "Kode pass atau QR tidak terdaftar di buku tamu digital."}
+              </p>
+              <div className="mt-3 inline-flex items-center gap-2 font-mono text-xs font-bold text-foreground bg-muted px-2.5 py-1 rounded-lg">
+                <span>Kode: {scanResult.badge_code || "-"}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Reset Scan Button */}
+          <button
+            type="button"
+            onClick={() => {
+              setScanResult(null);
+              setIsProcessingScan(false);
+              void startCamera();
+            }}
+            className="w-full inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-foreground px-4 text-xs font-bold text-background transition-all hover:bg-foreground/90 active:scale-95 shadow-sm"
+          >
+            <RefreshCw className="h-4 w-4" />
+            <span>Pindai Kode Lain</span>
+          </button>
+        </div>
+      ) : (
+        /* CAMERA SCANNER VIEWPORT */
+        <div className="space-y-3.5">
+          {/* Camera Viewport Frame */}
+          <div className="relative aspect-square w-full max-w-[340px] mx-auto overflow-hidden rounded-2xl border-2 border-primary/30 bg-neutral-950 shadow-inner flex items-center justify-center">
+            {/* Live Video Element */}
+            <video
+              ref={videoRef}
+              playsInline
+              muted
+              autoPlay
+              className={`h-full w-full object-cover transition-opacity duration-300 ${
+                cameraState === "active" ? "opacity-100" : "opacity-0"
+              }`}
+            />
+
+            {/* Scanning Viewfinder Overlay Reticle */}
+            {cameraState === "active" && (
+              <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-6">
+                {/* Viewfinder Target Box */}
+                <div className="relative h-48 w-48 sm:h-56 sm:w-56 rounded-2xl border-2 border-primary/60 shadow-[0_0_0_9999px_rgba(0,0,0,0.45)]">
+                  {/* Glowing Corner Brackets */}
+                  <div className="absolute -top-1.5 -left-1.5 h-6 w-6 border-t-4 border-l-4 border-brand rounded-tl-lg" />
+                  <div className="absolute -top-1.5 -right-1.5 h-6 w-6 border-t-4 border-r-4 border-brand rounded-tr-lg" />
+                  <div className="absolute -bottom-1.5 -left-1.5 h-6 w-6 border-b-4 border-l-4 border-brand rounded-bl-lg" />
+                  <div className="absolute -bottom-1.5 -right-1.5 h-6 w-6 border-b-4 border-r-4 border-brand rounded-br-lg" />
+
+                  {/* Animated Sweeping Laser Line */}
+                  <div className="absolute inset-x-2 h-0.5 bg-gradient-to-r from-transparent via-brand to-transparent shadow-[0_0_12px_#10D5A0] animate-[scanLaser_2s_easeInOut_infinite]" />
+                </div>
+
+                <p className="absolute bottom-3 text-center text-[11px] font-semibold text-white/90 drop-shadow-md">
+                  Arahkan kamera ke QR code undangan atau badge pass
+                </p>
+              </div>
+            )}
+
+            {/* Permission Denied / Error State */}
+            {cameraState === "denied" && (
+              <div className="absolute inset-0 p-5 flex flex-col items-center justify-center text-center bg-card text-foreground">
+                <AlertCircle className="h-10 w-10 text-amber-500 mb-2" />
+                <h3 className="font-display text-sm font-bold">Izin Kamera Dinonaktifkan</h3>
+                <p className="mt-1 text-xs text-muted-foreground max-w-xs">
+                  Browser memerlukan izin kamera untuk memindai QR code. Silakan aktifkan izin di
+                  pengaturan browser atau gunakan opsi alternatif di bawah.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2 justify-center">
+                  <button
+                    type="button"
+                    onClick={() => void startCamera()}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground active:scale-95"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    Coba Lagi
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground active:scale-95"
+                  >
+                    <Upload className="h-3.5 w-3.5" />
+                    Unggah Gambar QR
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Requesting / Loading State */}
+            {cameraState === "requesting" && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center bg-neutral-900 text-white">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-brand mb-2" />
+                <p className="text-xs font-semibold">Mengaktifkan kamera...</p>
+              </div>
+            )}
+
+            {/* Unsupported Camera */}
+            {cameraState === "unsupported" && (
+              <div className="absolute inset-0 p-5 flex flex-col items-center justify-center text-center bg-card text-foreground">
+                <Camera className="h-10 w-10 text-muted-foreground mb-2" />
+                <h3 className="font-display text-sm font-bold">Kamera Tidak Tersedia</h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Perangkat tidak memiliki kamera atau koneksi tidak aman (HTTPS diperlukan).
+                </p>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground"
+                >
+                  <Upload className="h-3.5 w-3.5" />
+                  Unggah Foto QR
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Camera Quick Controls */}
+          <div className="flex items-center justify-center gap-2">
+            {hasTorch && cameraState === "active" && (
+              <button
+                type="button"
+                onClick={toggleTorch}
+                title={torchOn ? "Matikan lampu senter" : "Nyalakan lampu senter"}
+                className={`inline-flex min-h-10 items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all active:scale-95 ${
+                  torchOn
+                    ? "border-amber-400 bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200"
+                    : "border-border bg-card text-foreground hover:bg-muted"
+                }`}
+              >
+                {torchOn ? (
+                  <FlashlightOff className="h-4 w-4" />
+                ) : (
+                  <Flashlight className="h-4 w-4" />
+                )}
+                <span>{torchOn ? "Senter Nyala" : "Senter"}</span>
+              </button>
+            )}
+
+            {cameraState === "active" && (
+              <button
+                type="button"
+                onClick={toggleCameraFacing}
+                title="Ganti kamera depan / belakang"
+                className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted active:scale-95"
+              >
+                <SwitchCamera className="h-4 w-4" />
+                <span>Ganti Kamera</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              title="Pindai dari galeri atau berkas foto"
+              className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted active:scale-95"
+            >
+              <Upload className="h-4 w-4 text-muted-foreground" />
+              <span>Unggah Foto</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowManualInput(!showManualInput)}
+              title="Ketik kode pass secara manual"
+              className={`inline-flex min-h-10 items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all active:scale-95 ${
+                showManualInput
+                  ? "border-primary/40 bg-brand-soft text-primary font-bold"
+                  : "border-border bg-card text-foreground hover:bg-muted"
+              }`}
+            >
+              <Keyboard className="h-4 w-4 text-muted-foreground" />
+              <span>Ketik Kode</span>
+            </button>
+          </div>
+
+          {/* Manual Code Input Form (Toggled or Fallback) */}
+          {showManualInput && (
+            <form
+              onSubmit={handleManualSubmit}
+              className="fade-up rounded-2xl border border-border/80 bg-muted/40 p-3.5 space-y-2.5"
+            >
+              <p className="text-xs font-semibold text-foreground">
+                Ketikkan nomor pass tamu (contoh: <code>VTR-261017-8A3F</code>):
+              </p>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={manualCode}
+                  onChange={(e) => setManualCode(e.target.value.toUpperCase())}
+                  placeholder="VTR-YYMMDD-XXXX"
+                  className="flex-1 min-h-11 rounded-xl border border-input bg-card px-3 text-xs font-mono font-bold tracking-wider text-foreground placeholder:text-muted-foreground focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
+                />
+                <button
+                  type="submit"
+                  disabled={loadingSearch || !manualCode.trim()}
+                  className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95 disabled:opacity-50"
+                >
+                  <Search className="h-4 w-4" />
+                  <span>{loadingSearch ? "Mencari..." : "Periksa"}</span>
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

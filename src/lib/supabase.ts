@@ -107,3 +107,45 @@ export type ActivityLog = {
   actor_email: string | null;
   created_at: string;
 };
+
+export type GuestStatusResult = {
+  found: boolean;
+  id?: string;
+  name?: string;
+  institution?: string;
+  phone?: string;
+  check_in_time?: string;
+  check_in_date?: string;
+  badge_code?: string;
+  purpose_name?: string;
+  employee_name?: string;
+  department?: string;
+  status?: string;
+  scheduled_at?: string;
+  error?: string;
+};
+
+export async function checkGuestStatus(code: string): Promise<GuestStatusResult> {
+  try {
+    const { data, error } = await supabase.rpc("check_guest_status", { _code: code });
+    if (error || !data) {
+      console.warn("RPC check_guest_status error or schema not run yet", error);
+      return { found: false, error: error?.message };
+    }
+    return data as GuestStatusResult;
+  } catch (err) {
+    return { found: false, error: (err as Error).message };
+  }
+}
+
+export async function quickCheckInByCode(code: string): Promise<GuestStatusResult> {
+  try {
+    const { data, error } = await supabase.rpc("quick_checkin_by_code", { _code: code });
+    if (error || !data) {
+      return { found: false, error: error?.message };
+    }
+    return data as GuestStatusResult;
+  } catch (err) {
+    return { found: false, error: (err as Error).message };
+  }
+}

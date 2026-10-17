@@ -695,4 +695,69 @@ create trigger feedback_activity_logger
 after insert on public.guest_feedback
 for each row execute function public.log_feedback_activity();
 
+-- 5. Fungsi Pengecekan Status Tamu & QR Check-in untuk Akses Publik
+create or replace function public.check_guest_status(_code text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare
+  clean_code text := upper(trim(_code));
+  res jsonb;
+begin
+  if clean_code is null or clean_code = '' then
+    return jsonb_build_object('found', false, 'error', 'Kode tidak boleh kosong');
+  end if;
+
+  select jsonb_build_object(
+    'found', true,
+    'id', g.id,
+    'name', g.name,
+    'institution', g.institution,
+    'phone', g.phone,
+    'check_in_time', to_char(g.check_in_time at time zone 'Asia/Jakarta', 'HH24:MI'),
+    'check_in_date', to_char(g.check_in_time at time zone 'Asia/Jakarta', 'DD Mon YYYY'),
+    'badge_code', coalesce(g.badge_code, 'VTR-' || to_char(g.check_in_time, 'YYMMDD') || '-' || upper(substring(replace(g.id::text, '-', '') from 1 for 4))),
+    'purpose_name', coalesce(p.name, 'Kunjungan Resmi'),
+    'employee_name', coalesce(e.name, 'Resepsionis Lobi'),
+    'department', coalesce(e.department, '-'),
+    'status', 'TERDAFTAR',
+    'scheduled_at', g.scheduled_at
+  ) into res
+  from guests g
+  left join employees e on e.id = g.employee_id
+  left join visit_purposes p on p.id = g.visit_purpose_id
+  where g.badge_code = clean_code
+     or upper(replace(coalesce(g.badge_code, ''), '-', '')) = replace(clean_code, '-', '')
+     or g.id::text ilike clean_code
+     or upper(replace(g.id::text, '-', '')) ilike '%' || replace(clean_code, '-', '') || '%'
+  order by g.check_in_time desc
+  limit 1;
+
+  if res is null then
+    return jsonb_build_object('found', false);
+  end if;
+
+  return res;
+end $$;
+
+create or replace function public.quick_checkin_by_code(_code text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare
+  clean_code text := upper(trim(_code));
+  g_id uuid;
+begin
+  select g.id into g_id
+  from guests g
+  where (g.badge_code = clean_code or g.id::text ilike clean_code)
+  limit 1;
+
+  if g_id is not null then
+    update guests set check_in_time = now() where id = g_id;
+    return public.check_guest_status(_code);
+  end if;
+
+  return jsonb_build_object('found', false, 'error', 'Data kunjungan tidak ditemukan');
+end $$;
+
+grant execute on function public.check_guest_status(text), public.quick_checkin_by_code(text) to anon, authenticated;
+
+
 

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import type { z } from "zod";
 import { guestSchema } from "@/lib/validation";
@@ -8,10 +8,12 @@ import {
   RegistrationSuccess,
   type RegistrationSuccessData,
 } from "@/components/RegistrationSuccess";
+import { QrCode } from "lucide-react";
 
 const navItems = [
   { to: "/", label: "Beranda" },
   { to: "/registrasi", label: "Registrasi Tamu" },
+  { to: "/scan", label: "Pindai QR" },
   { to: "/panduan", label: "Panduan" },
   { to: "/karyawan", label: "Karyawan" },
   { to: "/admin/login", label: "Admin" },
@@ -334,6 +336,30 @@ function GuestForm() {
           <h1 className="mt-1 text-3xl font-bold text-foreground md:text-4xl">Registrasi Tamu</h1>
           <p className="mt-1 text-muted-foreground">Silakan isi data kunjungan Anda</p>
         </header>
+
+        {/* Quick QR Scan Banner for fast check-in */}
+        <div className="fade-up mb-6 flex items-center justify-between gap-3 rounded-2xl border border-primary/25 bg-gradient-to-r from-brand-soft/80 to-card p-3 shadow-xs">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xs">
+              <QrCode className="h-4 w-4" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-foreground truncate">
+                Punya QR Undangan atau Pass?
+              </p>
+              <p className="text-[11px] text-muted-foreground truncate">
+                Pindai kamera untuk check-in instan tanpa perlu ketik
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/scan"
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-primary px-3 text-xs font-bold text-primary-foreground shadow-xs transition-all hover:brightness-110 active:scale-95 shrink-0"
+          >
+            <span>Pindai QR</span>
+            <span>→</span>
+          </Link>
+        </div>
 
         {restore && (
           <div className="mb-4 fade-up rounded-2xl border border-brand bg-brand-soft p-4">

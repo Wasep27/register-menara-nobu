@@ -17,6 +17,7 @@ import {
   Mail,
   Menu,
   MessageSquareHeart,
+  QrCode,
   ShieldCheck,
   Sparkles,
   UserCheck,
@@ -123,6 +124,11 @@ const ROUTE_METADATA: Record<
   "/registrasi": {
     icon: Users,
     desc: "Pendaftaran tamu & buku tamu",
+    category: "Navigasi",
+  },
+  "/scan": {
+    icon: QrCode,
+    desc: "Pindai QR undangan & badge pass",
     category: "Navigasi",
   },
   "/karyawan": {
@@ -414,6 +420,7 @@ export function SiteNav({ items, right, userName, onLogout, isDashboard }: SiteN
   const corePublicLinks = [
     { to: "/", label: "Beranda", icon: Home },
     { to: "/registrasi", label: "Registrasi", icon: Users },
+    { to: "/scan", label: "Pindai QR", icon: QrCode },
     { to: "/panduan", label: "Panduan", icon: BookOpen },
   ];
 
@@ -433,8 +440,8 @@ export function SiteNav({ items, right, userName, onLogout, isDashboard }: SiteN
         </a>
         <div
           className={`mx-auto flex max-w-6xl items-center justify-between gap-3 rounded-full border px-4 py-2.5 transition-all duration-300 md:px-5 ${
-            scrolled
-              ? "border-border/50 bg-card/85 shadow-soft backdrop-blur-md"
+            scrolled || isDashboardMode
+              ? "border-border/70 bg-card/95 shadow-soft backdrop-blur-xl"
               : "border-transparent bg-card/50 backdrop-blur-md"
           }`}
         >
