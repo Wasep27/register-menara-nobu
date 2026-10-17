@@ -9,7 +9,7 @@ req_tables(name) as (values
   ('profiles'),('admin_emails'),('login_attempts'),('notifications'),('guest_feedback'),
   ('activity_logs')),
 req_functions(name) as (values
-  ('has_role'),('upsert_draft'),('get_draft'),('delete_draft'),('submit_guest'),
+  ('has_role'),('has_any_role'),('set_user_role'),('upsert_draft'),('get_draft'),('delete_draft'),('submit_guest'),
   ('login_lock_seconds'),('record_login_attempt'),('handle_new_user'),
   ('sync_admin_email'),('link_employee_user'),('link_user_employee'),
   ('notify_new_guest'),('generate_visit_reminders'),('list_users_with_roles'),

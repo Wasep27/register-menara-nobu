@@ -257,7 +257,42 @@ Berdasarkan audit standar industri _Visitor Management System_ (VMS), regulasi U
 
 ---
 
-## 6. Pemecahan Masalah (Troubleshooting)
+## 6. Standar Keamanan Multi-Role (RBAC) & Pemisahan Akses Dashboard
+
+Sesuai audit standar industri keamanan gedung perkantoran (*Visitor Management System*), ISO 27001, dan prinsip *Least Privilege* (PoLP):
+
+### 1. Mengapa Perlu Role Terpisah (`admin`, `security`, `staff`)?
+- **Risiko Jika Semua Menggunakan Role `admin`:** Petugas keamanan di pos jaga atau staf front desk di lobi yang menggunakan tablet bersama rentan mengekspos pengaturan master (hapus direktori karyawan, ubah email admin sistem, atau ekspor seluruh database tamu ke Excel).
+- **Pemisahan Wewenang (*Segregation of Duties*):**
+  - **`admin` (Super Admin Gedung):** Memiliki wewenang penuh atas master data, konfigurasi email admin, analitik ekspor laporan, log audit, serta manajemen penugasan peran akun.
+  - **`security` (Petugas Keamanan / Pos Jaga):**
+    - Saat login, otomatis diarahkan langsung ke **Pos Pindai Pass (`/admin/scan`)** sebagai layar kerja utama.
+    - Hanya dapat mengakses: **Pos Pindai Pass**, **Buku Tamu Hari Ini**, dan **Direktori Karyawan** (read-only untuk lookup kontak darurat tuan rumah saat tamu tiba).
+    - Dilarang keras (403 Forbidden) mengakses: Laporan Ekspor, Email Notifikasi, Pengguna & Role, Pengaturan Master Tujuan, dan CSAT Feedback.
+    - Pada database, **Petugas Keamanan TIDAK memiliki izin DELETE** pada tabel tamu, menjamin rekam jejak audit tidak dapat dihapus.
+  - **`staff` (Front Desk / Resepsionis Lobi):**
+    - Mengelola antrean check-in walk-in di lobi, cetak kartu pass tamu, dan feedback kepuasan pengunjung.
+
+### 2. Penyesuaian Skema Database Supabase (`supabase/schema.sql`):
+1. **Pembaruan Tipe Enum:**
+   ```sql
+   alter type public.app_role add value if not exists 'security';
+   alter type public.app_role add value if not exists 'staff';
+   ```
+2. **Fungsi Helper Multi-Peran:**
+   `public.has_any_role(_user_id uuid, _roles public.app_role[])` untuk evaluasi fleksibel di RLS.
+3. **Kebijakan RLS Granular pada Tabel `guests`:**
+   - `SELECT & UPDATE`: Diizinkan untuk `admin`, `security`, dan `staff`.
+   - `INSERT`: Diizinkan untuk `admin` dan `staff` (registrasi lobi).
+   - `DELETE`: Khusus `admin` saja.
+4. **Fungsi RPC `set_user_role`:**
+   Memungkinkan Administrator di menu `/admin/pengguna` mengubah dan menetapkan peran `admin`, `security`, atau `staff` dengan sekali klik.
+5. **Keamanan RPC `quick_checkin_by_code`:**
+   Dibatasi hanya untuk `authenticated` dan otomatis mencatat jejak audit petugas verifikasi ke tabel `activity_logs`.
+
+---
+
+## 7. Pemecahan Masalah (Troubleshooting)
 
 1. **Kamera tidak mau terbuka di ponsel saat buka website**:
    - Pastikan Anda mengakses website melalui protokol **`https://`**, bukan `http://`.

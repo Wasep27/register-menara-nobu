@@ -2,8 +2,10 @@
 
 create extension if not exists pgcrypto;
 
--- ROLES
-do $$ begin create type public.app_role as enum ('admin'); exception when duplicate_object then null; end $$;
+-- ROLES: RBAC (Role-Based Access Control) multi-peran: admin, security, staff
+do $$ begin create type public.app_role as enum ('admin', 'security', 'staff'); exception when duplicate_object then null; end $$;
+alter type public.app_role add value if not exists 'security';
+alter type public.app_role add value if not exists 'staff';
 
 create table if not exists public.user_roles (
   id uuid primary key default gen_random_uuid(),
@@ -20,8 +22,14 @@ returns boolean language sql stable security definer set search_path = public as
   select exists (select 1 from public.user_roles where user_id = _user_id and role = _role)
 $$;
 
+create or replace function public.has_any_role(_user_id uuid, _roles public.app_role[])
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.user_roles where user_id = _user_id and role = any(_roles))
+$$;
+
 drop policy if exists "own roles" on public.user_roles;
-create policy "own roles" on public.user_roles for select to authenticated using (user_id = auth.uid());
+create policy "own roles" on public.user_roles for select to authenticated
+using (user_id = auth.uid() or public.has_role(auth.uid(), 'admin'));
 
 -- MASTER DATA
 create table if not exists public.employees (
@@ -71,7 +79,27 @@ grant select, insert, update, delete on public.guests to authenticated;
 grant all on public.guests to service_role;
 alter table public.guests enable row level security;
 drop policy if exists "admin all" on public.guests;
-create policy "admin all" on public.guests for all to authenticated using (public.has_role(auth.uid(),'admin')) with check (public.has_role(auth.uid(),'admin'));
+drop policy if exists "staff select guests" on public.guests;
+drop policy if exists "staff update guests" on public.guests;
+drop policy if exists "staff insert guests" on public.guests;
+drop policy if exists "admin delete guests" on public.guests;
+
+-- Baca buku tamu: admin, security pos jaga, dan staff lobi
+create policy "staff select guests" on public.guests for select to authenticated
+using (public.has_any_role(auth.uid(), array['admin', 'security', 'staff']::public.app_role[]));
+
+-- Update tamu (verifikasi kedatangan / kepulangan / status pass): admin, security, staff
+create policy "staff update guests" on public.guests for update to authenticated
+using (public.has_any_role(auth.uid(), array['admin', 'security', 'staff']::public.app_role[]))
+with check (public.has_any_role(auth.uid(), array['admin', 'security', 'staff']::public.app_role[]));
+
+-- Tambah tamu internal (walk-in dari lobi): admin dan staff
+create policy "staff insert guests" on public.guests for insert to authenticated
+with check (public.has_any_role(auth.uid(), array['admin', 'staff']::public.app_role[]));
+
+-- Hapus data tamu: HANYA Super Admin gedung (Petugas security/staff tidak diizinkan menghapus rekam jejak audit)
+create policy "admin delete guests" on public.guests for delete to authenticated
+using (public.has_role(auth.uid(), 'admin'));
 
 -- DRAFTS (hanya lewat fungsi)
 create table if not exists public.guest_drafts (
@@ -409,6 +437,31 @@ end $$;
 revoke all on function public.list_users_with_roles() from public, anon;
 grant execute on function public.list_users_with_roles() to authenticated;
 
+-- Mengatur peran pengguna (Admin dapat menetapkan role 'admin', 'security', atau 'staff')
+create or replace function public.set_user_role(_target_user_id uuid, _role public.app_role, _assign boolean)
+returns boolean language plpgsql security definer set search_path = public as $$
+begin
+  if not public.has_role(auth.uid(), 'admin') then
+    raise exception 'Hanya administrator yang dapat mengubah peran pengguna' using errcode = '42501';
+  end if;
+
+  if _assign then
+    insert into public.user_roles (user_id, role)
+    values (_target_user_id, _role)
+    on conflict (user_id, role) do nothing;
+  else
+    if _target_user_id = auth.uid() and _role = 'admin' then
+      raise exception 'Tidak dapat mencabut hak akses admin dari akun Anda sendiri';
+    end if;
+    delete from public.user_roles
+    where user_id = _target_user_id and role = _role;
+  end if;
+
+  return true;
+end $$;
+revoke all on function public.set_user_role(uuid, public.app_role, boolean) from public, anon;
+grant execute on function public.set_user_role(uuid, public.app_role, boolean) to authenticated;
+
 -- ============================================================
 -- FEEDBACK TAMU (CSAT & KEPUASAN PENGISIAN BUKU TAMU)
 -- Tamu (anon) hanya bisa INSERT via RPC; SELECT & DELETE khusus Admin
@@ -743,21 +796,44 @@ returns jsonb language plpgsql security definer set search_path = public as $$
 declare
   clean_code text := upper(trim(_code));
   g_id uuid;
+  g_name text;
+  caller_email text;
 begin
-  select g.id into g_id
+  -- Best Practice: Hanya petugas yang terautentikasi (admin, security, staff) yang dapat memverifikasi kedatangan
+  if auth.uid() is null then
+    return jsonb_build_object('found', false, 'error', 'Sesi kedaluwarsa. Silakan login sebagai petugas untuk verifikasi.');
+  end if;
+
+  select g.id, g.name into g_id, g_name
   from guests g
   where (g.badge_code = clean_code or g.id::text ilike clean_code)
   limit 1;
 
   if g_id is not null then
     update guests set check_in_time = now() where id = g_id;
+
+    -- Catat log jejak audit verifikasi pos keamanan
+    select email into caller_email from auth.users where id = auth.uid();
+    insert into public.activity_logs (category, action, title, details, actor_type, actor_id, actor_email)
+    values (
+      'security',
+      'checkin_verified',
+      'Verifikasi Pass Tamu: ' || coalesce(g_name, 'Pengunjung'),
+      jsonb_build_object('guest_id', g_id, 'badge_code', clean_code, 'verified_at', now()),
+      'admin',
+      auth.uid(),
+      caller_email
+    );
+
     return public.check_guest_status(_code);
   end if;
 
-  return jsonb_build_object('found', false, 'error', 'Data kunjungan tidak ditemukan');
+  return jsonb_build_object('found', false, 'error', 'Data kunjungan atau kode pass tidak ditemukan');
 end $$;
 
-grant execute on function public.check_guest_status(text), public.quick_checkin_by_code(text) to anon, authenticated;
+grant execute on function public.check_guest_status(text) to anon, authenticated;
+revoke execute on function public.quick_checkin_by_code(text) from anon, public;
+grant execute on function public.quick_checkin_by_code(text) to authenticated;
 
 
 

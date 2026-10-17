@@ -2,9 +2,9 @@ import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { signOutLocal, startIdleLogout, supabase } from "@/lib/supabase";
+import { signOutLocal, startIdleLogout, supabase, type AppRole } from "@/lib/supabase";
 import { SiteNav } from "@/components/SiteNav";
-import { LogOut, ShieldCheck, Users } from "lucide-react";
+import { LogOut, ShieldAlert, ShieldCheck, Users } from "lucide-react";
 import { AdminSidebar } from "@/components/AdminSidebar";
 
 export const Route = createFileRoute("/admin")({
@@ -50,14 +50,22 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/panduan": "Panduan Teknis",
 };
 
+const SECURITY_ALLOWED_ROUTES = ["/admin/scan", "/admin/tamu", "/admin/karyawan"];
+const STAFF_ALLOWED_ROUTES = ["/admin/tamu", "/admin/scan", "/admin/karyawan", "/admin/feedback"];
+
 function AdminLayout() {
   const loc = useLocation();
   const nav = useNavigate();
   const [state, setState] = useState<"loading" | "ok" | "noadmin" | "out">("loading");
+  const [userRoles, setUserRoles] = useState<AppRole[]>([]);
   const [idle, setIdle] = useState(false);
   const [name, setName] = useState("");
   const isLogin = loc.pathname === "/admin/login";
-  const currentTitle = PAGE_TITLES[loc.pathname] || "Dashboard Admin";
+  const currentTitle = PAGE_TITLES[loc.pathname] || "Dashboard Staf";
+
+  const isAdmin = userRoles.includes("admin");
+  const isSecurity = userRoles.includes("security") && !isAdmin;
+  const isStaff = userRoles.includes("staff") && !isAdmin && !userRoles.includes("security");
 
   // Periksa ulang akses ke server (getUser memvalidasi token, bukan hanya membaca lokal)
   useEffect(() => {
@@ -75,15 +83,27 @@ function AdminLayout() {
         .from("user_roles")
         .select("role")
         .eq("user_id", data.user.id);
-      setState(roles?.some((r) => r.role === "admin") ? "ok" : "noadmin");
+
+      const assigned = roles?.map((r) => r.role as AppRole) ?? [];
+      setUserRoles(assigned);
+      const isAllowed = assigned.length > 0;
+      setState(isAllowed ? "ok" : "noadmin");
+
       const { data: prof } = await supabase
         .from("profiles")
         .select("full_name")
         .eq("id", data.user.id)
         .maybeSingle();
-      setName(prof?.full_name || data.user.email?.split("@")[0] || "Admin");
+      setName(prof?.full_name || data.user.email?.split("@")[0] || "Petugas");
     });
   }, [isLogin, loc.pathname, nav, state]);
+
+  // Petugas keamanan otomatis dialihkan ke pos verifikasi scan bila membuka root /admin
+  useEffect(() => {
+    if (state === "ok" && isSecurity && loc.pathname === "/admin") {
+      nav({ to: "/admin/scan" });
+    }
+  }, [state, isSecurity, loc.pathname, nav]);
 
   // Satu pendengar perubahan sesi: keluar di tab lain / token habis -> ke halaman login
   useEffect(() => {
@@ -135,6 +155,17 @@ function AdminLayout() {
       </main>
     );
 
+  const isRouteUnauthorized =
+    (isSecurity && !SECURITY_ALLOWED_ROUTES.includes(loc.pathname)) ||
+    (isStaff && !STAFF_ALLOWED_ROUTES.includes(loc.pathname));
+
+  const permittedLinks = links.filter((l) => {
+    if (isAdmin) return true;
+    if (isSecurity) return SECURITY_ALLOWED_ROUTES.includes(l.to);
+    if (isStaff) return STAFF_ALLOWED_ROUTES.includes(l.to);
+    return true;
+  });
+
   if (state === "loading" || state === "out") {
     return (
       <main className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -150,12 +181,26 @@ function AdminLayout() {
   }
   if (state === "noadmin")
     return (
-      <div className="p-8">
-        <p className="text-foreground">Akun ini belum memiliki akses admin.</p>
-        <button className="mt-4 rounded-lg border border-input px-4 py-2" onClick={logout}>
-          Keluar
-        </button>
-      </div>
+      <main className="flex min-h-screen items-center justify-center bg-background p-4">
+        <div className="w-full max-w-md rounded-3xl border border-border bg-card p-6 sm:p-8 text-center shadow-soft">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
+            <ShieldCheck className="h-6 w-6" />
+          </div>
+          <h2 className="font-display text-base sm:text-lg font-bold text-foreground">
+            Belum Memiliki Hak Akses
+          </h2>
+          <p className="mt-2 text-xs sm:text-sm text-muted-foreground leading-relaxed">
+            Akun Anda belum memiliki peran aktif (Admin, Petugas Keamanan, atau Staf). Silakan
+            hubungi Administrator Sistem untuk aktivasi peran.
+          </p>
+          <button
+            onClick={logout}
+            className="mt-6 inline-flex h-10 w-full items-center justify-center rounded-xl border border-input bg-card text-xs font-semibold text-foreground hover:bg-muted active:scale-95 transition-all"
+          >
+            Keluar dari Sesi
+          </button>
+        </div>
+      </main>
     );
 
   return (
@@ -163,7 +208,7 @@ function AdminLayout() {
       {/* Navigasi Mobile (< md): Header mengambang & dock bawah dibuat sticky */}
       <div className="md:hidden sticky top-0 z-40">
         <SiteNav
-          items={[...links]}
+          items={[...permittedLinks]}
           userName={name}
           onLogout={() => setAskLogout(true)}
           isDashboard={true}
@@ -182,7 +227,7 @@ function AdminLayout() {
       {/* Layout Desktop Modern (md ke atas): Sidebar Mengambang dengan Radius */}
       <div className="mx-auto flex max-w-[1440px] items-start gap-4 p-3 md:p-4 lg:gap-6">
         {/* Sidebar Mengambang Desktop */}
-        <AdminSidebar userName={name} onLogout={() => setAskLogout(true)} />
+        <AdminSidebar userName={name} onLogout={() => setAskLogout(true)} userRoles={userRoles} />
 
         {/* Viewport Konten Utama */}
         <div className="flex-1 min-w-0 flex flex-col">
@@ -190,10 +235,10 @@ function AdminLayout() {
           <header className="sticky top-3 md:top-4 z-30 hidden md:flex items-center justify-between gap-4 mb-4 rounded-2xl border border-border/80 bg-card/95 px-5 py-3 shadow-soft backdrop-blur-xl transition-all">
             <div className="flex items-center gap-2 text-sm min-w-0">
               <Link
-                to="/admin"
+                to={isSecurity ? "/admin/scan" : "/admin"}
                 className="font-semibold text-muted-foreground hover:text-foreground transition-colors"
               >
-                Dashboard
+                {isSecurity ? "Pos Jaga" : "Dashboard"}
               </Link>
               <span className="text-muted-foreground/40 font-normal">/</span>
               <span className="font-bold text-foreground truncate">{currentTitle}</span>
@@ -221,7 +266,29 @@ function AdminLayout() {
 
           {/* Area Halaman */}
           <main key={loc.pathname} className="fade-up flex-1 pb-24 md:pb-6">
-            <Outlet />
+            {isRouteUnauthorized ? (
+              <div className="mx-auto my-12 max-w-md rounded-3xl border border-amber-500/30 bg-card p-6 sm:p-8 text-center shadow-soft">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                  <ShieldAlert className="h-7 w-7" />
+                </div>
+                <h2 className="font-display text-lg font-bold text-foreground">Akses Terbatas</h2>
+                <p className="mt-2 text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                  Halaman ini memerlukan hak akses <strong>Administrator Gedung</strong>. Sebagai{" "}
+                  <strong>{isSecurity ? "Petugas Keamanan" : "Staf Resepsionis"}</strong>, area
+                  operasional Anda berada di pos jaga dan lobi.
+                </p>
+                <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-2">
+                  <Link
+                    to={isSecurity ? "/admin/scan" : "/admin/tamu"}
+                    className="inline-flex min-h-10 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-primary px-5 text-xs font-semibold text-primary-foreground hover:brightness-110 active:scale-95 transition-all"
+                  >
+                    {isSecurity ? "Buka Pos Pindai Pass" : "Buka Buku Tamu"}
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <Outlet />
+            )}
           </main>
         </div>
       </div>

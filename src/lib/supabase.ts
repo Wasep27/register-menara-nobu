@@ -45,6 +45,8 @@ export function startIdleLogout(onTimeout: () => void, minutes = 30) {
   };
 }
 
+export type AppRole = "admin" | "security" | "staff";
+
 export type Employee = { id: string; name: string; department: string | null; is_active: boolean };
 export type Purpose = { id: string; name: string; is_active: boolean };
 export type Guest = {

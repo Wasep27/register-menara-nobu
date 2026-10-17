@@ -17,9 +17,12 @@ import {
 import logo from "@/assets/logo.png";
 import { Avatar } from "@/components/Avatar";
 
+import type { AppRole } from "@/lib/supabase";
+
 export interface AdminSidebarProps {
   userName?: string;
   onLogout?: () => void;
+  userRoles?: AppRole[];
 }
 
 interface NavMenuItem {
@@ -34,7 +37,7 @@ interface NavGroup {
   items: NavMenuItem[];
 }
 
-const NAV_GROUPS: NavGroup[] = [
+const ADMIN_NAV_GROUPS: NavGroup[] = [
   {
     title: "Menu Utama",
     items: [
@@ -68,6 +71,12 @@ const NAV_GROUPS: NavGroup[] = [
     title: "Operasional & Master",
     items: [
       {
+        to: "/admin/scan",
+        label: "Pindai QR / Pass",
+        icon: QrCode,
+        description: "Verifikasi badge & pos sekuriti",
+      },
+      {
         to: "/admin/karyawan",
         label: "Karyawan",
         icon: UserCheck,
@@ -84,12 +93,6 @@ const NAV_GROUPS: NavGroup[] = [
         label: "Feedback Tamu",
         icon: MessageSquareHeart,
         description: "Indeks kepuasan pengunjung",
-      },
-      {
-        to: "/admin/scan",
-        label: "Pindai QR / Pass",
-        icon: QrCode,
-        description: "Verifikasi badge & pos sekuriti",
       },
     ],
   },
@@ -118,8 +121,93 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-export function AdminSidebar({ userName, onLogout }: AdminSidebarProps) {
+const SECURITY_NAV_GROUPS: NavGroup[] = [
+  {
+    title: "Pos Keamanan & Jaga",
+    items: [
+      {
+        to: "/admin/scan",
+        label: "Pos Pindai Pass",
+        icon: QrCode,
+        description: "Pindai barcode & verifikasi fisik",
+      },
+      {
+        to: "/admin/tamu",
+        label: "Buku Tamu Hari Ini",
+        icon: Users,
+        description: "Daftar kehadiran & validasi",
+      },
+      {
+        to: "/admin/karyawan",
+        label: "Direktori Host",
+        icon: UserCheck,
+        description: "Cari kontak karyawan penerima",
+      },
+    ],
+  },
+];
+
+const STAFF_NAV_GROUPS: NavGroup[] = [
+  {
+    title: "Operasional Front Desk",
+    items: [
+      {
+        to: "/admin/tamu",
+        label: "Buku Tamu Lobi",
+        icon: Users,
+        description: "Kelola check-in & cetak kartu",
+      },
+      {
+        to: "/admin/scan",
+        label: "Pindai Pass",
+        icon: QrCode,
+        description: "Verifikasi barcode undangan",
+      },
+      {
+        to: "/admin/karyawan",
+        label: "Direktori Karyawan",
+        icon: UserCheck,
+        description: "Daftar staf penerima tamu",
+      },
+      {
+        to: "/admin/feedback",
+        label: "Feedback Tamu",
+        icon: MessageSquareHeart,
+        description: "Indeks kepuasan pengunjung",
+      },
+    ],
+  },
+];
+
+export function AdminSidebar({ userName, onLogout, userRoles = ["admin"] }: AdminSidebarProps) {
   const pathname = useLocation().pathname;
+  const isAdmin = userRoles.includes("admin");
+  const isSecurityOnly = userRoles.includes("security") && !isAdmin;
+  const isStaffOnly = userRoles.includes("staff") && !isAdmin && !userRoles.includes("security");
+
+  const navGroups = isAdmin
+    ? ADMIN_NAV_GROUPS
+    : isSecurityOnly
+      ? SECURITY_NAV_GROUPS
+      : isStaffOnly
+        ? STAFF_NAV_GROUPS
+        : ADMIN_NAV_GROUPS;
+
+  const roleLabel = isAdmin
+    ? "Admin Portal"
+    : isSecurityOnly
+      ? "Pos Keamanan"
+      : isStaffOnly
+        ? "Staf Front Desk"
+        : "Staff Portal";
+
+  const userRoleDescription = isAdmin
+    ? "Admin Menara Nobu"
+    : isSecurityOnly
+      ? "Petugas Keamanan Lobi"
+      : isStaffOnly
+        ? "Resepsionis Front Desk"
+        : "Staf Operasional";
 
   const isItemActive = (to: string) => {
     if (to === "/admin") {
@@ -151,9 +239,25 @@ export function AdminSidebar({ userName, onLogout }: AdminSidebarProps) {
             <span className="block truncate font-display text-sm font-bold text-foreground tracking-tight leading-none">
               Menara Nobu
             </span>
-            <span className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-brand-soft px-2 py-0.5 text-[10px] font-bold text-primary">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-              Admin Portal
+            <span
+              className={`mt-1 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                isSecurityOnly
+                  ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+                  : isStaffOnly
+                    ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+                    : "bg-brand-soft text-primary"
+              }`}
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  isSecurityOnly
+                    ? "bg-emerald-500 animate-pulse"
+                    : isStaffOnly
+                      ? "bg-amber-500"
+                      : "bg-primary"
+                }`}
+              />
+              {roleLabel}
             </span>
           </div>
         </Link>
@@ -164,7 +268,7 @@ export function AdminSidebar({ userName, onLogout }: AdminSidebarProps) {
         aria-label="Menu navigasi sidebar"
         className="flex-1 overflow-y-auto overflow-x-hidden space-y-4 pr-1 -mr-1 text-left"
       >
-        {NAV_GROUPS.map((group) => (
+        {navGroups.map((group) => (
           <div key={group.title} className="space-y-1">
             <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">
               {group.title}
@@ -238,14 +342,18 @@ export function AdminSidebar({ userName, onLogout }: AdminSidebarProps) {
         {/* Profile Card & Logout */}
         <div className="flex items-center justify-between gap-2 rounded-2xl border border-border/70 bg-card p-2 shadow-xs">
           <div className="flex items-center gap-2.5 min-w-0">
-            <Avatar name={userName || "Admin"} size="sm" />
+            <Avatar name={userName || "Petugas"} size="sm" />
             <div className="min-w-0">
               <p className="truncate text-xs font-bold text-foreground leading-tight">
-                {userName || "Administrator"}
+                {userName || (isAdmin ? "Administrator" : "Petugas Jaga")}
               </p>
               <p className="text-[10px] text-muted-foreground flex items-center gap-1 leading-tight mt-0.5">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
-                Admin Menara Nobu
+                <span
+                  className={`inline-block h-1.5 w-1.5 rounded-full ${
+                    isSecurityOnly ? "bg-emerald-500" : isStaffOnly ? "bg-amber-500" : "bg-primary"
+                  }`}
+                />
+                {userRoleDescription}
               </p>
             </div>
           </div>
