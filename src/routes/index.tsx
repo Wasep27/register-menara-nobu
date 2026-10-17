@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
+  BookOpen,
   ClipboardCheck,
   Clock,
   QrCode,
@@ -47,7 +48,6 @@ export const Route = createFileRoute("/")({
 const nav = [
   { to: "/", label: "Beranda" },
   { to: "#fitur", label: "Fitur" },
-  { to: "/scan", label: "Pindai QR" },
   { to: "#cara", label: "Cara Kerja" },
   { to: "#faq", label: "FAQ" },
   { to: "/registrasi", label: "Registrasi Tamu" },
@@ -136,11 +136,11 @@ function Landing() {
                 Mulai Registrasi →
               </Link>
               <Link
-                to="/scan"
+                to="/panduan"
                 className="inline-flex min-h-13 items-center justify-center gap-2 rounded-full border border-border bg-card px-6 py-3.5 font-display text-base font-bold text-foreground transition-all hover:bg-brand-soft hover:text-primary active:scale-95 text-center"
               >
-                <QrCode className="h-5 w-5 text-primary" />
-                <span>Pindai QR / Cek Pass</span>
+                <BookOpen className="h-5 w-5 text-primary" />
+                <span>Panduan Kunjungan</span>
               </Link>
             </div>
           </div>

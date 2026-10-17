@@ -20,6 +20,8 @@ import {
   AlertCircle,
   Building2,
   Barcode as BarcodeIcon,
+  Check,
+  UserCheck,
 } from "lucide-react";
 import { checkGuestStatus, quickCheckInByCode, type GuestStatusResult } from "@/lib/supabase";
 import { encodeCode39 } from "@/lib/barcode";
@@ -30,9 +32,15 @@ export interface QrCodeScannerProps {
   onSuccess?: (result: GuestStatusResult) => void;
   onClose?: () => void;
   isModal?: boolean;
+  roleMode?: "security" | "admin" | "kiosk";
 }
 
-export function QrCodeScanner({ onSuccess, onClose, isModal = false }: QrCodeScannerProps) {
+export function QrCodeScanner({
+  onSuccess,
+  onClose,
+  isModal = false,
+  roleMode = "security",
+}: QrCodeScannerProps) {
   const [cameraState, setCameraState] = useState<
     "idle" | "requesting" | "active" | "denied" | "unsupported" | "error"
   >("requesting");
@@ -46,6 +54,7 @@ export function QrCodeScanner({ onSuccess, onClose, isModal = false }: QrCodeSca
   const [isProcessingScan, setIsProcessingScan] = useState(false);
   const [showManualInput, setShowManualInput] = useState(false);
   const [downloadingPass, setDownloadingPass] = useState(false);
+  const [confirmingCheckIn, setConfirmingCheckIn] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -53,7 +62,7 @@ export function QrCodeScanner({ onSuccess, onClose, isModal = false }: QrCodeSca
   const animationFrameRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Play subtle acoustic feedback when QR is recognized
+  // Audio feedback when barcode or QR is recognized
   const playBeep = () => {
     try {
       const AudioCtx =
@@ -96,7 +105,6 @@ export function QrCodeScanner({ onSuccess, onClose, isModal = false }: QrCodeSca
   // Parse scanned raw string
   const parseRawQrCode = (raw: string): { code: string; name?: string; institution?: string } => {
     const trimmed = raw.trim();
-    // Format standar: MENARA-NOBU:CODE:NAME:INSTITUTION
     if (trimmed.startsWith("MENARA-NOBU:")) {
       const parts = trimmed.split(":");
       return {
@@ -105,7 +113,6 @@ export function QrCodeScanner({ onSuccess, onClose, isModal = false }: QrCodeSca
         institution: parts[3] || undefined,
       };
     }
-    // URL format: https://domain/status?code=VTR-...
     if (trimmed.includes("code=")) {
       try {
         const url = new URL(trimmed);
@@ -115,7 +122,6 @@ export function QrCodeScanner({ onSuccess, onClose, isModal = false }: QrCodeSca
         /* ignore */
       }
     }
-    // Raw badge code VTR-YYMMDD-XXXX
     return { code: trimmed };
   };
 
@@ -138,14 +144,14 @@ export function QrCodeScanner({ onSuccess, onClose, isModal = false }: QrCodeSca
       setLoadingSearch(true);
 
       try {
-        // Cek data di database Supabase via secure RPC
+        // Cek data via secure RPC
         const res = await checkGuestStatus(code);
         if (res.found) {
           setScanResult(res);
           onSuccess?.(res);
-          toast.success(`Data tamu ditemukan: ${res.name}`);
+          toast.success(`Pass terverifikasi: ${res.name}`);
         } else {
-          // Fallback parsing jika DB offline atau belum tersinkron
+          // Fallback parsing jika DB offline atau offline simulation
           if (parsedName) {
             const fallbackRes: GuestStatusResult = {
               found: true,
@@ -167,14 +173,14 @@ export function QrCodeScanner({ onSuccess, onClose, isModal = false }: QrCodeSca
             };
             setScanResult(fallbackRes);
             onSuccess?.(fallbackRes);
-            toast.success(`Tamu diverifikasi: ${parsedName}`);
+            toast.success(`Pass terverifikasi: ${parsedName}`);
           } else {
             setScanResult({
               found: false,
               badge_code: code,
-              error: "Data tamu tidak ditemukan di sistem. Silakan registrasi ulang.",
+              error: "Data pass tidak ditemukan di sistem. Pastikan kartu terdaftar.",
             });
-            toast.error("Kode QR tidak terdaftar di sistem");
+            toast.error("Kode pass tidak terdaftar");
           }
         }
       } catch (err) {
@@ -363,22 +369,23 @@ export function QrCodeScanner({ onSuccess, onClose, isModal = false }: QrCodeSca
     }
   };
 
-  // Quick check-in action if invite code
+  // Quick check-in action by security / staff
   const handleConfirmQuickCheckIn = async () => {
-    if (!scannedRawCode) return;
-    setLoadingSearch(true);
+    const code = scanResult?.badge_code || scannedRawCode;
+    if (!code) return;
+    setConfirmingCheckIn(true);
     try {
-      const res = await quickCheckInByCode(scannedRawCode);
+      const res = await quickCheckInByCode(code);
       if (res.found) {
         setScanResult(res);
-        toast.success("Check-in berhasil dikonfirmasi!");
+        toast.success(`Check-in berhasil dikonfirmasi untuk ${res.name}!`);
       } else {
         toast.error("Gagal konfirmasi check-in");
       }
     } catch {
-      toast.error("Terjadi kendala jaringan");
+      toast.error("Terjadi kendala jaringan saat konfirmasi");
     } finally {
-      setLoadingSearch(false);
+      setConfirmingCheckIn(false);
     }
   };
 
@@ -397,15 +404,15 @@ export function QrCodeScanner({ onSuccess, onClose, isModal = false }: QrCodeSca
       {/* Header Bar */}
       <div className="flex items-center justify-between border-b border-border/60 pb-3 mb-4">
         <div className="flex items-center gap-2.5 min-w-0">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xs">
-            <QrCode className="h-4 w-4" />
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xs">
+            <ShieldCheck className="h-4.5 w-4.5 text-primary-foreground" />
           </span>
           <div className="min-w-0">
             <h2 className="font-display text-base sm:text-lg font-bold text-foreground leading-tight truncate">
-              Pindai QR / Cek Status Tamu
+              Pemindai Pass & Verifikasi Keamanan
             </h2>
             <p className="text-xs text-muted-foreground truncate">
-              Pindai badge pass, ID tamu, atau undangan digital
+              Verifikasi keaslian badge dan validasi izin masuk
             </p>
           </div>
         </div>
@@ -428,18 +435,18 @@ export function QrCodeScanner({ onSuccess, onClose, isModal = false }: QrCodeSca
           {scanResult.found ? (
             <div className="rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-brand-soft/60 via-card to-card p-4 sm:p-5 shadow-xs">
               <div className="flex items-center justify-between border-b border-border/70 pb-2.5">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  {scanResult.status || "TERDAFTAR & AKTIF"}
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-3 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                  {scanResult.status || "TERDAFTAR & SAH"}
                 </span>
-                <span className="text-xs font-mono font-bold text-foreground">
+                <span className="text-xs font-mono font-bold text-foreground bg-muted/60 px-2 py-0.5 rounded-md border border-border">
                   {scanResult.badge_code}
                 </span>
               </div>
 
-              <div className="mt-3 text-center sm:text-left">
+              <div className="mt-3.5 text-center sm:text-left">
                 <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
-                  Nama Tamu
+                  Nama Tamu Terverifikasi
                 </span>
                 <h3 className="font-display text-xl sm:text-2xl font-black text-foreground">
                   {scanResult.name}
@@ -449,13 +456,13 @@ export function QrCodeScanner({ onSuccess, onClose, isModal = false }: QrCodeSca
                 </p>
               </div>
 
-              <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl bg-card border border-border/70 p-2.5 text-xs">
+              <div className="mt-3.5 grid grid-cols-2 gap-2 rounded-xl bg-card border border-border/70 p-3 text-xs">
                 <div>
                   <span className="text-[10px] text-muted-foreground block font-medium">
                     Staf Dituju:
                   </span>
                   <span className="font-bold text-foreground truncate block">
-                    {scanResult.employee_name || "Resepsionis"}
+                    {scanResult.employee_name || "Resepsionis Lobi"}
                   </span>
                 </div>
                 <div>
@@ -479,7 +486,7 @@ export function QrCodeScanner({ onSuccess, onClose, isModal = false }: QrCodeSca
                     Departemen:
                   </span>
                   <span className="font-bold text-foreground truncate block">
-                    {scanResult.department || "Lobi"}
+                    {scanResult.department || "Lobi Utama"}
                   </span>
                 </div>
               </div>
@@ -522,36 +529,52 @@ export function QrCodeScanner({ onSuccess, onClose, isModal = false }: QrCodeSca
                 </div>
               )}
 
-              {/* Action Buttons */}
-              <div className="mt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              {/* Quick Staff Confirmation Button */}
+              <div className="mt-4 pt-3 border-t border-border/60 flex flex-col gap-2">
                 <button
                   type="button"
-                  disabled={downloadingPass}
-                  onClick={handleDownloadResultBadge}
-                  className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95 disabled:opacity-60"
+                  disabled={confirmingCheckIn}
+                  onClick={handleConfirmQuickCheckIn}
+                  className="w-full inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition-all active:scale-95 disabled:opacity-60"
                 >
-                  <Download className="h-4 w-4" />
-                  <span>{downloadingPass ? "Mengunduh..." : "Unduh Visitor Pass (PNG)"}</span>
+                  <UserCheck className="h-4 w-4" />
+                  <span>
+                    {confirmingCheckIn
+                      ? "Menyimpan Verifikasi..."
+                      : "Konfirmasi Masuk (Check-In Pos Keamanan)"}
+                  </span>
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => window.print()}
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 text-xs font-semibold text-foreground shadow-xs hover:bg-muted active:scale-95"
-                >
-                  <Printer className="h-4 w-4 text-muted-foreground" />
-                  <span>Cetak</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={downloadingPass}
+                    onClick={handleDownloadResultBadge}
+                    className="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 text-xs font-semibold text-foreground shadow-2xs hover:bg-muted active:scale-95 disabled:opacity-60"
+                  >
+                    <Download className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span>{downloadingPass ? "Mengunduh..." : "Unduh Badge"}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-4 text-xs font-semibold text-foreground shadow-2xs hover:bg-muted active:scale-95"
+                  >
+                    <Printer className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span>Cetak</span>
+                  </button>
+                </div>
               </div>
             </div>
           ) : (
             <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-center">
               <AlertCircle className="mx-auto h-8 w-8 text-destructive" />
               <h3 className="mt-2 font-display text-sm font-bold text-foreground">
-                Tamu Tidak Ditemukan
+                Pass Tidak Terdaftar / Tidak Valid
               </h3>
               <p className="mt-1 text-xs text-muted-foreground">
-                {scanResult.error || "Kode pass atau QR tidak terdaftar di buku tamu digital."}
+                {scanResult.error || "Kode pass atau barcode tidak terdaftar di buku tamu digital."}
               </p>
               <div className="mt-3 inline-flex items-center gap-2 font-mono text-xs font-bold text-foreground bg-muted px-2.5 py-1 rounded-lg">
                 <span>Kode: {scanResult.badge_code || "-"}</span>
@@ -570,14 +593,14 @@ export function QrCodeScanner({ onSuccess, onClose, isModal = false }: QrCodeSca
             className="w-full inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-foreground px-4 text-xs font-bold text-background transition-all hover:bg-foreground/90 active:scale-95 shadow-sm"
           >
             <RefreshCw className="h-4 w-4" />
-            <span>Pindai Kode Lain</span>
+            <span>Pindai Kartu / Pass Berikutnya</span>
           </button>
         </div>
       ) : (
         /* CAMERA SCANNER VIEWPORT */
         <div className="space-y-3">
-          {/* Responsive Camera Viewport Frame (Compact & Adaptive Height) */}
-          <div className="relative h-44 xs:h-52 sm:h-64 w-full max-w-[320px] sm:max-w-[360px] mx-auto overflow-hidden rounded-2xl border-2 border-primary/30 bg-neutral-950 shadow-inner flex items-center justify-center">
+          {/* Responsive Camera Viewport Frame with Polished Indicators */}
+          <div className="relative h-60 xs:h-64 sm:h-72 w-full max-w-[340px] sm:max-w-[390px] mx-auto overflow-hidden rounded-2xl border-2 border-primary/40 bg-neutral-950 shadow-md flex items-center justify-center">
             {/* Live Video Element */}
             <video
               ref={videoRef}
@@ -589,24 +612,68 @@ export function QrCodeScanner({ onSuccess, onClose, isModal = false }: QrCodeSca
               }`}
             />
 
+            {/* Polished Active Camera Status Overlay HUD (Top) */}
+            {cameraState === "active" && (
+              <div className="absolute top-2.5 inset-x-3 z-20 flex items-center justify-between pointer-events-none">
+                {/* Active Indicator Badge with Pulsing Emerald Glow */}
+                <div className="inline-flex items-center gap-2 rounded-full bg-neutral-900/90 backdrop-blur-md px-3 py-1 text-[11px] font-bold text-white border border-emerald-500/50 shadow-sm">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 shadow-[0_0_8px_#10b981]"></span>
+                  </span>
+                  <span className="tracking-wide">KAMERA AKTIF</span>
+                </div>
+
+                {/* Lens Orientation & Torch Pill */}
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-neutral-900/85 backdrop-blur-md px-2.5 py-1 text-[10px] font-mono text-neutral-200 border border-white/10 shadow-sm">
+                  <span>{facingMode === "environment" ? "Lensa Belakang" : "Lensa Depan"}</span>
+                  {hasTorch && torchOn && (
+                    <span className="text-amber-400 font-bold flex items-center gap-0.5">
+                      • ⚡ Senter
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Scanning Viewfinder Overlay Reticle */}
             {cameraState === "active" && (
               <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-4">
-                {/* Viewfinder Target Box - Responsive Scaling */}
-                <div className="relative h-36 w-36 xs:h-40 xs:w-40 sm:h-48 sm:w-48 rounded-2xl border-2 border-primary/60 shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]">
-                  {/* Glowing Corner Brackets */}
-                  <div className="absolute -top-1.5 -left-1.5 h-5 w-5 border-t-3 border-l-3 border-brand rounded-tl-lg" />
-                  <div className="absolute -top-1.5 -right-1.5 h-5 w-5 border-t-3 border-r-3 border-brand rounded-tr-lg" />
-                  <div className="absolute -bottom-1.5 -left-1.5 h-5 w-5 border-b-3 border-l-3 border-brand rounded-bl-lg" />
-                  <div className="absolute -bottom-1.5 -right-1.5 h-5 w-5 border-b-3 border-r-3 border-brand rounded-br-lg" />
+                {/* Viewfinder Target Box with Sharp Glowing Corner Brackets */}
+                <div className="relative h-44 w-44 xs:h-48 xs:w-48 sm:h-52 sm:w-52 rounded-2xl border border-white/20">
+                  {/* Glowing Emerald Corner Brackets */}
+                  <div className="absolute -top-1 -left-1 h-6 w-6 border-t-[3px] border-l-[3px] border-emerald-400 rounded-tl-lg shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
+                  <div className="absolute -top-1 -right-1 h-6 w-6 border-t-[3px] border-r-[3px] border-emerald-400 rounded-tr-lg shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
+                  <div className="absolute -bottom-1 -left-1 h-6 w-6 border-b-[3px] border-l-[3px] border-emerald-400 rounded-bl-lg shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
+                  <div className="absolute -bottom-1 -right-1 h-6 w-6 border-b-[3px] border-r-[3px] border-emerald-400 rounded-br-lg shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
 
-                  {/* Animated Sweeping Laser Line */}
-                  <div className="absolute inset-x-2 h-0.5 bg-gradient-to-r from-transparent via-brand to-transparent shadow-[0_0_12px_#10D5A0] animate-[scanLaser_2s_easeInOut_infinite]" />
+                  {/* Center Subtle Crosshair Guide */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-30">
+                    <div className="w-5 h-0.5 bg-white/70"></div>
+                    <div className="h-5 w-0.5 bg-white/70 -ml-2.5"></div>
+                  </div>
+
+                  {/* Sweeping Laser Line with Neon Glow */}
+                  <div className="absolute inset-x-2 h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_12px_#34d399] scan-laser" />
                 </div>
 
-                <p className="absolute bottom-2 text-center text-[10px] sm:text-[11px] font-semibold text-white/90 drop-shadow-md px-2">
-                  Arahkan QR code pass tepat di dalam kotak
-                </p>
+                {/* Bottom Instruction Pill */}
+                <div className="absolute bottom-2.5 inset-x-3 flex justify-center pointer-events-none z-20">
+                  <span className="rounded-full bg-neutral-900/90 backdrop-blur-md px-3 py-1 text-[11px] font-medium text-neutral-200 border border-white/10 shadow-sm text-center">
+                    Posisikan barcode atau QR pass di dalam kotak
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Loading / Verifying Scan Overlay */}
+            {(isProcessingScan || loadingSearch) && (
+              <div className="absolute inset-0 z-30 bg-neutral-950/80 backdrop-blur-xs flex flex-col items-center justify-center p-4">
+                <div className="h-9 w-9 animate-spin rounded-full border-3 border-emerald-500/30 border-t-emerald-400 mb-2" />
+                <p className="text-xs font-bold text-white">Memverifikasi kode pass...</p>
+                {scannedRawCode && (
+                  <p className="text-[10px] text-emerald-300 font-mono mt-0.5">{scannedRawCode}</p>
+                )}
               </div>
             )}
 
@@ -619,7 +686,7 @@ export function QrCodeScanner({ onSuccess, onClose, isModal = false }: QrCodeSca
                 </h3>
                 <p className="mt-1 text-[11px] text-muted-foreground max-w-xs leading-tight">
                   Browser memerlukan izin kamera. Anda dapat mengizinkannya di pengaturan browser
-                  atau unggah foto QR di bawah.
+                  atau unggah berkas foto QR di bawah.
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2 justify-center">
                   <button
@@ -636,7 +703,7 @@ export function QrCodeScanner({ onSuccess, onClose, isModal = false }: QrCodeSca
                     className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground active:scale-95"
                   >
                     <Upload className="h-3.5 w-3.5" />
-                    Unggah Gambar QR
+                    Unggah Foto Pass
                   </button>
                 </div>
               </div>
@@ -645,8 +712,8 @@ export function QrCodeScanner({ onSuccess, onClose, isModal = false }: QrCodeSca
             {/* Requesting / Loading State */}
             {cameraState === "requesting" && (
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center bg-neutral-900 text-white p-4">
-                <div className="h-7 w-7 animate-spin rounded-full border-2 border-white/20 border-t-brand mb-2" />
-                <p className="text-xs font-semibold">Mengaktifkan kamera...</p>
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-emerald-400 mb-2" />
+                <p className="text-xs font-semibold">Mengaktifkan kamera pemindai...</p>
               </div>
             )}
 
@@ -664,14 +731,14 @@ export function QrCodeScanner({ onSuccess, onClose, isModal = false }: QrCodeSca
                   className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground"
                 >
                   <Upload className="h-3.5 w-3.5" />
-                  Unggah Foto QR
+                  Unggah Foto Pass
                 </button>
               </div>
             )}
           </div>
 
-          {/* Camera Quick Controls: Responsive Grid (Never overflows/cuts off) */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full max-w-[360px] mx-auto pt-1">
+          {/* Camera Quick Controls: Responsive Balanced Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full max-w-[390px] mx-auto pt-1">
             {hasTorch && cameraState === "active" ? (
               <button
                 type="button"
@@ -700,7 +767,7 @@ export function QrCodeScanner({ onSuccess, onClose, isModal = false }: QrCodeSca
                 className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-2 py-2 text-xs font-semibold text-foreground hover:bg-muted active:scale-95 shadow-2xs"
               >
                 <SwitchCamera className="h-4 w-4 shrink-0" />
-                <span className="truncate">Kamera</span>
+                <span className="truncate">Ganti Kamera</span>
               </button>
             )}
 

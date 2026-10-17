@@ -222,38 +222,38 @@ Di bagian accordion **Environment Variables**, tambahkan 3 kunci berikut:
 
 ---
 
-## 5. Audit & Best Practice: Fitur Pemindai Barcode / QR Code (`/scan`)
+## 5. Audit & Arsitektur Keamanan: Pemindai Barcode / QR Code Khusus Internal Admin & Petugas Keamanan (`/admin/scan`)
 
-Berdasarkan audit standar industri _Visitor Management System_ (VMS) dan keamanan gedung perkantoran:
+Berdasarkan audit standar industri _Visitor Management System_ (VMS), regulasi UU Pelindungan Data Pribadi (UU PDP), dan tata kelola keamanan fisik gedung Menara Nobu:
 
-### 1. Siapa yang Menggunakan Fitur Scan Barcode / QR?
+### 1. Mengapa Pemindai Barcode Security Ditempatkan di Portal Admin & Bukan di Navigasi Publik?
 
-Fitur ini dirancang memiliki **dua fungsi utama (Dual-Purpose)**:
+1. **Mencegah Penyalahgunaan & Enumerasi Kode Pass:**
+   - Jika pemindai pass diletakkan bebas di navigasi publik, pihak luar berpotensi melakukan brute-force atau menguji kode serial pass tamu untuk mengintip siapa saja yang sedang berkunjung ke Menara Nobu.
+2. **Pemisahan Peran Tegas (Separation of Concerns):**
+   - **Tamu Publik:** Alur tamu hanya membutuhkan formulir pendaftaran (`/registrasi`), buku panduan gedung (`/panduan`), dan penyimpanan kartu kunjungan pribadi (`VisitorBadgeModal` / `RegistrationSuccess`). Tamu umum tidak perlu dan tidak seharusnya memiliki akses memvalidasi pass pengunjung lain.
+   - **Petugas Keamanan (Security) & Resepsionis:** Memiliki otorisasi untuk memvalidasi fisik pengunjung, memindai barcode pass di meja lobi / pos sekuriti (`/admin/scan`), mencocokkan kartu identitas asli (KTP/SIM), dan mencatat verifikasi check-in turnstile.
+3. **Pengamanan Rute Publik (`/scan`):**
+   - Rute `/scan` publik kini dilengkapi gerbang keamanan (gatekeeper). Jika diakses oleh tamu umum, sistem menampilkan penjelasan bahwa pemindai dibatasi untuk internal gedung, serta tombol login bagi petugas terdaftar.
 
-1. **Untuk Tamu Publik (Self Check-In & Verifikasi Undangan):**
-   - Tamu yang telah mendaftar sebelumnya (_pre-registered_) atau memiliki barcode/QR pass dapat memindai dari ponsel atau di tablet kios lobi.
-   - Mengurangi antrean di resepsionis pada jam-jam sibuk gedung.
-2. **Untuk Petugas Resepsionis & Petugas Keamanan (Security Gate / Turnstile):**
-   - Petugas memindai **Visitor Badge Pass** (lanyard atau stiker) tamu untuk memvalidasi:
-     - Apakah pass tersebut asli dan berstatus **AKTIF HARI INI**.
-     - Siapa staf/karyawan Bank Nobu penanggung jawab kunjungan.
-     - Departemen dan keperluan kunjungan tamu.
-   - Petugas dapat mengakses pemindai langsung dari **Dashboard Admin (`/admin/tamu`)** tanpa harus berpindah ke antarmuka publik.
+### 2. Fitur Pemindai Keamanan di Portal Admin (`/admin/scan`):
 
-### 2. Best Practice Keamanan & Privasi Data Tamu (Zero-Trust):
+- **HUD Indikator Kamera Aktif yang Rapi:**
+  - Dilengkapi pill status berdenyut hijau (_emerald pulsing_) **"● KAMERA AKTIF"** di pojok atas layar kamera.
+  - Indikator orientasi lensa kamera (Lensa Belakang / Depan) dan status senter aktif (Flashlight).
+  - Kotak bidik reticle futuristik dengan sudut neon bercahaya, crosshair pemandu di tengah, dan garis laser pemindai teranimasi (_sweeping laser beam_).
+  - Teks instruksi di bagian bawah kamera yang jelas dan responsif di ponsel, tablet, maupun layar kiosk monitor.
+- **Konfirmasi Check-In Pos Keamanan:** Petugas dapat langsung menekan tombol **"Konfirmasi Masuk (Check-In Pos Keamanan)"** untuk memvalidasi kedatangan secara instan.
+- **Riwayat Verifikasi Sesi Ini (Shift Log):** Petugas keamanan dapat memantau daftar kartu pass yang baru saja dipindai dalam sesi jaga saat ini.
+- **SOP Terintegrasi:** Terdapat panduan langkah demi langkah prosedur verifikasi fisik tamu Menara Nobu.
 
-- **Isolasi Data Publik:** Pemanggilan scan publik menggunakan fungsi database tersimpan `check_guest_status(_code text)` yang berjalan di balik _Security Definer_ PostgreSQL dengan output terbatas.
-- **Tidak Membocorkan Database:** Pemindai publik **tidak memiliki akses `SELECT`** langsung ke tabel `guests`. Publik hanya bisa melihat data milik kode pass yang dipindai, sehingga pengunjung lain tidak dapat mengintip daftar nomor telepon atau identitas tamu gedung lainnya.
-- **Akses Kamera (WebRTC):** Fitur pemindai QR menggunakan Web API `navigator.mediaDevices.getUserMedia`.
-- **Protokol HTTPS Wajib:** Browser modern hanya mengizinkan akses kamera pada domain **`localhost`** atau domain yang terenkripsi **`HTTPS`** (Vercel otomatis menyediakan sertifikat SSL).
+### 3. Format Barcode & QR Code yang Didukung:
 
-### 3. Format QR Code yang Didukung:
-
-1. `MENARA-NOBU:VTR-YYMMDD-XXXX:Nama:Instansi` (Format resmi Kartu Akses Badge Tamu Menara Nobu).
-2. Kode teks serial `VTR-YYMMDD-XXXX`.
-3. URL tautan undangan digital kunjungan.
-4. Pengunggahan foto kartu/gambar QR dari galeri (opsi jika perangkat tidak memiliki kamera).
-5. Ketik kode pass manual secara instan dengan pencarian real-time.
+1. Barcode linear **Code 39** pada kartu fisik badge pass tamu.
+2. QR Code format resmi Menara Nobu: `MENARA-NOBU:VTR-YYMMDD-XXXX:Nama:Instansi`.
+3. Kode teks serial `VTR-YYMMDD-XXXX`.
+4. Pengunggahan berkas gambar pass dari galeri perangkat.
+5. Input manual nomor pass jika barcode fisik kotor atau terlipat.
 
 ---
 

@@ -86,10 +86,10 @@ const NAV_GROUPS: NavGroup[] = [
         description: "Indeks kepuasan pengunjung",
       },
       {
-        to: "/scan",
+        to: "/admin/scan",
         label: "Pindai QR / Pass",
         icon: QrCode,
-        description: "Verifikasi badge & pass lobi",
+        description: "Verifikasi badge & pos sekuriti",
       },
     ],
   },

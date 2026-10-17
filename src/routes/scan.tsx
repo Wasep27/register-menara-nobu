@@ -1,64 +1,77 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
-import { QrCodeScanner } from "@/components/QrCodeScanner";
+import { supabase } from "@/lib/supabase";
 import {
-  QrCode,
+  ShieldAlert,
   ShieldCheck,
-  Sparkles,
-  UserCheck,
-  Users,
-  ArrowLeft,
-  Building2,
   Lock,
-  Info,
-  BadgeCheck,
+  ArrowRight,
+  ArrowLeft,
+  Users,
+  LogIn,
+  KeyRound,
+  FileCheck,
 } from "lucide-react";
 
 export const Route = createFileRoute("/scan")({
   head: () => ({
     meta: [
-      { title: "Pindai QR & Check-In Cepat — Menara Nobu" },
+      { title: "Verifikasi Keamanan Akses — Menara Nobu" },
       {
         name: "description",
         content:
-          "Pindai QR code undangan atau ID badge tamu menggunakan kamera ponsel atau tablet kios lobi untuk verifikasi akses gedung di Menara Nobu.",
+          "Halaman verifikasi pass dan pemindai barcode khusus petugas keamanan dan resepsionis Menara Nobu.",
       },
-      { property: "og:title", content: "Pindai QR & Check-In Cepat — Menara Nobu" },
+      { property: "og:title", content: "Verifikasi Keamanan Akses — Menara Nobu" },
       {
         property: "og:description",
-        content: "Pindai QR code undangan atau ID tamu untuk verifikasi status kunjungan.",
+        content: "Fitur pemindai barcode keamanan hanya dapat diakses oleh petugas terotorisasi.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: ScanPage,
+  component: ScanRedirectPage,
 });
 
 const navItems = [
   { to: "/", label: "Beranda" },
   { to: "/registrasi", label: "Registrasi Tamu" },
-  { to: "/scan", label: "Pindai QR" },
   { to: "/panduan", label: "Panduan" },
   { to: "/karyawan", label: "Karyawan" },
   { to: "/admin/login", label: "Admin" },
 ];
 
-function ScanPage() {
-  const [roleMode, setRoleMode] = useState<"guest" | "security">("guest");
+function ScanRedirectPage() {
+  const navigate = useNavigate();
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        setIsAuthenticated(true);
+        // Otomatis arahkan ke admin scan jika sudah login
+        navigate({ to: "/admin/scan" });
+      } else {
+        setIsAuthenticated(false);
+      }
+      setCheckingAuth(false);
+    });
+  }, [navigate]);
 
   return (
-    <main className="min-h-screen bg-background pb-48 sm:pb-36">
+    <main className="min-h-screen bg-background pb-32">
       <SiteNav items={navItems} />
 
-      <div className="fade-up mx-auto max-w-xl px-4 pt-4 sm:pt-6">
-        {/* Navigation back pill & shortcut */}
-        <div className="mb-4 flex items-center justify-between">
+      <div className="fade-up mx-auto max-w-lg px-4 pt-8 sm:pt-12">
+        {/* Navigation back pill */}
+        <div className="mb-6 flex items-center justify-between">
           <Link
             to="/"
-            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-brand-soft hover:text-primary active:scale-95"
+            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-brand-soft hover:text-primary active:scale-95"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             <span>Kembali ke Beranda</span>
@@ -73,112 +86,64 @@ function ScanPage() {
           </Link>
         </div>
 
-        {/* Role Mode Selector (Audit Best Practice: Dual-Purpose Scanner) */}
-        <div className="mb-5 rounded-2xl border border-border/80 bg-card p-1.5 shadow-xs flex items-center">
-          <button
-            type="button"
-            onClick={() => setRoleMode("guest")}
-            className={`flex-1 flex items-center justify-center gap-2 rounded-xl py-2 px-3 text-xs font-bold transition-all ${
-              roleMode === "guest"
-                ? "bg-primary text-primary-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Users className="h-4 w-4" />
-            <span>Tamu / Kios Mandiri</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setRoleMode("security")}
-            className={`flex-1 flex items-center justify-center gap-2 rounded-xl py-2 px-3 text-xs font-bold transition-all ${
-              roleMode === "security"
-                ? "bg-primary text-primary-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <ShieldCheck className="h-4 w-4" />
-            <span>Petugas Lobi / Security</span>
-          </button>
-        </div>
-
-        {/* Hero Title & Contextual Copy based on role */}
-        <div className="text-center mb-6">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-soft px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary">
-            <QrCode className="h-3.5 w-3.5 text-primary" />
-            {roleMode === "guest"
-              ? "Self Check-In Pengunjung"
-              : "Verifikasi Akses Gedung & Turnstile"}
-          </span>
-          <h1 className="mt-2 font-display text-2xl sm:text-3xl font-black text-foreground">
-            {roleMode === "guest" ? "Pindai Undangan Digital" : "Pemindai Kartu Akses Tamu"}
-          </h1>
-          <p className="mt-1.5 text-xs sm:text-sm text-muted-foreground max-w-md mx-auto">
-            {roleMode === "guest"
-              ? "Arahkan kamera ke QR code undangan kunjungan Anda untuk konfirmasi kedatangan instan di meja lobi Menara Nobu."
-              : "Pindai barcode atau QR badge pass pengunjung untuk memverifikasi keaslian kartu, status aktif hari ini, dan staf penanggung jawab."}
-          </p>
-        </div>
-
-        {/* Camera Scanner Viewport Component */}
-        <QrCodeScanner />
-
-        {/* Best Practice Security Audit Box */}
-        <div className="mt-6 rounded-2xl border border-primary/20 bg-brand-soft/40 p-4 text-xs text-foreground space-y-2">
-          <div className="flex items-center gap-2 font-bold text-primary">
-            <Lock className="h-4 w-4 shrink-0" />
-            <span>Audit Keamanan & Kepatuhan Privasi Data</span>
+        {/* Security Access Gate Card */}
+        <div className="overflow-hidden rounded-3xl border border-border/90 bg-card p-6 sm:p-8 shadow-soft text-center space-y-5">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+            <ShieldAlert className="h-8 w-8" />
           </div>
-          <p className="text-[11px] sm:text-xs leading-relaxed text-muted-foreground">
-            Fitur pemindai ini mematuhi standar keamanan <b>Zero-Trust VMS</b>. Verifikasi diproses
-            melalui fungsi tersimpan PostgreSQL berizin terbatas (<code>check_guest_status</code>)
-            yang hanya mencocokkan kode pass spesifik, tanpa pernah membuka akses pembacaan database
-            tamu lainnya kepada publik.
-          </p>
-        </div>
 
-        {/* Guide / How it Works Section */}
-        <div className="mt-6 rounded-2xl border border-border/80 bg-card p-4 sm:p-5 text-xs text-muted-foreground space-y-3">
-          <h3 className="font-display text-sm font-bold text-foreground flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" />
-            {roleMode === "guest"
-              ? "Panduan Check-In Mandiri Tamu:"
-              : "SOP Verifikasi Petugas Lobi / Keamanan:"}
-          </h3>
-          <ul className="space-y-2.5 list-none pl-0">
-            <li className="flex items-start gap-2.5">
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-[10px]">
-                1
-              </span>
-              <span>
-                {roleMode === "guest"
-                  ? "Buka QR code undangan yang Anda terima di ponsel atau kartu kunjungan cetak Anda."
-                  : "Minta pengunjung memperlihatkan kartu Visitor Badge Pass (lanyard atau stiker)."}
-              </span>
-            </li>
-            <li className="flex items-start gap-2.5">
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-[10px]">
-                2
-              </span>
-              <span>
-                Posisikan QR code atau barcode pass tepat di tengah kotak bidik kamera hingga suara
-                indikator konfirmasi terdengar.
-              </span>
-            </li>
-            <li className="flex items-start gap-2.5">
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-[10px]">
-                3
-              </span>
-              <span>
-                {roleMode === "guest"
-                  ? "Status kehadiran Anda otomatis tercatat dan notifikasi kedatangan dikirimkan ke staf yang Anda tuju."
-                  : "Pastikan status menunjukkan 'AKTIF HARI INI' dan data instansi sesuai dengan tanda pengenal fisik pengunjung."}
-              </span>
-            </li>
-          </ul>
+          <div>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 px-3 py-1 text-xs font-bold text-amber-700 dark:text-amber-300">
+              <Lock className="h-3 w-3" />
+              <span>Akses Khusus Petugas Keamanan & Admin</span>
+            </span>
+            <h1 className="mt-3 font-display text-2xl sm:text-3xl font-black text-foreground">
+              Pemindai Barcode Khusus Internal
+            </h1>
+            <p className="mt-2 text-xs sm:text-sm text-muted-foreground leading-relaxed">
+              Demi kepatuhan privasi (UU Pelindungan Data Pribadi) dan mencegah penyalahgunaan kode
+              pass, fitur <b>Pemindai Barcode & Verifikasi Pass</b> hanya dapat dioperasikan oleh
+              Petugas Keamanan, Resepsionis, atau Admin yang terotentikasi.
+            </p>
+          </div>
+
+          {/* Action Cards */}
+          <div className="pt-2 space-y-2.5">
+            <Link
+              to="/admin/login"
+              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 font-display text-sm font-bold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95"
+            >
+              <LogIn className="h-4 w-4" />
+              <span>Masuk ke Portal Petugas / Admin</span>
+              <ArrowRight className="h-4 w-4 ml-1" />
+            </Link>
+
+            <Link
+              to="/registrasi"
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-5 text-xs font-semibold text-foreground hover:bg-muted active:scale-95 transition-all"
+            >
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span>Saya Pengunjung: Isi Formulir Registrasi</span>
+            </Link>
+          </div>
+
+          {/* Zero-Trust Notice */}
+          <div className="rounded-xl border border-border/80 bg-muted/40 p-3 text-left space-y-1">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+              <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+              <span>Mengapa Halaman Ini Dibatasi?</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              Sistem manajemen pengunjung Menara Nobu menerapkan prinsip <i>Least Privilege</i>.
+              Tamu umum hanya perlu mendaftar dan menyimpan bukti kunjungan digital, sedangkan
+              pembacaan barcode dan otorisasi gerbang turnstile dikontrol secara terpusat oleh staf
+              berwenang.
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="mt-12">
+      <div className="mt-16">
         <SiteFooter />
       </div>
     </main>

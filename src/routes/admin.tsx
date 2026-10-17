@@ -25,6 +25,7 @@ export const Route = createFileRoute("/admin")({
 const links = [
   { to: "/admin", label: "Ringkasan" },
   { to: "/admin/tamu", label: "Tamu" },
+  { to: "/admin/scan", label: "Pindai Pass" },
   { to: "/admin/karyawan", label: "Karyawan" },
   { to: "/admin/tujuan", label: "Tujuan" },
   { to: "/admin/laporan", label: "Laporan" },
@@ -38,6 +39,7 @@ const links = [
 const PAGE_TITLES: Record<string, string> = {
   "/admin": "Ringkasan",
   "/admin/tamu": "Buku Tamu",
+  "/admin/scan": "Pos Verifikasi & Pemindai Pass",
   "/admin/karyawan": "Direktori Karyawan",
   "/admin/tujuan": "Tujuan Kunjungan",
   "/admin/laporan": "Laporan & Ekspor",

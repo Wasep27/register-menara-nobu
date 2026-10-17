@@ -246,7 +246,7 @@ function Guests() {
         <p className="text-sm text-muted-foreground">{count} kunjungan ditemukan</p>
         <div className="flex items-center gap-2">
           <Link
-            to="/scan"
+            to="/admin/scan"
             className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-primary/30 bg-brand-soft px-4 text-xs sm:text-sm font-semibold text-primary transition-all hover:bg-primary hover:text-primary-foreground active:scale-95"
             title="Buka pemindai barcode / QR pass tamu"
           >

@@ -126,10 +126,10 @@ const ROUTE_METADATA: Record<
     desc: "Pendaftaran tamu & buku tamu",
     category: "Navigasi",
   },
-  "/scan": {
+  "/admin/scan": {
     icon: QrCode,
-    desc: "Pindai QR undangan & badge pass",
-    category: "Navigasi",
+    desc: "Pos verifikasi keamanan & pemindai pass",
+    category: "Operasional & Data",
   },
   "/karyawan": {
     icon: UserCheck,
@@ -413,15 +413,15 @@ export function SiteNav({ items, right, userName, onLogout, isDashboard }: SiteN
   const coreDashboardLinks = [
     { to: "/admin", label: "Ringkasan", icon: LayoutDashboard },
     { to: "/admin/tamu", label: "Tamu", icon: Users },
+    { to: "/admin/scan", label: "Pindai Pass", icon: QrCode },
     { to: "/admin/laporan", label: "Laporan", icon: BarChart3 },
-    { to: "/admin/aktivitas", label: "Aktivitas", icon: Activity },
   ];
 
   const corePublicLinks = [
     { to: "/", label: "Beranda", icon: Home },
     { to: "/registrasi", label: "Registrasi", icon: Users },
-    { to: "/scan", label: "Pindai QR", icon: QrCode },
     { to: "/panduan", label: "Panduan", icon: BookOpen },
+    { to: "/karyawan", label: "Karyawan", icon: UserCheck },
   ];
 
   const bottomDockLinks = isDashboardMode ? coreDashboardLinks : corePublicLinks;
