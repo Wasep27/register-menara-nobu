@@ -37,6 +37,32 @@ function Dashboard() {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(true);
 
+  // Jam Real-Time Indonesia (WIB - Asia/Jakarta)
+  const [clock, setClock] = useState<Date>(new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setClock(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const timeFormatted = useMemo(() => {
+    return clock.toLocaleTimeString("id-ID", {
+      timeZone: "Asia/Jakarta",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    });
+  }, [clock]);
+
+  const dateFormatted = useMemo(() => {
+    return clock.toLocaleDateString("id-ID", {
+      timeZone: "Asia/Jakarta",
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    });
+  }, [clock]);
+
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
@@ -142,25 +168,60 @@ function Dashboard() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-xl font-bold text-foreground sm:text-2xl">
-            {greeting()}
-            {name ? `, ${name}` : ""} 👋
+        <div className="min-w-0 flex-1">
+          <h1 className="flex items-center gap-1.5 text-xl font-bold tracking-tight text-foreground sm:text-2xl min-w-0 max-w-full overflow-hidden whitespace-nowrap">
+            <span className="shrink-0">{greeting()},</span>
+            {name ? (
+              <span
+                className="truncate min-w-0 flex-1 max-w-[120px] min-[360px]:max-w-[150px] min-[400px]:max-w-[210px] sm:max-w-xs md:max-w-md inline-block font-extrabold"
+                title={name}
+              >
+                {name}
+              </span>
+            ) : null}
+            <span className="shrink-0 text-lg sm:text-xl">👋</span>
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground truncate">
             Berikut ringkasan kunjungan tamu Menara Nobu.
           </p>
         </div>
-        <div className="flex w-fit shrink-0 rounded-full bg-card p-1 shadow-soft">
-          {periods.map((p) => (
-            <button
-              key={p.d}
-              onClick={() => setDays(p.d)}
-              className={`rounded-full px-3 py-1.5 text-sm transition-colors ${days === p.d ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
-            >
-              {p.l}
-            </button>
-          ))}
+
+        <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap sm:flex-nowrap shrink-0">
+          {/* Jam Real-time Indonesia (WIB - Asia/Jakarta) */}
+          <div
+            title="Waktu Real-time Indonesia Barat (WIB)"
+            className="flex items-center gap-2 rounded-full border border-border/80 bg-card px-3 sm:px-3.5 py-1.5 shadow-soft transition-all hover:border-primary/40 shrink-0"
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
+            <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+              <span className="text-muted-foreground hidden md:inline">{dateFormatted} ·</span>
+              <span className="font-mono tabular-nums text-foreground">{timeFormatted}</span>
+              <span className="rounded bg-brand-soft px-1 text-[10px] font-bold text-primary">
+                WIB
+              </span>
+            </div>
+          </div>
+
+          {/* Filter Hari 7, 30, 90 Hari */}
+          <div className="flex w-fit shrink-0 rounded-full bg-card p-1 shadow-soft border border-border/60">
+            {periods.map((p) => (
+              <button
+                key={p.d}
+                onClick={() => setDays(p.d)}
+                className={`rounded-full px-3 py-1.5 text-xs sm:text-sm font-semibold transition-all active:scale-95 ${
+                  days === p.d
+                    ? "bg-primary text-primary-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {p.l}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

@@ -1,16 +1,18 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   BarChart3,
   BookOpen,
   Building2,
+  ChevronDown,
   ChevronRight,
   Compass,
   ExternalLink,
   HelpCircle,
   Home,
   LayoutDashboard,
+  LayoutGrid,
   LogOut,
   Mail,
   Menu,
@@ -197,6 +199,13 @@ export function SiteNav({ items, right, userName, onLogout, isDashboard }: SiteN
     };
   }, [open]);
 
+  // Global trigger listener (e.g. from desktop header avatar)
+  useEffect(() => {
+    const handler = () => setOpen((prev) => !prev);
+    window.addEventListener("toggle-sitenav-drawer", handler);
+    return () => window.removeEventListener("toggle-sitenav-drawer", handler);
+  }, []);
+
   // Scroll-spy for page anchors
   const anchors = useMemo(() => items.filter((l) => l.to.startsWith("#")), [items]);
   useEffect(() => {
@@ -221,17 +230,20 @@ export function SiteNav({ items, right, userName, onLogout, isDashboard }: SiteN
   }, [anchors]);
 
   // Helper to check if an item is currently active
-  const isItemActive = (to: string) => {
-    if (to.startsWith("#")) {
-      return activeAnchor === to;
-    }
-    if (to === "/admin") {
-      return pathname === "/admin";
-    }
-    return pathname === to || pathname.startsWith(to + "/");
-  };
+  const isItemActive = useCallback(
+    (to: string) => {
+      if (to.startsWith("#")) {
+        return activeAnchor === to;
+      }
+      if (to === "/admin") {
+        return pathname === "/admin";
+      }
+      return pathname === to || pathname.startsWith(to + "/");
+    },
+    [activeAnchor, pathname],
+  );
 
-  // Grouped items for the modern mobile drawer
+  // Grouped items for the modern mobile & desktop drawer
   const groupedItems = useMemo(() => {
     const groups: Record<string, NavItem[]> = {};
 
@@ -254,6 +266,19 @@ export function SiteNav({ items, right, userName, onLogout, isDashboard }: SiteN
     const coreRoutes = ["/admin", "/admin/tamu", "/admin/laporan", "/admin/aktivitas"];
     return !coreRoutes.includes(pathname);
   }, [isDashboardMode, pathname]);
+
+  // Primary 4 items shown directly in desktop navbar to keep layout uncluttered
+  const primaryDesktopItems = useMemo(() => {
+    if (!isDashboardMode || items.length <= 5) return items;
+    const coreRoutes = ["/admin", "/admin/tamu", "/admin/laporan", "/admin/aktivitas"];
+    const preferred = items.filter((it) => coreRoutes.includes(it.to));
+    return preferred.length >= 3 ? preferred : items.slice(0, 4);
+  }, [items, isDashboardMode]);
+
+  const activeSecondaryItem = useMemo(() => {
+    if (!isSecondaryMenuActive) return null;
+    return items.find((it) => isItemActive(it.to));
+  }, [isSecondaryMenuActive, items, isItemActive]);
 
   const focusRing =
     "outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background";
@@ -437,7 +462,35 @@ export function SiteNav({ items, right, userName, onLogout, isDashboard }: SiteN
           </Link>
 
           <nav aria-label="Navigasi utama" className="hidden items-center gap-1 md:flex">
-            {items.map(desktopItem)}
+            {isDashboardMode && items.length > 5 ? (
+              <>
+                {primaryDesktopItems.map(desktopItem)}
+                <button
+                  type="button"
+                  onClick={() => setOpen(!open)}
+                  aria-expanded={open}
+                  aria-label={open ? "Tutup drawer menu" : "Buka semua menu"}
+                  className={`${focusRing} relative flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium transition-all duration-200 active:scale-95 ${
+                    open || isSecondaryMenuActive
+                      ? "bg-brand-soft text-primary font-semibold shadow-xs"
+                      : "text-muted-foreground hover:bg-brand-soft hover:text-primary"
+                  }`}
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                  <span>{activeSecondaryItem ? activeSecondaryItem.label : "Lainnya"}</span>
+                  {isSecondaryMenuActive && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                  )}
+                  <ChevronDown
+                    className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                      open ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+              </>
+            ) : (
+              items.map(desktopItem)
+            )}
           </nav>
 
           <div className="hidden items-center gap-2 md:flex">{right}</div>
@@ -520,9 +573,9 @@ export function SiteNav({ items, right, userName, onLogout, isDashboard }: SiteN
         </nav>
       </aside>
 
-      {/* Modern Native App Mobile Menu Drawer / Sheet */}
+      {/* Modern Native App Menu Drawer / Sheet (Mobile Bottom Sheet & Desktop Command Modal) */}
       <div
-        className={`fixed inset-0 z-50 md:hidden transition-all duration-300 ${
+        className={`fixed inset-0 z-50 transition-all duration-300 ${
           open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
         }`}
         aria-hidden={!open}
@@ -539,8 +592,8 @@ export function SiteNav({ items, right, userName, onLogout, isDashboard }: SiteN
           ref={panelRef}
           role="dialog"
           aria-modal="true"
-          aria-label="Menu Navigasi Mobile"
-          className={`absolute inset-x-3.5 top-3.5 bottom-20 sm:bottom-auto sm:max-h-[85vh] max-w-lg mx-auto flex flex-col overflow-hidden rounded-3xl border border-border/80 bg-card/95 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.35)] backdrop-blur-2xl transition-all duration-300 ease-out ${
+          aria-label="Semua Menu Navigasi"
+          className={`absolute inset-x-3.5 top-3.5 bottom-20 sm:bottom-auto sm:max-h-[85vh] max-w-lg md:max-w-xl mx-auto flex flex-col overflow-hidden rounded-3xl border border-border/80 bg-card/95 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.35)] backdrop-blur-2xl transition-all duration-300 ease-out md:top-20 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 ${
             open ? "translate-y-0 opacity-100 scale-100" : "-translate-y-4 opacity-0 scale-95"
           }`}
           onClick={(e) => e.stopPropagation()}
