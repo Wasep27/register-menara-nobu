@@ -313,7 +313,7 @@ function GuestForm() {
   return (
     <main className="min-h-screen bg-background">
       <SiteNav items={navItems} />
-      <div className="mx-auto max-w-xl px-4 pb-10 pt-4 md:pt-8">
+      <div className="mx-auto max-w-xl px-4 pb-28 pt-4 md:pt-8 md:pb-10">
         <header className="fade-up mb-6 text-center">
           <span className="inline-block rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold uppercase tracking-widest text-primary">
             Selamat datang

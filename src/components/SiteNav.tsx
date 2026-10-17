@@ -378,13 +378,28 @@ export function SiteNav({ items, right, userName, onLogout, isDashboard }: SiteN
     );
   }
 
-  // Dashboard Core items for the bottom floating dock
+  // Core items for the bottom floating dock
   const coreDashboardLinks = [
     { to: "/admin", label: "Ringkasan", icon: LayoutDashboard },
     { to: "/admin/tamu", label: "Tamu", icon: Users },
     { to: "/admin/laporan", label: "Laporan", icon: BarChart3 },
     { to: "/admin/aktivitas", label: "Aktivitas", icon: Activity },
   ];
+
+  const corePublicLinks = [
+    { to: "/", label: "Beranda", icon: Home },
+    { to: "/registrasi", label: "Registrasi", icon: Users },
+    { to: "/panduan", label: "Panduan", icon: BookOpen },
+  ];
+
+  const bottomDockLinks = isDashboardMode ? coreDashboardLinks : corePublicLinks;
+
+  const avatarName = userName || (isDashboardMode ? "Admin" : "Tamu");
+  const displayShortName = userName
+    ? userName.trim().split(/\s+/)[0] || "Admin"
+    : isDashboardMode
+      ? "Admin"
+      : "Tamu";
 
   return (
     <>
@@ -432,97 +447,86 @@ export function SiteNav({ items, right, userName, onLogout, isDashboard }: SiteN
 
           <div className="hidden items-center gap-2 md:flex">{right}</div>
 
-          {/* Hamburger button on mobile */}
-          <button
-            ref={btnRef}
-            type="button"
-            aria-controls="menu-ponsel-modern"
-            aria-label={open ? "Tutup menu navigasi" : "Buka menu navigasi"}
-            aria-expanded={open}
-            onClick={() => setOpen(!open)}
-            className={`${focusRing} relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border transition-all active:scale-90 md:hidden ${
-              open
-                ? "border-primary/40 bg-primary text-primary-foreground shadow-sm"
-                : "border-border/80 bg-card text-foreground hover:bg-brand-soft hover:text-primary shadow-xs"
-            }`}
-          >
-            {open ? (
-              <X aria-hidden className="h-5 w-5 transition-transform duration-200" />
-            ) : (
-              <Menu aria-hidden className="h-5 w-5 transition-transform duration-200" />
-            )}
-            {!open && isSecondaryMenuActive && (
-              <span className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card bg-primary" />
-            )}
-          </button>
+          {/* Mobile Right: Avatar instead of Hamburger button to eliminate double hamburger */}
+          <div className="flex items-center gap-1.5 md:hidden">
+            <button
+              ref={btnRef}
+              type="button"
+              aria-controls="menu-ponsel-modern"
+              aria-label={open ? "Tutup profil dan menu" : `Profil ${avatarName}`}
+              aria-expanded={open}
+              onClick={() => setOpen(!open)}
+              className={`${focusRing} group relative flex items-center gap-1.5 rounded-full border border-border/80 bg-card/90 py-1 pl-1 pr-2.5 transition-all active:scale-95 shadow-xs hover:border-primary/40 hover:bg-brand-soft/40`}
+            >
+              <Avatar name={avatarName} size="sm" />
+              <span className="max-w-24 truncate text-xs font-semibold text-foreground">
+                {displayShortName}
+              </span>
+              {isSecondaryMenuActive && (
+                <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-card bg-primary" />
+              )}
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* Modern Native Mobile Floating Bottom Navigation Bar (Dashboard only) */}
-      {isDashboardMode && (
-        <aside
-          aria-label="Navigasi cepat dashboard ponsel"
-          className="fixed bottom-3.5 inset-x-3.5 z-40 mx-auto max-w-md md:hidden pointer-events-none"
-        >
-          <nav className="pointer-events-auto flex items-center justify-around gap-1 rounded-3xl border border-border/80 bg-card/90 p-1.5 shadow-[0_12px_32px_-4px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-            {coreDashboardLinks.map((item) => {
-              const active = isItemActive(item.to);
-              const IconComp = item.icon;
-              return (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  onClick={() => setOpen(false)}
-                  className={`${focusRing} relative flex flex-1 flex-col items-center justify-center rounded-2xl py-2 px-1 text-center transition-all duration-200 active:scale-95 ${
-                    active
-                      ? "bg-brand-soft text-primary font-bold shadow-xs"
-                      : "text-muted-foreground hover:bg-muted/40 hover:text-foreground"
-                  }`}
-                >
-                  <IconComp className={`h-5 w-5 ${active ? "stroke-[2.25]" : "stroke-[1.75]"}`} />
-                  <span className="mt-0.5 text-[10px] leading-tight tracking-tight">
-                    {item.label}
-                  </span>
-                  {active && (
-                    <span
-                      aria-hidden
-                      className="absolute -bottom-0.5 h-1 w-3 rounded-full bg-primary"
-                    />
-                  )}
-                </Link>
-              );
-            })}
+      {/* Modern Native Mobile Floating Bottom Navigation Bar with rounded-full pill radius */}
+      <aside
+        aria-label="Navigasi cepat ponsel"
+        className="fixed bottom-3.5 inset-x-3.5 z-40 mx-auto max-w-md md:hidden pointer-events-none"
+      >
+        <nav className="pointer-events-auto flex items-center justify-around gap-1 rounded-full border border-border/80 bg-card/95 p-1.5 shadow-[0_12px_32px_-4px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+          {bottomDockLinks.map((item) => {
+            const active = isItemActive(item.to);
+            const IconComp = item.icon;
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                onClick={() => setOpen(false)}
+                className={`${focusRing} relative flex flex-1 flex-col items-center justify-center rounded-full py-2 px-1 text-center transition-all duration-200 active:scale-95 ${
+                  active
+                    ? "bg-brand-soft text-primary font-bold shadow-xs"
+                    : "text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                }`}
+              >
+                <IconComp className={`h-5 w-5 ${active ? "stroke-[2.25]" : "stroke-[1.75]"}`} />
+                <span className="mt-0.5 text-[10px] leading-tight tracking-tight">
+                  {item.label}
+                </span>
+                {active && (
+                  <span aria-hidden className="absolute bottom-1 h-1 w-3 rounded-full bg-primary" />
+                )}
+              </Link>
+            );
+          })}
 
-            {/* Menu Button to toggle full floating drawer */}
-            <button
-              type="button"
-              onClick={() => setOpen(!open)}
-              aria-label={open ? "Tutup drawer menu" : "Buka semua menu"}
-              aria-expanded={open}
-              className={`${focusRing} relative flex flex-1 flex-col items-center justify-center rounded-2xl py-2 px-1 text-center transition-all duration-200 active:scale-95 ${
-                open || isSecondaryMenuActive
-                  ? "bg-brand-soft text-primary font-bold shadow-xs"
-                  : "text-muted-foreground hover:bg-muted/40 hover:text-foreground"
-              }`}
-            >
-              {open ? (
-                <X className="h-5 w-5 stroke-[2.25]" />
-              ) : (
-                <Menu className="h-5 w-5 stroke-[1.75]" />
-              )}
-              <span className="mt-0.5 text-[10px] leading-tight tracking-tight">
-                {open ? "Tutup" : "Menu"}
-              </span>
-              {(open || isSecondaryMenuActive) && (
-                <span
-                  aria-hidden
-                  className="absolute -bottom-0.5 h-1 w-3 rounded-full bg-primary"
-                />
-              )}
-            </button>
-          </nav>
-        </aside>
-      )}
+          {/* Menu Button to toggle full floating drawer */}
+          <button
+            type="button"
+            onClick={() => setOpen(!open)}
+            aria-label={open ? "Tutup drawer menu" : "Buka semua menu"}
+            aria-expanded={open}
+            className={`${focusRing} relative flex flex-1 flex-col items-center justify-center rounded-full py-2 px-1 text-center transition-all duration-200 active:scale-95 ${
+              open || isSecondaryMenuActive
+                ? "bg-brand-soft text-primary font-bold shadow-xs"
+                : "text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+            }`}
+          >
+            {open ? (
+              <X className="h-5 w-5 stroke-[2.25]" />
+            ) : (
+              <Menu className="h-5 w-5 stroke-[1.75]" />
+            )}
+            <span className="mt-0.5 text-[10px] leading-tight tracking-tight">
+              {open ? "Tutup" : "Menu"}
+            </span>
+            {(open || isSecondaryMenuActive) && (
+              <span aria-hidden className="absolute bottom-1 h-1 w-3 rounded-full bg-primary" />
+            )}
+          </button>
+        </nav>
+      </aside>
 
       {/* Modern Native App Mobile Menu Drawer / Sheet */}
       <div
@@ -579,39 +583,46 @@ export function SiteNav({ items, right, userName, onLogout, isDashboard }: SiteN
             </button>
           </div>
 
-          {/* User Profile Quick Card in Dashboard */}
-          {isDashboardMode && (
-            <div className="mx-4 mt-3 rounded-2xl border border-border/60 bg-muted/30 p-3 shrink-0">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <Avatar name={userName || "Admin"} size="sm" />
-                  <div className="min-w-0">
-                    <p className="truncate text-xs font-bold text-foreground">
-                      {userName || "Administrator"}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
-                      Admin Nobu
-                    </p>
-                  </div>
+          {/* User Profile Quick Card */}
+          <div className="mx-4 mt-3 rounded-2xl border border-border/60 bg-muted/30 p-3 shrink-0">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Avatar name={avatarName} size="sm" />
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-bold text-foreground">
+                    {userName || (isDashboardMode ? "Administrator" : "Pengunjung Menara Nobu")}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
+                    {isDashboardMode ? "Admin Nobu" : "Tamu Digital"}
+                  </p>
                 </div>
-
-                {onLogout && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOpen(false);
-                      onLogout();
-                    }}
-                    className="inline-flex items-center gap-1 rounded-xl border border-destructive/30 bg-destructive/10 px-2.5 py-1.5 text-xs font-semibold text-destructive transition-all hover:bg-destructive hover:text-destructive-foreground active:scale-95"
-                  >
-                    <LogOut className="h-3.5 w-3.5" />
-                    Keluar
-                  </button>
-                )}
               </div>
+
+              {onLogout ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    onLogout();
+                  }}
+                  className="inline-flex items-center gap-1 rounded-xl border border-destructive/30 bg-destructive/10 px-2.5 py-1.5 text-xs font-semibold text-destructive transition-all hover:bg-destructive hover:text-destructive-foreground active:scale-95"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                  Keluar
+                </button>
+              ) : !isDashboardMode ? (
+                <Link
+                  to="/admin/login"
+                  onClick={() => setOpen(false)}
+                  className="inline-flex items-center gap-1 rounded-xl border border-primary/30 bg-primary/10 px-2.5 py-1.5 text-xs font-semibold text-primary transition-all hover:bg-primary hover:text-primary-foreground active:scale-95"
+                >
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  Masuk
+                </Link>
+              ) : null}
             </div>
-          )}
+          </div>
 
           {/* Scrollable Categories & Navigation items */}
           <div className="flex-1 overflow-y-auto px-3.5 py-3 space-y-4">

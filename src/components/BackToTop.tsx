@@ -28,7 +28,7 @@ export function BackToTop() {
         window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
         document.getElementById("konten")?.focus({ preventScroll: true });
       }}
-      className={`group fixed bottom-5 right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-soft outline-none transition-all duration-300 hover:-translate-y-1 hover:brightness-110 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:scale-90 md:right-6 ${
+      className={`group fixed bottom-20 md:bottom-5 right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-soft outline-none transition-all duration-300 hover:-translate-y-1 hover:brightness-110 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:scale-90 md:right-6 ${
         show ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-6 opacity-0"
       }`}
     >
