@@ -534,41 +534,54 @@ function Inbox({ user }: { user: User }) {
              * TAMPILAN KHUSUS ADMINISTRATOR
              * Admin memiliki hak penuh; tidak perlu meminta admin lain!
              * ========================================================================= */
-            <div className="fade-up rounded-3xl border border-border/80 bg-card p-6 sm:p-8 shadow-soft space-y-6">
+            <div className="fade-up rounded-2xl sm:rounded-3xl border border-border/80 bg-card p-4 sm:p-7 shadow-soft space-y-5 sm:space-y-6">
               {/* Header Status Admin */}
-              <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-soft text-primary shadow-2xs">
-                  <ShieldCheck className="h-6 w-6" />
+              <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+                <div className="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-brand-soft text-primary shadow-2xs">
+                  <ShieldCheck className="h-5 w-5 sm:h-6 sm:w-6" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-soft px-3 py-0.5 text-xs font-bold text-primary">
-                    <Sparkles className="h-3 w-3" />
-                    Terverifikasi Sebagai Administrator
-                  </span>
-                  <h1 className="mt-1 font-display text-xl sm:text-2xl font-bold text-foreground">
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-soft px-2.5 py-1 text-[11px] sm:text-xs font-bold text-primary">
+                      <Sparkles className="h-3 w-3" />
+                      Akun Administrator
+                    </span>
+                    <span className="inline-flex items-center rounded-full bg-muted/80 px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground font-mono break-all">
+                      {user.email}
+                    </span>
+                  </div>
+                  <h1 className="mt-2 font-display text-lg sm:text-2xl font-black text-foreground tracking-tight leading-snug">
                     Profil Karyawan Belum Didaftarkan
                   </h1>
-                  <p className="mt-1 text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                    Anda telah login dengan akun <b>Administrator</b>. Karena Anda adalah pengelola
-                    sistem, Anda tidak perlu meminta siapapun—Anda dapat langsung membuat profil
-                    karyawan untuk menerima notifikasi tamu atau menautkan ke data yang sudah ada.
+                  <p className="mt-1.5 text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                    Akun Anda terverifikasi dengan hak akses{" "}
+                    <strong className="text-foreground">Administrator</strong>. Namun, nama Anda
+                    belum tercantum di daftar staf penerima tamu (<code>employees</code>) yang dapat
+                    dipilih pengunjung saat registrasi di lobi gedung.
                   </p>
+                  <div className="mt-2.5 flex items-start gap-2 rounded-xl bg-brand-soft/60 px-3 py-2 text-[11px] sm:text-xs text-foreground font-medium border border-brand/20">
+                    <Sparkles className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                    <span>
+                      Sebagai Admin, Anda dapat langsung mendaftarkan profil Anda sendiri di bawah
+                      ini tanpa perlu meminta izin siapapun.
+                    </span>
+                  </div>
                 </div>
               </div>
 
               {/* Opsi 1: Buat & Tautkan Profil Langsung */}
-              <div className="rounded-2xl border border-brand/30 bg-gradient-to-b from-brand-soft/40 to-background p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <UserPlus className="h-4 w-4 text-primary" />
-                  <h2 className="font-display text-sm font-bold text-foreground">
+              <div className="rounded-xl sm:rounded-2xl border border-brand/30 bg-gradient-to-b from-brand-soft/40 to-background p-4 sm:p-5 space-y-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <UserPlus className="h-4 w-4 text-primary shrink-0" />
+                  <h2 className="font-display text-xs sm:text-sm font-bold text-foreground">
                     Opsi 1: Buat Profil Karyawan Atas Nama Saya Sendiri (1-Klik)
                   </h2>
                 </div>
                 <form onSubmit={handleAdminCreateSelfEmployee} className="space-y-3">
                   <div className="grid gap-3 sm:grid-cols-2 text-xs">
                     <div>
-                      <label className="block font-semibold text-muted-foreground mb-1">
-                        Nama Lengkap yang Tampil di Lobi:
+                      <label className="block font-semibold text-muted-foreground mb-1 text-xs">
+                        Nama Lengkap (Tampil di Lobi):
                       </label>
                       <input
                         type="text"
@@ -576,11 +589,11 @@ function Inbox({ user }: { user: User }) {
                         value={adminSelfName}
                         onChange={(e) => setAdminSelfName(e.target.value)}
                         placeholder="Contoh: Budi Santoso"
-                        className="w-full rounded-xl border border-input bg-card px-3.5 py-2.5 text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="w-full rounded-xl border border-input bg-card px-3.5 py-2.5 text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary shadow-2xs"
                       />
                     </div>
                     <div>
-                      <label className="block font-semibold text-muted-foreground mb-1">
+                      <label className="block font-semibold text-muted-foreground mb-1 text-xs">
                         Divisi / Jabatan:
                       </label>
                       <input
@@ -588,14 +601,14 @@ function Inbox({ user }: { user: User }) {
                         value={adminSelfDept}
                         onChange={(e) => setAdminSelfDept(e.target.value)}
                         placeholder="Contoh: Manajemen / IT"
-                        className="w-full rounded-xl border border-input bg-card px-3.5 py-2.5 text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="w-full rounded-xl border border-input bg-card px-3.5 py-2.5 text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary shadow-2xs"
                       />
                     </div>
                   </div>
 
                   <div className="pt-1 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                    <p className="text-[11px] text-muted-foreground">
-                      Email login Anda (<b>{user.email}</b>) akan otomatis ditautkan ke profil ini.
+                    <p className="text-[11px] text-muted-foreground leading-normal">
+                      Email login Anda (<b>{user.email}</b>) otomatis ditautkan ke profil ini.
                     </p>
                     <button
                       type="submit"
@@ -613,21 +626,21 @@ function Inbox({ user }: { user: User }) {
 
               {/* Opsi 2: Tautkan ke Data Karyawan yang Sudah Ada */}
               {unlinkedEmployees.length > 0 && (
-                <div className="rounded-2xl border border-border bg-muted/30 p-5">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Building2 className="h-4 w-4 text-muted-foreground" />
-                    <h2 className="font-display text-sm font-bold text-foreground">
+                <div className="rounded-xl sm:rounded-2xl border border-border bg-muted/30 p-4 sm:p-5 space-y-2">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <h2 className="font-display text-xs sm:text-sm font-bold text-foreground">
                       Opsi 2: Tautkan ke Data Karyawan yang Sudah Terdaftar di Sistem
                     </h2>
                   </div>
-                  <p className="text-xs text-muted-foreground mb-3">
+                  <p className="text-xs text-muted-foreground mb-2">
                     Pilih nama Anda jika sebelumnya sudah didaftarkan di master data karyawan:
                   </p>
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
                     <select
                       value={selectedUnlinkedEmpId}
                       onChange={(e) => setSelectedUnlinkedEmpId(e.target.value)}
-                      className="flex-1 rounded-xl border border-input bg-card px-3.5 py-2.5 text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full sm:flex-1 rounded-xl border border-input bg-card px-3.5 py-2.5 text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary shadow-2xs"
                     >
                       <option value="">-- Pilih Nama Karyawan --</option>
                       {unlinkedEmployees.map((ue) => (
@@ -640,7 +653,7 @@ function Inbox({ user }: { user: User }) {
                       type="button"
                       onClick={handleAdminLinkExistingEmployee}
                       disabled={!selectedUnlinkedEmpId || savingSelfLink}
-                      className="w-full sm:w-auto inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 text-xs font-bold text-foreground hover:bg-brand-soft hover:text-primary transition-all active:scale-95 disabled:opacity-40"
+                      className="w-full sm:w-auto inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 text-xs font-bold text-foreground hover:bg-brand-soft hover:text-primary transition-all active:scale-95 disabled:opacity-40 shadow-2xs"
                     >
                       <Check className="h-4 w-4 text-primary" />
                       <span>Tautkan ke Nama Terpilih</span>
@@ -650,18 +663,18 @@ function Inbox({ user }: { user: User }) {
               )}
 
               {/* Pintasan Modul Administrator */}
-              <div className="pt-2 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                <div className="flex flex-wrap items-center gap-2">
+              <div className="pt-3 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                   <Link
                     to="/admin/karyawan"
-                    className="inline-flex items-center gap-1.5 font-bold text-primary hover:underline"
+                    className="w-full sm:w-auto inline-flex items-center gap-1.5 font-bold text-primary hover:underline py-1"
                   >
                     Buka Master Karyawan (/admin/karyawan) <ArrowRight className="h-3.5 w-3.5" />
                   </Link>
-                  <span className="text-muted-foreground">•</span>
+                  <span className="hidden sm:inline text-muted-foreground">•</span>
                   <Link
                     to="/admin"
-                    className="inline-flex items-center gap-1.5 font-bold text-foreground hover:text-primary"
+                    className="w-full sm:w-auto inline-flex items-center gap-1.5 font-bold text-foreground hover:text-primary py-1"
                   >
                     Ke Dashboard Admin (/admin)
                   </Link>
@@ -681,20 +694,20 @@ function Inbox({ user }: { user: User }) {
             /* =========================================================================
              * TAMPILAN KARYAWAN REGULER (NON-ADMIN)
              * ========================================================================= */
-            <div className="fade-up rounded-3xl border border-border/80 bg-card p-6 sm:p-8 shadow-soft">
+            <div className="fade-up rounded-2xl sm:rounded-3xl border border-border/80 bg-card p-4 sm:p-7 shadow-soft space-y-5 sm:space-y-6">
               {/* Header Status */}
-              <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
-                  <Link2Off className="h-6 w-6" />
+              <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+                <div className="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-destructive/10 text-destructive shadow-2xs">
+                  <Link2Off className="h-5 w-5 sm:h-6 sm:w-6" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2.5 py-0.5 text-xs font-bold text-destructive">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2.5 py-1 text-[11px] sm:text-xs font-bold text-destructive">
                     Status: Belum Terhubung
                   </span>
-                  <h1 className="mt-1 font-display text-xl sm:text-2xl font-bold text-foreground">
+                  <h1 className="mt-2 font-display text-lg sm:text-2xl font-black text-foreground tracking-tight leading-snug">
                     Akun Email Belum Terhubung
                   </h1>
-                  <p className="mt-1 text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                  <p className="mt-1.5 text-xs sm:text-sm text-muted-foreground leading-relaxed">
                     Akun login Anda berhasil diautentikasi, namun belum ditautkan ke data nama staf
                     pada master direktori karyawan Menara Nobu.
                   </p>
@@ -702,12 +715,12 @@ function Inbox({ user }: { user: User }) {
               </div>
 
               {/* Email Box & Salin */}
-              <div className="mt-6 rounded-2xl border border-border bg-muted/40 p-4">
+              <div className="rounded-xl sm:rounded-2xl border border-border bg-muted/40 p-3.5 sm:p-4">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Email Akun Anda:
                 </p>
                 <div className="mt-1.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                  <span className="font-mono text-sm sm:text-base font-bold text-foreground break-all">
+                  <span className="font-mono text-xs sm:text-base font-bold text-foreground break-all">
                     {user.email}
                   </span>
                   <button
@@ -726,12 +739,12 @@ function Inbox({ user }: { user: User }) {
               </div>
 
               {/* Action Buttons: Full Width di Mobile */}
-              <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
                 <button
                   type="button"
                   onClick={() => checkEmployeeLink(true)}
                   disabled={checkingLink}
-                  className="w-full sm:w-auto flex-1 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-primary px-5 font-display font-bold text-sm text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95 disabled:opacity-60"
+                  className="w-full sm:w-auto flex-1 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-primary px-5 font-display font-bold text-xs sm:text-sm text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95 disabled:opacity-60"
                 >
                   <RefreshCw className={`h-4 w-4 ${checkingLink ? "animate-spin" : ""}`} />
                   <span>
@@ -759,7 +772,7 @@ function Inbox({ user }: { user: User }) {
               </div>
 
               {/* Panduan Langkah Singkat */}
-              <div className="mt-7 rounded-2xl border border-border/80 bg-background p-4 sm:p-5">
+              <div className="rounded-xl sm:rounded-2xl border border-border/80 bg-background p-4 sm:p-5">
                 <p className="text-xs font-bold text-foreground flex items-center gap-1.5">
                   <HelpCircle className="h-4 w-4 text-primary" />
                   Cara Menghubungkan Akun Anda:
