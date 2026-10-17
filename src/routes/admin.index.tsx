@@ -85,12 +85,12 @@ function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h1 className="truncate text-2xl font-bold text-foreground">{greeting()}{name ? `, ${name}` : ""} 👋</h1>
+          <h1 className="text-xl font-bold text-foreground sm:text-2xl">{greeting()}{name ? `, ${name}` : ""} 👋</h1>
           <p className="text-sm text-muted-foreground">Berikut ringkasan kunjungan tamu Menara Nobu.</p>
         </div>
-        <div className="flex rounded-full bg-card p-1 shadow-soft">
+        <div className="flex w-fit shrink-0 rounded-full bg-card p-1 shadow-soft">
           {periods.map((p) => (
             <button key={p.d} onClick={() => setDays(p.d)} className={`rounded-full px-3 py-1.5 text-sm transition-colors ${days === p.d ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>{p.l}</button>
           ))}
@@ -109,7 +109,7 @@ function Dashboard() {
         <Card t="Tamu hari ini" v={stats.todayCount} />
         <Card t={`Total ${days} hari`} v={rows.length} sub={diff != null ? `${diff >= 0 ? "▲" : "▼"} ${Math.abs(diff)}% vs periode lalu` : "Belum ada pembanding"} />
         <Card t="Jam tersibuk" v={stats.busiest ? `${stats.busiest[0]}:00` : "-"} />
-        <Card t="Rata-rata waktu isi" v={stats.avg != null ? `${stats.avg} dtk` : "-"} />
+        <Card t="Rata-rata waktu isi" v={stats.avg != null ? (stats.avg >= 60 ? `${Math.floor(stats.avg / 60)} mnt ${stats.avg % 60} dtk` : `${stats.avg} dtk`) : "-"} />
       </div>
 
       <Panel title="Kunjungan per hari">
