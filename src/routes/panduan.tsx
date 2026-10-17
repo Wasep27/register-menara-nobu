@@ -1,16 +1,10 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import {
   BookOpen,
   Building2,
   CheckCircle2,
-  Clock,
-  HelpCircle,
-  PhoneCall,
-  QrCode,
-  Shield,
   ShieldCheck,
   Smartphone,
-  UserCheck,
   Users,
   WifiOff,
 } from "lucide-react";
@@ -198,6 +192,14 @@ function Guide() {
             <div className="flex items-start gap-2.5">
               <CheckCircle2 className="h-4 w-4 shrink-0 text-primary mt-0.5" />
               <span>
+                <b>Verifikasi & Pemindaian Badge:</b> Petugas keamanan atau resepsionis memindai
+                Visitor Badge tamu melalui portal internal untuk mencatat waktu keluar-masuk serta
+                memastikan status pass aktif.
+              </span>
+            </div>
+            <div className="flex items-start gap-2.5">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-primary mt-0.5" />
+              <span>
                 <b>Buku Tamu Live Dashboard:</b> Petugas dapat memantau kedatangan tamu real-time
                 melalui menu <b>Admin &gt; Tamu</b> di komputer meja resepsionis.
               </span>
@@ -289,48 +291,6 @@ function Guide() {
               <p className="mt-1 text-muted-foreground text-xs">
                 Drop-off tamu tersedia di lobby utama. Parkir kendaraan roda 4 dan roda 2 tersedia
                 di gedung parkir basement dengan tarif standar.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* 5. Prosedur Pemindai Barcode / QR Code & Akses Keamanan */}
-        <section className={cardStyle}>
-          <div className="flex items-center gap-3 border-b border-border pb-4">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-soft text-primary">
-              <QrCode className="h-6 w-6" />
-            </div>
-            <div>
-              <h2 className="font-display text-lg font-bold text-foreground sm:text-xl">
-                5. Prosedur Pemindai Barcode / QR Code
-              </h2>
-              <p className="text-xs text-muted-foreground sm:text-sm">
-                Fungsi ganda untuk check-in mandiri tamu dan verifikasi keamanan petugas lobi
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 text-xs sm:text-sm">
-            <div className="rounded-xl border border-border/80 bg-background p-4 space-y-2">
-              <p className="font-bold text-primary flex items-center gap-1.5">
-                <span>📱</span> Untuk Tamu Publik (Self Check-In)
-              </p>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Pengunjung yang telah memiliki QR code undangan digital dapat memindai langsung
-                melalui menu <b>Pindai QR</b> di ponsel atau di tablet kios lobi untuk verifikasi
-                kehadiran instan tanpa perlu antre di meja resepsionis.
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-border/80 bg-background p-4 space-y-2">
-              <p className="font-bold text-primary flex items-center gap-1.5">
-                <span>🛡️</span> Untuk Petugas Lobi & Security
-              </p>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Petugas memindai <b>Visitor Badge Pass</b> (lanyard/stiker) saat tamu melewati
-                gerbang akses (turnstile) atau saat check-out untuk memastikan pass berstatus{" "}
-                <b>AKTIF HARI INI</b>, memeriksa staf penanggung jawab, serta menjaga keamanan
-                perimeter gedung.
               </p>
             </div>
           </div>
