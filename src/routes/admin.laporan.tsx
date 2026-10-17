@@ -38,7 +38,24 @@ function Report() {
       {rows && (
         <div className="rounded-xl bg-card p-4">
           <p className="mb-3 text-sm text-muted-foreground">Periode {from} s/d {to} — total {rows.length} tamu</p>
-          <div className="overflow-x-auto">
+          {/* Kartu ringkas untuk ponsel */}
+          <ul className="space-y-3 sm:hidden">
+            {rows.map((r) => (
+              <li key={r.id} className="rounded-xl border border-border bg-background p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="min-w-0 truncate font-semibold text-foreground">{r.name}</p>
+                  <span className="shrink-0 rounded-full bg-brand-soft px-2 py-0.5 text-xs font-medium text-primary">{r.visit_purposes?.name ?? "-"}</span>
+                </div>
+                <p className="mt-1 truncate text-sm text-muted-foreground">{r.institution}</p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {new Date(r.check_in_time).toLocaleString("id-ID")}{r.employees?.name ? ` · bertemu ${r.employees.name}` : ""}
+                </p>
+              </li>
+            ))}
+            {!rows.length && <li className="py-6 text-center text-sm text-muted-foreground">Tidak ada data pada periode ini.</li>}
+          </ul>
+          {/* Tabel penuh untuk layar lebih besar */}
+          <div className="hidden overflow-x-auto sm:block">
           <table className="w-full min-w-[560px] text-sm">
             <thead className="text-left"><tr><th className="p-2">Waktu</th><th className="p-2">Nama</th><th className="p-2">Instansi</th><th className="p-2">Tujuan</th><th className="p-2">Dituju</th></tr></thead>
             <tbody>{rows.map((r) => <tr key={r.id} className="border-t border-border"><td className="p-2">{new Date(r.check_in_time).toLocaleString("id-ID")}</td><td className="p-2">{r.name}</td><td className="p-2">{r.institution}</td><td className="p-2">{r.visit_purposes?.name}</td><td className="p-2">{r.employees?.name}</td></tr>)}</tbody>

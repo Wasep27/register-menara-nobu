@@ -13,8 +13,25 @@ const periods = [
 const PRIMARY = "var(--primary)";
 const BRAND = "var(--brand)";
 
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 11) return "Selamat pagi";
+  if (h < 15) return "Selamat siang";
+  if (h < 19) return "Selamat sore";
+  return "Selamat malam";
+}
+
 function Dashboard() {
   const [days, setDays] = useState(7);
+  const [name, setName] = useState("");
+
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!data.user) return;
+      const { data: prof } = await supabase.from("profiles").select("full_name").eq("id", data.user.id).maybeSingle();
+      setName(prof?.full_name || data.user.email?.split("@")[0] || "");
+    });
+  }, []);
   const [rows, setRows] = useState<Guest[]>([]);
   const [prevCount, setPrevCount] = useState(0);
 
@@ -65,7 +82,10 @@ function Dashboard() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
-        <h1 className="truncate text-2xl font-bold text-foreground">Ringkasan</h1>
+        <div className="min-w-0">
+          <h1 className="truncate text-2xl font-bold text-foreground">{greeting()}{name ? `, ${name}` : ""} 👋</h1>
+          <p className="text-sm text-muted-foreground">Berikut ringkasan kunjungan tamu Menara Nobu.</p>
+        </div>
         <div className="flex rounded-full bg-card p-1 shadow-soft">
           {periods.map((p) => (
             <button key={p.d} onClick={() => setDays(p.d)} className={`rounded-full px-3 py-1.5 text-sm transition-colors ${days === p.d ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>{p.l}</button>
