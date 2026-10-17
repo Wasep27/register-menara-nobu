@@ -67,7 +67,8 @@ function Dashboard() {
       const e = r.employees?.name ?? "-";
       emp[e] = (emp[e] ?? 0) + 1;
       hour[dt.getHours()] = (hour[dt.getHours()] ?? 0) + 1;
-      if (r.fill_duration_seconds != null) durs.push(r.fill_duration_seconds);
+      // abaikan durasi tidak wajar (> 30 menit = formulir ditinggal)
+      if (r.fill_duration_seconds != null && r.fill_duration_seconds <= 1800) durs.push(r.fill_duration_seconds);
     });
     const busiest = Object.entries(hour).sort((a, b) => b[1] - a[1])[0];
     const toArr = (o: Record<string, number>) => Object.entries(o).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
