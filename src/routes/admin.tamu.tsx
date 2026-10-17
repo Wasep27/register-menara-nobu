@@ -15,11 +15,8 @@ import {
   Trash2,
 } from "lucide-react";
 import { supabase, type Employee, type Guest, type Purpose } from "@/lib/supabase";
-import {
-  VisitorBadgeModal,
-  createVisitorBadgeFromGuest,
-  type VisitorBadgeData,
-} from "@/components/VisitorBadgeModal";
+import { VisitorBadgeModal } from "@/components/VisitorBadgeModal";
+import { createVisitorBadgeFromGuest, type VisitorBadgeData } from "@/lib/badge-utils";
 import { useAdminRole } from "@/hooks/useAdminRole";
 import { exportToCsv } from "@/lib/csv-export";
 import { formatWibDateTime } from "@/lib/date-utils";

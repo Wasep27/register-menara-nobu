@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { encodeCode39, generateQrMatrix } from "@/lib/barcode";
 import { downloadBadgeAsPng } from "@/lib/badge-download";
+import { getNowWibDateString, getNowWibTimeString } from "@/lib/date-utils";
 import { toast } from "sonner";
 
 export interface VisitorQrCodePassProps {
@@ -51,15 +52,8 @@ export function VisitorQrCodePass({
   const [isDownloading, setIsDownloading] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const displayTime =
-    checkInTime || new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
-  const displayDate =
-    checkInDate ||
-    new Date().toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
+  const displayTime = checkInTime || getNowWibTimeString();
+  const displayDate = checkInDate || getNowWibDateString();
 
   // Deterministic QR payload format
   const qrPayload = `MENARA-NOBU:${badgeCode}:${name}:${institution}`;

@@ -26,6 +26,7 @@ import {
 import { checkGuestStatus, quickCheckInByCode, type GuestStatusResult } from "@/lib/supabase";
 import { encodeCode39 } from "@/lib/barcode";
 import { downloadBadgeAsPng } from "@/lib/badge-download";
+import { getNowWibDateString, getNowWibTimeString } from "@/lib/date-utils";
 import { toast } from "sonner";
 
 export interface QrCodeScannerProps {
@@ -159,15 +160,8 @@ export function QrCodeScanner({
               name: parsedName,
               institution: parsedInstitution || "Pengunjung Menara Nobu",
               badge_code: code,
-              check_in_time: new Date().toLocaleTimeString("id-ID", {
-                hour: "2-digit",
-                minute: "2-digit",
-              }),
-              check_in_date: new Date().toLocaleDateString("id-ID", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-              }),
+              check_in_time: getNowWibTimeString(),
+              check_in_date: getNowWibDateString(),
               status: "TERDAFTAR",
               purpose_name: "Kunjungan Resmi",
               employee_name: "Resepsionis Lobi",

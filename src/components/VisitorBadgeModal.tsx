@@ -16,9 +16,8 @@ import {
 import logo from "@/assets/logo.png";
 import { encodeCode39, formatBadgeCode, generateQrMatrix } from "@/lib/barcode";
 import { toast } from "sonner";
-import { downloadBadgeAsPng } from "@/lib/badge-download";
-
-import { type VisitorBadgeData } from "@/lib/badge-utils";
+import type { VisitorBadgeData } from "@/lib/badge-utils";
+import { getNowWibDateString, getNowWibTimeString } from "@/lib/date-utils";
 export type { VisitorBadgeData };
 
 interface VisitorBadgeModalProps {
@@ -70,16 +69,8 @@ export const VisitorBadgeModal = React.memo(function VisitorBadgeModal({
     return generateQrMatrix(`MENARA-NOBU:${badgeCode}:${data.name}:${data.institution}`);
   }, [open, badgeCode, data.name, data.institution]);
 
-  const displayTime =
-    data.checkInTime ||
-    new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
-  const displayDate =
-    data.checkInDate ||
-    new Date().toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
+  const displayTime = data.checkInTime || getNowWibTimeString();
+  const displayDate = data.checkInDate || getNowWibDateString();
 
   // Handle ESC key to close modal
   useEffect(() => {

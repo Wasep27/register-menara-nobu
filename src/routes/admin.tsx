@@ -6,6 +6,7 @@ import { signOutLocal, startIdleLogout, supabase, type AppRole } from "@/lib/sup
 import { SiteNav } from "@/components/SiteNav";
 import { LogOut, ShieldAlert, ShieldCheck, Users } from "lucide-react";
 import { AdminSidebar } from "@/components/AdminSidebar";
+import { Avatar } from "@/components/Avatar";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
@@ -246,16 +247,24 @@ function AdminLayout() {
               <span className="font-bold text-foreground truncate">{currentTitle}</span>
             </div>
 
-            <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-2.5 shrink-0">
               {!isSecurity && (
                 <Link
                   to="/registrasi"
-                  className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-brand-soft px-3.5 py-1.5 text-xs font-semibold text-primary transition-all hover:bg-primary hover:text-primary-foreground active:scale-95"
+                  className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-brand-soft px-3.5 py-1.5 text-xs font-semibold text-primary transition-all hover:bg-primary hover:text-primary-foreground active:scale-95 shadow-2xs"
                 >
                   <Users className="h-3.5 w-3.5" />
                   <span>Buku Tamu Depan</span>
                 </Link>
               )}
+
+              {/* Avatar saja tanpa nama di sampingnya agar clean */}
+              <div
+                title={`Akun: ${name || "Petugas"}`}
+                className="flex shrink-0 items-center justify-center rounded-full p-0.5 border border-border/80 bg-card shadow-2xs hover:border-primary/50 transition-all cursor-default"
+              >
+                <Avatar name={name || "Admin"} size="sm" />
+              </div>
 
               <button
                 type="button"

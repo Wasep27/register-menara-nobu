@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase, type AppRole } from "@/lib/supabase";
+import { formatWibDate } from "@/lib/date-utils";
 import { toast } from "sonner";
 import {
   Shield,
@@ -406,7 +407,7 @@ function UsersPage() {
                           )}
                         </p>
                         <p className="text-[11px] text-muted-foreground">
-                          Terdaftar: {new Date(r.created_at).toLocaleDateString("id-ID")}
+                          Terdaftar: {formatWibDate(r.created_at)}
                         </p>
                       </div>
                     </td>

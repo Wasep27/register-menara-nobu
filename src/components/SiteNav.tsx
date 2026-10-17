@@ -1,6 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, ChevronRight, LayoutGrid } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { Avatar } from "@/components/Avatar";
 import type { NavItem, SiteNavProps } from "./navigation/navTypes";
@@ -180,25 +180,6 @@ export function SiteNav({
     return !isRouteInMobileDock;
   }, [isDashboardMode, isRouteInMobileDock]);
 
-  // Primary 4 items shown directly in desktop navbar to keep layout uncluttered
-  const primaryDesktopItems = useMemo(() => {
-    if (!isDashboardMode || items.length <= 5) return items;
-    const coreRoutes = [
-      "/admin",
-      "/admin/tamu",
-      "/admin/karyawan",
-      "/admin/laporan",
-      "/admin/aktivitas",
-    ];
-    const preferred = items.filter((it) => coreRoutes.includes(it.to));
-    return preferred.length >= 3 ? preferred : items.slice(0, 4);
-  }, [items, isDashboardMode]);
-
-  const activeSecondaryItem = useMemo(() => {
-    if (!isSecondaryMenuActive) return null;
-    return items.find((it) => isItemActive(it.to));
-  }, [isSecondaryMenuActive, items, isItemActive]);
-
   // For public desktop navbar: cleanly separate content navigation from actions (Registrasi CTA & Admin link)
   const { publicContentItems, publicCtaItem, publicAdminItem } = useMemo(() => {
     if (isDashboardMode) {
@@ -305,37 +286,7 @@ export function SiteNav({
 
           {/* Desktop Navigation: neatly structured, spacious, and never cramped */}
           <nav aria-label="Navigasi utama" className="hidden items-center gap-1 lg:gap-1.5 md:flex">
-            {isDashboardMode && items.length > 5 ? (
-              <>
-                {primaryDesktopItems.map(desktopItem)}
-                <button
-                  type="button"
-                  onClick={() => setOpen(!open)}
-                  aria-expanded={open}
-                  aria-label={open ? "Tutup drawer menu" : "Buka semua menu"}
-                  className={`${focusRing} relative flex items-center gap-1.5 rounded-full px-3 py-1.5 lg:px-3.5 text-sm font-medium transition-all duration-200 active:scale-95 ${
-                    open || isSecondaryMenuActive
-                      ? "bg-brand-soft text-primary font-semibold shadow-xs"
-                      : "text-muted-foreground hover:bg-brand-soft hover:text-primary"
-                  }`}
-                >
-                  <LayoutGrid className="h-4 w-4" />
-                  <span>{activeSecondaryItem ? activeSecondaryItem.label : "Lainnya"}</span>
-                  {isSecondaryMenuActive && (
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                  )}
-                  <ChevronDown
-                    className={`h-3.5 w-3.5 transition-transform duration-200 ${
-                      open ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-              </>
-            ) : isDashboardMode ? (
-              items.map(desktopItem)
-            ) : (
-              publicContentItems.map(desktopItem)
-            )}
+            {isDashboardMode ? items.map(desktopItem) : publicContentItems.map(desktopItem)}
           </nav>
 
           {/* Desktop Right Actions: Admin and Primary Registration CTA */}

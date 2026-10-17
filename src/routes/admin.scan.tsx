@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { QrCodeScanner } from "@/components/QrCodeScanner";
 import { type GuestStatusResult } from "@/lib/supabase";
+import { getNowWibTimeString } from "@/lib/date-utils";
 import {
   ShieldCheck,
   QrCode,
@@ -42,7 +43,7 @@ function AdminScanPage() {
         name: res.name || "Tamu Terdaftar",
         institution: res.institution || "Pengunjung",
         badgeCode: res.badge_code || "-",
-        time: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }),
+        time: getNowWibTimeString(),
         status: res.status || "TERVERIFIKASI",
       };
       return [newItem, ...prev.slice(0, 9)];

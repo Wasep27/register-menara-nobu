@@ -25,6 +25,7 @@ import { VisitorBadgeModal } from "@/components/VisitorBadgeModal";
 import { VisitorQrCodePass } from "@/components/VisitorQrCodePass";
 import { encodeCode39, formatBadgeCode } from "@/lib/barcode";
 import { downloadBadgeAsPng } from "@/lib/badge-download";
+import { getNowWibDateString, getNowWibTimeString } from "@/lib/date-utils";
 import { toast } from "sonner";
 
 export type RegistrationSuccessData = {
@@ -73,16 +74,8 @@ export function RegistrationSuccess({ data, onReset }: RegistrationSuccessProps)
     return encodeCode39(badgeCode, 2, 5);
   }, [badgeCode]);
 
-  const displayTime =
-    data.checkInTime ||
-    new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
-  const displayDate =
-    data.checkInDate ||
-    new Date().toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
+  const displayTime = data.checkInTime || getNowWibTimeString();
+  const displayDate = data.checkInDate || getNowWibDateString();
 
   const availableTags = [
     "⚡ Sangat Cepat",

@@ -28,11 +28,9 @@ import {
 } from "lucide-react";
 import { supabase, type Guest } from "@/lib/supabase";
 import { useAdminRole } from "@/hooks/useAdminRole";
-import {
-  VisitorBadgeModal,
-  createVisitorBadgeFromGuest,
-  type VisitorBadgeData,
-} from "@/components/VisitorBadgeModal";
+import { VisitorBadgeModal } from "@/components/VisitorBadgeModal";
+import { createVisitorBadgeFromGuest, type VisitorBadgeData } from "@/lib/badge-utils";
+import { formatWibTime, formatWibWeekdayDate, getGreeting } from "@/lib/date-utils";
 
 export const Route = createFileRoute("/admin/")({ component: Dashboard });
 
@@ -43,14 +41,6 @@ const periods = [
 ];
 const PRIMARY = "var(--primary)";
 const BRAND = "var(--brand)";
-
-function greeting() {
-  const h = new Date().getHours();
-  if (h < 11) return "Selamat pagi";
-  if (h < 15) return "Selamat siang";
-  if (h < 19) return "Selamat sore";
-  return "Selamat malam";
-}
 
 const LiveWibClock = memo(function LiveWibClock() {
   const [clock, setClock] = useState<Date>(new Date());
@@ -63,20 +53,8 @@ const LiveWibClock = memo(function LiveWibClock() {
     return () => clearInterval(timer);
   }, []);
 
-  const timeFormatted = clock.toLocaleTimeString("id-ID", {
-    timeZone: "Asia/Jakarta",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  });
-
-  const dateFormatted = clock.toLocaleDateString("id-ID", {
-    timeZone: "Asia/Jakarta",
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  });
+  const timeFormatted = formatWibTime(clock, true);
+  const dateFormatted = formatWibWeekdayDate(clock);
 
   return (
     <div
@@ -231,7 +209,7 @@ function Dashboard() {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h1 className="flex items-center gap-1.5 text-xl font-bold tracking-tight text-foreground sm:text-2xl min-w-0 max-w-full overflow-hidden whitespace-nowrap">
-              <span className="shrink-0">{greeting()},</span>
+              <span className="shrink-0">{getGreeting()},</span>
               {name ? (
                 <span
                   className="truncate min-w-0 flex-1 max-w-[140px] sm:max-w-xs md:max-w-md inline-block font-extrabold"
@@ -460,11 +438,7 @@ function Dashboard() {
 
                       <div className="flex items-center justify-between sm:justify-end gap-2.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/50 shrink-0">
                         <span className="text-muted-foreground whitespace-nowrap text-[11px]">
-                          {new Date(r.check_in_time).toLocaleTimeString("id-ID", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}{" "}
-                          WIB
+                          {formatWibTime(r.check_in_time)} WIB
                         </span>
                         <button
                           type="button"
@@ -696,11 +670,7 @@ function Dashboard() {
 
                       <div className="flex items-center justify-between sm:justify-end gap-2.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/50 shrink-0">
                         <span className="text-muted-foreground whitespace-nowrap text-[11px]">
-                          {new Date(r.check_in_time).toLocaleTimeString("id-ID", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}{" "}
-                          WIB
+                          {formatWibTime(r.check_in_time)} WIB
                         </span>
                         <button
                           type="button"

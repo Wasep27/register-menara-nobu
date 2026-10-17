@@ -9,6 +9,8 @@ import {
   type RegistrationSuccessData,
 } from "@/components/RegistrationSuccess";
 import { QrCode } from "lucide-react";
+import { formatBadgeCode } from "@/lib/barcode";
+import { getNowWibDateString, getNowWibTimeString } from "@/lib/date-utils";
 
 const navItems = [
   { to: "/", label: "Beranda" },
@@ -140,7 +142,7 @@ function GuestForm() {
       if (!navigator.onLine) setStatus("offline");
       else {
         setStatus("saved");
-        setSavedAt(new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }));
+        setSavedAt(getNowWibTimeString());
       }
     }, 500);
     return () => clearTimeout(t);
@@ -167,7 +169,7 @@ function GuestForm() {
         retry = 0;
         syncPending.current = false;
         setStatus("saved");
-        setSavedAt(new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }));
+        setSavedAt(getNowWibTimeString());
       }
     };
     const iv = setInterval(sync, 30000);
@@ -251,20 +253,9 @@ function GuestForm() {
     }
     const targetEmployee = employees.find((x) => x.id === r.data.employee_id);
     const targetPurpose = purposes.find((x) => x.id === r.data.visit_purpose_id);
-    const nowTime = new Date().toLocaleTimeString("id-ID", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    const nowDate = new Date().toLocaleDateString("id-ID", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
-
-    const cleanId = typeof newGuestId === "string" ? newGuestId.replace(/[^a-zA-Z0-9]/g, "") : "";
-    const shortCode = (cleanId.slice(0, 4) || Math.random().toString(36).slice(2, 6)).toUpperCase();
-    const datePrefix = new Date().toISOString().slice(2, 10).replace(/-/g, "");
-    const generatedBadge = `VTR-${datePrefix}-${shortCode}`;
+    const nowTime = getNowWibTimeString();
+    const nowDate = getNowWibDateString();
+    const generatedBadge = formatBadgeCode(typeof newGuestId === "string" ? newGuestId : undefined);
 
     setSuccessData({
       id: typeof newGuestId === "string" ? newGuestId : undefined,
