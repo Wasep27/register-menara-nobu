@@ -43,6 +43,7 @@ function Report() {
             <thead className="text-left"><tr><th className="p-2">Waktu</th><th className="p-2">Nama</th><th className="p-2">Instansi</th><th className="p-2">Tujuan</th><th className="p-2">Dituju</th></tr></thead>
             <tbody>{rows.map((r) => <tr key={r.id} className="border-t border-border"><td className="p-2">{new Date(r.check_in_time).toLocaleString("id-ID")}</td><td className="p-2">{r.name}</td><td className="p-2">{r.institution}</td><td className="p-2">{r.visit_purposes?.name}</td><td className="p-2">{r.employees?.name}</td></tr>)}</tbody>
           </table>
+          </div>
         </div>
       )}
     </div>
