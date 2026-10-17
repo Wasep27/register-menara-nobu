@@ -38,7 +38,8 @@ function Report() {
       {rows && (
         <div className="rounded-xl bg-card p-4">
           <p className="mb-3 text-sm text-muted-foreground">Periode {from} s/d {to} — total {rows.length} tamu</p>
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[560px] text-sm">
             <thead className="text-left"><tr><th className="p-2">Waktu</th><th className="p-2">Nama</th><th className="p-2">Instansi</th><th className="p-2">Tujuan</th><th className="p-2">Dituju</th></tr></thead>
             <tbody>{rows.map((r) => <tr key={r.id} className="border-t border-border"><td className="p-2">{new Date(r.check_in_time).toLocaleString("id-ID")}</td><td className="p-2">{r.name}</td><td className="p-2">{r.institution}</td><td className="p-2">{r.visit_purposes?.name}</td><td className="p-2">{r.employees?.name}</td></tr>)}</tbody>
           </table>
