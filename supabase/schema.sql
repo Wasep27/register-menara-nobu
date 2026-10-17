@@ -63,8 +63,10 @@ create table if not exists public.guests (
   notes text check (notes is null or char_length(notes) <= 500),
   check_in_time timestamptz not null default now(),
   form_opened_at timestamptz,
-  fill_duration_seconds integer
+  fill_duration_seconds integer,
+  badge_code text
 );
+alter table public.guests add column if not exists badge_code text;
 grant select, insert, update, delete on public.guests to authenticated;
 grant all on public.guests to service_role;
 alter table public.guests enable row level security;
@@ -103,7 +105,7 @@ $$;
 
 create or replace function public.submit_guest(_payload jsonb, _token uuid)
 returns uuid language plpgsql security definer set search_path = public as $$
-declare new_id uuid; opened timestamptz;
+declare new_id uuid; opened timestamptz; gen_badge text;
 begin
   if not exists (select 1 from employees where id=(_payload->>'employee_id')::uuid and is_active) then
     raise exception 'Karyawan tidak valid'; end if;
@@ -121,6 +123,11 @@ begin
         then least(360, greatest(10, extract(epoch from now()-opened)::int))
     end)
   returning id into new_id;
+
+  -- Buat kode unik badge pass tamu (format: VTR-YYMMDD-XXXX)
+  gen_badge := 'VTR-' || to_char(now(), 'YYMMDD') || '-' || upper(substring(replace(new_id::text, '-', '') from 1 for 4));
+  update guests set badge_code = gen_badge where id = new_id;
+
   if _token is not null then delete from guest_drafts where draft_token=_token; end if;
   return new_id;
 end $$;

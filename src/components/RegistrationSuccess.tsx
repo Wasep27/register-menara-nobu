@@ -15,10 +15,13 @@ import {
   ThumbsUp,
   RotateCcw,
   MessageSquare,
+  Barcode,
 } from "lucide-react";
 import { submitGuestFeedback } from "@/lib/supabase";
+import { VisitorBadgeModal } from "@/components/VisitorBadgeModal";
 
 export type RegistrationSuccessData = {
+  id?: string;
   name: string;
   institution: string;
   phone: string;
@@ -26,6 +29,8 @@ export type RegistrationSuccessData = {
   purposeName?: string;
   scheduledAt?: string;
   checkInTime: string;
+  checkInDate?: string;
+  badgeNumber?: string;
   fillDurationSeconds?: number;
 };
 
@@ -42,6 +47,7 @@ export function RegistrationSuccess({ data, onReset }: RegistrationSuccessProps)
   const [comment, setComment] = useState("");
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  const [showBadgeModal, setShowBadgeModal] = useState(false);
 
   // Countdown timer for auto-reset (starts at 30 seconds, pauses if user interacts)
   const [countdown, setCountdown] = useState(30);
@@ -269,10 +275,23 @@ export function RegistrationSuccess({ data, onReset }: RegistrationSuccessProps)
                 Bukti Registrasi Tamu
               </span>
             </div>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-card px-2.5 py-0.5 text-xs font-semibold text-primary shadow-sm">
-              <Clock className="h-3.5 w-3.5" />
-              {data.checkInTime} WIB
-            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsPaused(true);
+                  setShowBadgeModal(true);
+                }}
+                className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary hover:bg-primary hover:text-primary-foreground transition-all active:scale-95 shadow-xs"
+              >
+                <Barcode className="h-3.5 w-3.5" />
+                Badge & Barcode
+              </button>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-card px-2.5 py-1 text-xs font-semibold text-primary shadow-sm">
+                <Clock className="h-3.5 w-3.5" />
+                {data.checkInTime} WIB
+              </span>
+            </div>
           </div>
 
           <div className="mt-3.5 grid gap-3 text-xs sm:grid-cols-2 sm:text-sm">
@@ -463,13 +482,24 @@ export function RegistrationSuccess({ data, onReset }: RegistrationSuccessProps)
 
         {/* Action Controls & Auto-countdown */}
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => {
+                setIsPaused(true);
+                setShowBadgeModal(true);
+              }}
+              className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95 sm:flex-initial sm:text-sm"
+            >
+              <Barcode className="h-4 w-4" />
+              Cetak / Unduh Badge Tamu
+            </button>
             <button
               onClick={printPass}
-              className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 text-xs font-bold text-foreground shadow-sm transition-colors hover:bg-muted active:scale-95 sm:flex-initial sm:text-sm"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 text-xs font-semibold text-foreground shadow-sm transition-colors hover:bg-muted active:scale-95 sm:text-sm"
+              title="Cetak struk ringkas halaman"
             >
               <Printer className="h-4 w-4 text-muted-foreground" />
-              Cetak / Simpan Bukti
+              Cetak Struk
             </button>
             <button
               onClick={() => setIsPaused(!isPaused)}
@@ -482,12 +512,12 @@ export function RegistrationSuccess({ data, onReset }: RegistrationSuccessProps)
 
           <button
             onClick={onReset}
-            className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-6 font-display text-xs font-bold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95 sm:flex-initial sm:text-sm"
+            className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-5 font-display text-xs font-bold text-foreground shadow-sm transition-all hover:bg-muted active:scale-95 sm:flex-initial sm:text-sm"
           >
             <RotateCcw className="h-4 w-4" />
             Selesai / Tamu Baru
             {!isPaused && countdown > 0 && (
-              <span className="ml-1 rounded-full bg-primary-foreground/20 px-2 py-0.5 text-[11px]">
+              <span className="ml-1 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[11px]">
                 ({countdown}s)
               </span>
             )}
@@ -506,6 +536,13 @@ export function RegistrationSuccess({ data, onReset }: RegistrationSuccessProps)
           </div>
         )}
       </motion.div>
+
+      {/* Visitor Badge Modal with Barcode & Download */}
+      <VisitorBadgeModal
+        open={showBadgeModal}
+        onClose={() => setShowBadgeModal(false)}
+        data={data}
+      />
     </div>
   );
 }

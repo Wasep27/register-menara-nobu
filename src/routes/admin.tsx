@@ -151,11 +151,11 @@ function AdminLayout() {
         onLogout={() => setAskLogout(true)}
         right={
           <div className="flex w-full items-center gap-2 md:w-auto">
-            <span className="flex min-w-0 items-center gap-2 rounded-full bg-brand-soft py-1 pl-1 pr-3">
+            <span
+              title={`Akun: ${name || "Admin"}`}
+              className="flex shrink-0 items-center justify-center rounded-full transition-transform hover:scale-105"
+            >
               <Avatar name={name || "Admin"} size="sm" />
-              <span className="max-w-32 truncate text-sm font-semibold text-primary">
-                {name || "Admin"}
-              </span>
             </span>
             <button
               className="inline-flex min-h-11 items-center gap-2 rounded-full border border-destructive/30 px-4 text-sm font-semibold text-destructive transition-all hover:bg-destructive hover:text-destructive-foreground active:scale-95"

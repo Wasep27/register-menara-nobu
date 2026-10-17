@@ -229,7 +229,7 @@ function GuestForm() {
 
     setSubmitting(true);
     setSubmitErr("");
-    const { error } = await supabase.rpc("submit_guest", {
+    const { data: newGuestId, error } = await supabase.rpc("submit_guest", {
       _payload: {
         ...r.data,
         scheduled_at: r.data.scheduled_at ? new Date(r.data.scheduled_at).toISOString() : null,
@@ -254,8 +254,19 @@ function GuestForm() {
       hour: "2-digit",
       minute: "2-digit",
     });
+    const nowDate = new Date().toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+
+    const cleanId = typeof newGuestId === "string" ? newGuestId.replace(/[^a-zA-Z0-9]/g, "") : "";
+    const shortCode = (cleanId.slice(0, 4) || Math.random().toString(36).slice(2, 6)).toUpperCase();
+    const datePrefix = new Date().toISOString().slice(2, 10).replace(/-/g, "");
+    const generatedBadge = `VTR-${datePrefix}-${shortCode}`;
 
     setSuccessData({
+      id: typeof newGuestId === "string" ? newGuestId : undefined,
       name: r.data.name,
       institution: r.data.institution,
       phone: r.data.phone,
@@ -263,6 +274,8 @@ function GuestForm() {
       purposeName: targetPurpose?.name,
       scheduledAt: r.data.scheduled_at || undefined,
       checkInTime: nowTime,
+      checkInDate: nowDate,
+      badgeNumber: generatedBadge,
       fillDurationSeconds: safeDuration,
     });
 

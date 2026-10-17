@@ -57,6 +57,7 @@ export type Guest = {
   notes: string | null;
   check_in_time: string;
   fill_duration_seconds: number | null;
+  badge_code?: string | null;
   employees?: { name: string } | null;
   visit_purposes?: { name: string } | null;
 };

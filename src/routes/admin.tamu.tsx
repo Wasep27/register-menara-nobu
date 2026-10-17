@@ -2,8 +2,9 @@ import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { RefreshCw, RotateCcw, SearchX, UserPlus, Users } from "lucide-react";
+import { RefreshCw, RotateCcw, SearchX, UserPlus, Users, IdCard } from "lucide-react";
 import { supabase, type Employee, type Guest, type Purpose } from "@/lib/supabase";
+import { VisitorBadgeModal, type VisitorBadgeData } from "@/components/VisitorBadgeModal";
 
 export const Route = createFileRoute("/admin/tamu")({ component: Guests });
 const PAGE = 20;
@@ -22,6 +23,7 @@ function Guests() {
   const [emps, setEmps] = useState<Employee[]>([]);
   const [purps, setPurps] = useState<Purpose[]>([]);
   const [edit, setEdit] = useState<Guest | null>(null);
+  const [badgeGuest, setBadgeGuest] = useState<VisitorBadgeData | null>(null);
 
   useEffect(() => {
     supabase
@@ -308,6 +310,31 @@ function Guests() {
                     <td className="p-3 text-muted-foreground">{r.employees?.name ?? "-"}</td>
                     <td className="whitespace-nowrap p-3">
                       <button
+                        className="mr-3 font-semibold text-emerald-600 dark:text-emerald-400 transition-colors hover:underline"
+                        onClick={() =>
+                          setBadgeGuest({
+                            id: r.id,
+                            name: r.name,
+                            institution: r.institution,
+                            phone: r.phone,
+                            employeeName: r.employees?.name ?? undefined,
+                            purposeName: r.visit_purposes?.name ?? undefined,
+                            checkInTime: new Date(r.check_in_time).toLocaleTimeString("id-ID", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            }),
+                            checkInDate: new Date(r.check_in_time).toLocaleDateString("id-ID", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            }),
+                            badgeNumber: r.badge_code || undefined,
+                          })
+                        }
+                      >
+                        Badge
+                      </button>
+                      <button
                         className="mr-3 font-medium text-primary transition-colors hover:underline"
                         onClick={() => setEdit(r)}
                       >
@@ -475,6 +502,13 @@ function Guests() {
         description={`Data kunjungan "${toDelete?.name ?? ""}" akan dihapus permanen.`}
         onConfirm={del}
       />
+      {badgeGuest && (
+        <VisitorBadgeModal
+          open={!!badgeGuest}
+          onClose={() => setBadgeGuest(null)}
+          data={badgeGuest}
+        />
+      )}
     </div>
   );
 }

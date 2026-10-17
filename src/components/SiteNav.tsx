@@ -395,11 +395,6 @@ export function SiteNav({ items, right, userName, onLogout, isDashboard }: SiteN
   const bottomDockLinks = isDashboardMode ? coreDashboardLinks : corePublicLinks;
 
   const avatarName = userName || (isDashboardMode ? "Admin" : "Tamu");
-  const displayShortName = userName
-    ? userName.trim().split(/\s+/)[0] || "Admin"
-    : isDashboardMode
-      ? "Admin"
-      : "Tamu";
 
   return (
     <>
@@ -456,12 +451,9 @@ export function SiteNav({ items, right, userName, onLogout, isDashboard }: SiteN
               aria-label={open ? "Tutup profil dan menu" : `Profil ${avatarName}`}
               aria-expanded={open}
               onClick={() => setOpen(!open)}
-              className={`${focusRing} group relative flex items-center gap-1.5 rounded-full border border-border/80 bg-card/90 py-1 pl-1 pr-2.5 transition-all active:scale-95 shadow-xs hover:border-primary/40 hover:bg-brand-soft/40`}
+              className={`${focusRing} group relative flex items-center justify-center rounded-full border border-border/80 bg-card/90 p-1 transition-all active:scale-95 shadow-xs hover:border-primary/40 hover:bg-brand-soft/40`}
             >
               <Avatar name={avatarName} size="sm" />
-              <span className="max-w-24 truncate text-xs font-semibold text-foreground">
-                {displayShortName}
-              </span>
               {isSecondaryMenuActive && (
                 <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-card bg-primary" />
               )}

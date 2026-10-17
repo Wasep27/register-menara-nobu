@@ -15,7 +15,7 @@ req_functions(name) as (values
   ('notify_new_guest'),('generate_visit_reminders'),('list_users_with_roles'),
   ('submit_guest_feedback')),
 req_columns(tbl, col) as (values
-  ('guests','scheduled_at'),('guests','is_important'),('guests','fill_duration_seconds'),
+  ('guests','scheduled_at'),('guests','is_important'),('guests','fill_duration_seconds'),('guests','badge_code'),
   ('employees','email'),('employees','user_id'),('admin_emails','created_at')),
 checks as (
   select 1 as urut, 'Tabel' as kategori, t.name as item,
