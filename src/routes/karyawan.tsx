@@ -82,10 +82,19 @@ function StaffLogin() {
       setLoading(false);
       return setErr(`Terlalu banyak percobaan. Coba lagi dalam ${Math.ceil(lock / 60)} menit.`);
     }
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    await supabase.rpc("record_login_attempt", { _email: email, _success: !error });
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    await supabase.rpc("record_login_attempt", { _email: email.trim(), _success: !error });
     setLoading(false);
-    if (error) setErr("Email atau password salah.");
+    if (error) {
+      const msg = error.message.toLowerCase();
+      if (msg.includes("invalid login credentials")) {
+        setErr("Email atau password tidak sesuai.");
+      } else if (msg.includes("not confirmed")) {
+        setErr("Email belum dikonfirmasi di Supabase.");
+      } else {
+        setErr(error.message);
+      }
+    }
   };
   const f = "mt-1 w-full rounded-lg border border-input bg-card px-3 py-3 text-foreground";
   return (
@@ -103,7 +112,7 @@ function StaffLogin() {
         <img src={logo} alt="Nobu" className="mx-auto h-9 w-auto" />
         <h1 className="text-center text-xl font-bold text-foreground">Portal Karyawan</h1>
         <p className="text-center text-sm text-muted-foreground">
-          Masuk untuk melihat notifikasi tamu Anda.
+          Khusus karyawan internal untuk memantau notifikasi kedatangan tamu.
         </p>
         <label className="block text-sm">
           Email
@@ -140,6 +149,13 @@ function StaffLogin() {
         >
           {loading ? "Masuk…" : "Masuk"}
         </button>
+
+        <div className="border-t border-border/60 pt-3 text-center text-xs">
+          <span className="text-muted-foreground">Petugas Keamanan / Resepsionis? </span>
+          <Link to="/admin/login" className="font-semibold text-primary hover:underline">
+            Login di Sini →
+          </Link>
+        </div>
       </form>
     </main>
   );

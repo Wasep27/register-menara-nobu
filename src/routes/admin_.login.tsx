@@ -54,17 +54,24 @@ function Login() {
         `Terlalu banyak percobaan gagal. Coba lagi dalam ${Math.ceil(lock / 60)} menit.`,
       );
     }
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    await supabase.rpc("record_login_attempt", { _email: email, _success: !error });
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    await supabase.rpc("record_login_attempt", { _email: email.trim(), _success: !error });
     setLoading(false);
-    if (error)
-      return setErr(
-        !navigator.onLine
-          ? "Tidak ada koneksi internet. Periksa jaringan lalu coba lagi."
-          : error.message.includes("not confirmed")
-            ? "Email belum dikonfirmasi. Cek kotak masuk email Anda."
-            : "Email atau password salah. Setelah 5 kali gagal, akun dikunci 15 menit.",
-      );
+    if (error) {
+      if (!navigator.onLine) {
+        return setErr("Tidak ada koneksi internet. Periksa jaringan lalu coba lagi.");
+      }
+      const msg = error.message.toLowerCase();
+      if (msg.includes("not confirmed") || msg.includes("unconfirmed")) {
+        return setErr("Email belum dikonfirmasi di Supabase. Hubungi Admin atau centang 'Auto Confirm User' di Supabase.");
+      }
+      if (msg.includes("invalid login credentials")) {
+        return setErr(
+          "Email atau password tidak cocok. Pastikan akun sudah terdaftar di menu Admin ➔ Pengguna & Role (/admin/pengguna) atau Supabase Auth (bukan hanya di Direktori Karyawan).",
+        );
+      }
+      return setErr(error.message);
+    }
     nav({ to: "/admin" });
   };
   const forgot = async () => {
@@ -103,7 +110,10 @@ function Login() {
         className="fade-up w-full max-w-sm space-y-4 rounded-3xl bg-card p-8 shadow-soft"
       >
         <img src={logo} alt="Nobu" className="mx-auto h-9 w-auto" />
-        <h1 className="text-center text-xl font-bold text-foreground">Login Admin</h1>
+        <h1 className="text-center text-xl font-bold text-foreground">Login Petugas & Admin</h1>
+        <p className="text-center text-xs text-muted-foreground">
+          Portal masuk untuk <strong>Admin</strong>, <strong>Petugas Keamanan (Security)</strong>, dan <strong>Staf Resepsionis</strong>.
+        </p>
         <label className="block text-sm">
           Email
           <input
@@ -148,9 +158,17 @@ function Login() {
         >
           {loading ? "Masuk…" : "Masuk"}
         </button>
-        <button type="button" className="w-full text-sm text-primary" onClick={forgot}>
-          Lupa password?
-        </button>
+        <div className="flex flex-col gap-2 pt-2 text-center text-xs">
+          <button type="button" className="text-primary hover:underline" onClick={forgot}>
+            Lupa password?
+          </button>
+          <div className="border-t border-border/60 pt-3">
+            <span className="text-muted-foreground">Karyawan penerima tamu? </span>
+            <Link to="/karyawan" className="font-semibold text-primary hover:underline">
+              Buka Portal Karyawan →
+            </Link>
+          </div>
+        </div>
       </form>
     </main>
   );
