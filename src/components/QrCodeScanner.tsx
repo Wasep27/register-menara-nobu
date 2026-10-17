@@ -105,7 +105,9 @@ export function QrCodeScanner({
   }, []);
 
   // Parse scanned raw string
-  const parseRawQrCode = (raw: string): { code: string; name?: string; institution?: string } => {
+  const parseRawQrCode = (
+    raw: string,
+  ): { code: string; name?: string | undefined; institution?: string | undefined } => {
     const trimmed = raw.trim();
     if (trimmed.startsWith("MENARA-NOBU:")) {
       const parts = trimmed.split(":");

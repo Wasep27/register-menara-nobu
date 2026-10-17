@@ -7,9 +7,9 @@ export interface BadgeDownloadPayload {
   badgeCode: string;
   checkInTime: string;
   checkInDate: string;
-  purposeName?: string;
-  employeeName?: string;
-  format?: "lanyard" | "compact";
+  purposeName?: string | undefined;
+  employeeName?: string | undefined;
+  format?: "lanyard" | "compact" | undefined;
 }
 
 /**

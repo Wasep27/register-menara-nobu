@@ -17,6 +17,7 @@ import logo from "@/assets/logo.png";
 import { encodeCode39, formatBadgeCode, generateQrMatrix } from "@/lib/barcode";
 import { toast } from "sonner";
 import type { VisitorBadgeData } from "@/lib/badge-utils";
+import { downloadBadgeAsPng } from "@/lib/badge-download";
 import { getNowWibDateString, getNowWibTimeString } from "@/lib/date-utils";
 export type { VisitorBadgeData };
 

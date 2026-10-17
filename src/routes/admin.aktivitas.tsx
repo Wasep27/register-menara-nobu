@@ -40,6 +40,7 @@ import {
   calculateActivityStats,
 } from "@/lib/activity-log-utils";
 import { useAdminRole } from "@/hooks/useAdminRole";
+import { ActivitySummaryDashboard } from "@/components/ActivitySummaryDashboard";
 
 export const Route = createFileRoute("/admin/aktivitas")({
   head: () => ({
@@ -95,22 +96,26 @@ export function AdminActivityLogPage() {
       startOfToday.setHours(0, 0, 0, 0);
 
       // 1. Fetch counts independently
-      void supabase
-        .from("guests")
-        .select("id", { count: "exact", head: true })
-        .gte("check_in_time", startOfToday.toISOString())
-        .then((res) => {
+      void (async () => {
+        try {
+          const res = await supabase
+            .from("guests")
+            .select("id", { count: "exact", head: true })
+            .gte("check_in_time", startOfToday.toISOString());
           if (typeof res.count === "number") setTodayGuestRegistrations(res.count);
-        })
-        .catch(() => {});
+        } catch {
+          // ignore
+        }
+      })();
 
-      void supabase
-        .from("guests")
-        .select("id", { count: "exact", head: true })
-        .then((res) => {
+      void (async () => {
+        try {
+          const res = await supabase.from("guests").select("id", { count: "exact", head: true });
           if (typeof res.count === "number") setTotalGuestRegistrations(res.count);
-        })
-        .catch(() => {});
+        } catch {
+          // ignore
+        }
+      })();
 
       // 2. Coba ambil dari tabel activity_logs
       let directLogs: ActivityLog[] = [];

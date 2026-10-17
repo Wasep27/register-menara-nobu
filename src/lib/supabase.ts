@@ -112,19 +112,19 @@ export type ActivityLog = {
 
 export type GuestStatusResult = {
   found: boolean;
-  id?: string;
-  name?: string;
-  institution?: string;
-  phone?: string;
-  check_in_time?: string;
-  check_in_date?: string;
-  badge_code?: string;
-  purpose_name?: string;
-  employee_name?: string;
-  department?: string;
-  status?: string;
-  scheduled_at?: string;
-  error?: string;
+  id?: string | undefined;
+  name?: string | undefined;
+  institution?: string | undefined;
+  phone?: string | undefined;
+  check_in_time?: string | undefined;
+  check_in_date?: string | undefined;
+  badge_code?: string | undefined;
+  purpose_name?: string | undefined;
+  employee_name?: string | undefined;
+  department?: string | undefined;
+  status?: string | undefined;
+  scheduled_at?: string | undefined;
+  error?: string | undefined;
 };
 
 export async function checkGuestStatus(code: string): Promise<GuestStatusResult> {

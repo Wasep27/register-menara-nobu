@@ -954,10 +954,10 @@ function HBar({
 }: {
   data: { name: string; value: number }[];
   color: string;
-  emptyTitle?: string;
-  emptyDesc?: string;
-  onAction?: () => void;
-  actionLabel?: string;
+  emptyTitle?: string | undefined;
+  emptyDesc?: string | undefined;
+  onAction?: (() => void) | undefined;
+  actionLabel?: string | undefined;
 }) {
   if (!data.length)
     return (

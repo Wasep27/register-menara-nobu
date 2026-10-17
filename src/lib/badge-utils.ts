@@ -2,15 +2,15 @@ import type { Guest } from "@/lib/supabase";
 import { formatWibDate, formatWibTime } from "@/lib/date-utils";
 
 export interface VisitorBadgeData {
-  id?: string;
+  id?: string | undefined;
   name: string;
   institution: string;
-  phone?: string;
-  employeeName?: string;
-  purposeName?: string;
-  checkInTime?: string;
-  checkInDate?: string;
-  badgeNumber?: string;
+  phone?: string | undefined;
+  employeeName?: string | undefined;
+  purposeName?: string | undefined;
+  checkInTime?: string | undefined;
+  checkInDate?: string | undefined;
+  badgeNumber?: string | undefined;
 }
 
 /**

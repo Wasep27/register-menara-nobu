@@ -37,7 +37,7 @@ function AdminScanPage() {
     if (!res.badge_code) return;
     setHistory((prev) => {
       // Cegah duplikat beruntun
-      if (prev.length > 0 && prev[0].badgeCode === res.badge_code) return prev;
+      if (prev.length > 0 && prev[0]?.badgeCode === res.badge_code) return prev;
       const newItem: ScannedHistoryItem = {
         id: Math.random().toString(36).substring(2, 9),
         name: res.name || "Tamu Terdaftar",

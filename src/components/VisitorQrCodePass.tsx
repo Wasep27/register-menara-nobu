@@ -19,16 +19,16 @@ import { getNowWibDateString, getNowWibTimeString } from "@/lib/date-utils";
 import { toast } from "sonner";
 
 export interface VisitorQrCodePassProps {
-  id?: string;
+  id?: string | undefined;
   name: string;
   institution: string;
   badgeCode: string;
-  checkInTime?: string;
-  checkInDate?: string;
-  employeeName?: string;
-  purposeName?: string;
-  variant?: "card" | "compact" | "standalone";
-  className?: string;
+  checkInTime?: string | undefined;
+  checkInDate?: string | undefined;
+  employeeName?: string | undefined;
+  purposeName?: string | undefined;
+  variant?: "card" | "compact" | "standalone" | undefined;
+  className?: string | undefined;
 }
 
 /**

@@ -3,7 +3,7 @@ import { formatWibDate } from "@/lib/date-utils";
 
 export interface DashboardStats {
   todayCount: number;
-  busiest?: [string, number];
+  busiest?: [string, number] | undefined;
   avg: number | null;
   trend: { name: string; value: number }[];
   purpose: { name: string; value: number }[];

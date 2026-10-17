@@ -18,15 +18,15 @@ import { ROUTE_METADATA } from "./routeMetadata";
 interface NavDrawerModalProps {
   open: boolean;
   onClose: () => void;
-  userName?: string;
+  userName?: string | undefined;
   avatarName: string;
   isDashboardMode: boolean;
-  hideRegistration?: boolean;
-  onLogout?: () => void;
+  hideRegistration?: boolean | undefined;
+  onLogout?: (() => void) | undefined;
   groupedItems: Record<string, NavItem[]>;
   isItemActive: (to: string) => boolean;
   focusRing: string;
-  triggerBtnRef?: React.RefObject<HTMLButtonElement | null>;
+  triggerBtnRef?: React.RefObject<HTMLButtonElement | null> | undefined;
 }
 
 export const NavDrawerModal = React.memo(function NavDrawerModal({

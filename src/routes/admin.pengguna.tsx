@@ -191,7 +191,11 @@ function UsersPage() {
         toast.error(`Gagal membuat akun: ${error.message}`);
       } else {
         // Otomatis sinkronkan identitas jika ada Supabase schema baru
-        await supabase.rpc("admin_repair_identities").catch(() => null);
+        try {
+          await supabase.rpc("admin_repair_identities");
+        } catch {
+          // ignore if rpc not yet created
+        }
         toast.success(
           `Akun baru (${createEmail}) berhasil dibuat dengan peran ${createRole.toUpperCase()} dan provider email aktif!`,
         );

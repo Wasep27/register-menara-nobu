@@ -34,8 +34,8 @@ function rolldownRuntimeFallbackPlugin(): Plugin {
       });
     },
     load(id) {
-      const cleanId = id.split("?")[0];
-      if (cleanId.includes("rolldown-runtime-") && cleanId.endsWith(".js")) {
+      const cleanId = id.split("?")[0] ?? "";
+      if (cleanId && cleanId.includes("rolldown-runtime-") && cleanId.endsWith(".js")) {
         if (!fs.existsSync(cleanId)) {
           const depsDir = path.resolve(process.cwd(), "node_modules/.vite/deps");
           if (fs.existsSync(depsDir)) {
@@ -55,10 +55,12 @@ function rolldownRuntimeFallbackPlugin(): Plugin {
 }
 
 export default defineConfig({
-  server: {
-    host: "0.0.0.0",
-    port: 3000,
-    allowedHosts: true,
+  vite: {
+    server: {
+      host: "0.0.0.0",
+      port: 3000,
+      allowedHosts: true,
+    },
   },
   plugins: [rolldownRuntimeFallbackPlugin()],
   tanstackStart: {

@@ -29,17 +29,17 @@ import { getNowWibDateString, getNowWibTimeString } from "@/lib/date-utils";
 import { toast } from "sonner";
 
 export type RegistrationSuccessData = {
-  id?: string;
+  id?: string | undefined;
   name: string;
   institution: string;
   phone: string;
-  employeeName?: string;
-  purposeName?: string;
-  scheduledAt?: string;
+  employeeName?: string | undefined;
+  purposeName?: string | undefined;
+  scheduledAt?: string | undefined;
   checkInTime: string;
-  checkInDate?: string;
-  badgeNumber?: string;
-  fillDurationSeconds?: number;
+  checkInDate?: string | undefined;
+  badgeNumber?: string | undefined;
+  fillDurationSeconds?: number | undefined;
 };
 
 interface RegistrationSuccessProps {
