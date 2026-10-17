@@ -97,6 +97,14 @@ function Dashboard() {
         </div>
       </div>
 
+      {loading ? (
+        <>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{[0, 1, 2, 3].map((k) => <Skel key={k} h="h-24" />)}</div>
+          <Skel h="h-72" />
+          <div className="grid gap-6 lg:grid-cols-2"><Skel h="h-64" /><Skel h="h-64" /></div>
+        </>
+      ) : (
+      <>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Card t="Tamu hari ini" v={stats.todayCount} />
         <Card t={`Total ${days} hari`} v={rows.length} sub={diff != null ? `${diff >= 0 ? "▲" : "▼"} ${Math.abs(diff)}% vs periode lalu` : "Belum ada pembanding"} />
