@@ -4,9 +4,8 @@ import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tansta
 import { useEffect, useState } from "react";
 import { signOutLocal, startIdleLogout, supabase } from "@/lib/supabase";
 import { SiteNav } from "@/components/SiteNav";
-import { Avatar } from "@/components/Avatar";
-
-import { ShieldCheck } from "lucide-react";
+import { LogOut, ShieldCheck, Users } from "lucide-react";
+import { AdminSidebar } from "@/components/AdminSidebar";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
@@ -36,6 +35,19 @@ const links = [
   { to: "/admin/panduan", label: "Panduan Teknis" },
 ] as const;
 
+const PAGE_TITLES: Record<string, string> = {
+  "/admin": "Ringkasan",
+  "/admin/tamu": "Buku Tamu",
+  "/admin/karyawan": "Direktori Karyawan",
+  "/admin/tujuan": "Tujuan Kunjungan",
+  "/admin/laporan": "Laporan & Ekspor",
+  "/admin/feedback": "Feedback Tamu",
+  "/admin/aktivitas": "Log Aktivitas",
+  "/admin/email-admin": "Email Notifikasi",
+  "/admin/pengguna": "Pengguna & Hak Akses",
+  "/admin/panduan": "Panduan Teknis",
+};
+
 function AdminLayout() {
   const loc = useLocation();
   const nav = useNavigate();
@@ -43,6 +55,7 @@ function AdminLayout() {
   const [idle, setIdle] = useState(false);
   const [name, setName] = useState("");
   const isLogin = loc.pathname === "/admin/login";
+  const currentTitle = PAGE_TITLES[loc.pathname] || "Dashboard Admin";
 
   // Periksa ulang akses ke server (getUser memvalidasi token, bukan hanya membaca lokal)
   useEffect(() => {
@@ -145,43 +158,72 @@ function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-background">
-      <SiteNav
-        items={[...links]}
-        userName={name}
-        onLogout={() => setAskLogout(true)}
-        right={
-          <div className="flex w-full items-center gap-2 md:w-auto">
+      {/* Navigasi Mobile (< md): Header mengambang & dock bawah */}
+      <div className="md:hidden">
+        <SiteNav
+          items={[...links]}
+          userName={name}
+          onLogout={() => setAskLogout(true)}
+          isDashboard={true}
+          right={
             <button
-              type="button"
-              title={`Akun: ${name || "Admin"} — Buka profil & semua menu`}
-              onClick={() => window.dispatchEvent(new CustomEvent("toggle-sitenav-drawer"))}
-              className="flex shrink-0 items-center justify-center rounded-full transition-transform hover:scale-105 outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-            >
-              <Avatar name={name || "Admin"} size="sm" />
-            </button>
-            <button
-              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-destructive/30 px-4 text-sm font-semibold text-destructive transition-all hover:bg-destructive hover:text-destructive-foreground active:scale-95"
+              className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-destructive/30 px-3 text-xs font-semibold text-destructive transition-all hover:bg-destructive hover:text-destructive-foreground active:scale-95"
               onClick={() => setAskLogout(true)}
             >
-              <svg
-                aria-hidden
-                viewBox="0 0 24 24"
-                className="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <polyline points="16 17 21 12 16 7" />
-                <line x1="21" y1="12" x2="9" y2="12" />
-              </svg>
+              <LogOut className="h-3.5 w-3.5" />
               Keluar
             </button>
-          </div>
-        }
-      />
+          }
+        />
+      </div>
+
+      {/* Layout Desktop Modern (md ke atas): Sidebar Mengambang dengan Radius */}
+      <div className="mx-auto flex max-w-[1440px] items-start gap-4 p-3 md:p-4 lg:gap-6">
+        {/* Sidebar Mengambang Desktop */}
+        <AdminSidebar userName={name} onLogout={() => setAskLogout(true)} />
+
+        {/* Viewport Konten Utama */}
+        <div className="flex-1 min-w-0 flex flex-col">
+          {/* Top Bar Kontekstual Desktop */}
+          <header className="hidden md:flex items-center justify-between gap-4 mb-4 rounded-2xl border border-border/70 bg-card/85 px-5 py-3 shadow-soft backdrop-blur-md">
+            <div className="flex items-center gap-2 text-sm min-w-0">
+              <Link
+                to="/admin"
+                className="font-semibold text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Dashboard
+              </Link>
+              <span className="text-muted-foreground/40 font-normal">/</span>
+              <span className="font-bold text-foreground truncate">{currentTitle}</span>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0">
+              <Link
+                to="/registrasi"
+                className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-brand-soft px-3.5 py-1.5 text-xs font-semibold text-primary transition-all hover:bg-primary hover:text-primary-foreground active:scale-95"
+              >
+                <Users className="h-3.5 w-3.5" />
+                <span>Buku Tamu Depan</span>
+              </Link>
+
+              <button
+                type="button"
+                onClick={() => setAskLogout(true)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-destructive/25 px-3.5 py-1.5 text-xs font-semibold text-destructive transition-all hover:bg-destructive hover:text-destructive-foreground active:scale-95"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                <span>Keluar</span>
+              </button>
+            </div>
+          </header>
+
+          {/* Area Halaman */}
+          <main key={loc.pathname} className="fade-up flex-1 pb-24 md:pb-6">
+            <Outlet />
+          </main>
+        </div>
+      </div>
+
       <ConfirmDialog
         open={askLogout}
         onOpenChange={setAskLogout}
@@ -191,9 +233,6 @@ function AdminLayout() {
         destructive={false}
         onConfirm={logout}
       />
-      <div key={loc.pathname} className="fade-up mx-auto max-w-6xl p-4 pb-28 md:p-6 md:pb-8">
-        <Outlet />
-      </div>
     </div>
   );
 }

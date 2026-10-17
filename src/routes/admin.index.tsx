@@ -186,33 +186,36 @@ function Dashboard() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap sm:flex-nowrap shrink-0">
-          {/* Jam Real-time Indonesia (WIB - Asia/Jakarta) */}
+        {/* Kontrol Waktu & Filter Periode: Berdampingan Kiri-Kanan secara Responsif di Mobile */}
+        <div className="flex w-full sm:w-auto items-center justify-between sm:justify-end gap-1.5 min-[380px]:gap-2 sm:gap-2.5 flex-nowrap shrink-0">
+          {/* Jam Real-time Indonesia (WIB - Asia/Jakarta) di Kiri */}
           <div
             title="Waktu Real-time Indonesia Barat (WIB)"
-            className="flex items-center gap-2 rounded-full border border-border/80 bg-card px-3 sm:px-3.5 py-1.5 shadow-soft transition-all hover:border-primary/40 shrink-0"
+            className="flex flex-1 sm:flex-initial items-center gap-1.5 sm:gap-2 rounded-full border border-border/80 bg-card px-2.5 sm:px-3.5 py-1.5 shadow-soft transition-all hover:border-primary/40 min-w-0"
           >
-            <span className="relative flex h-2 w-2">
+            <span className="relative flex h-2 w-2 shrink-0">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
             </span>
             <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-              <span className="text-muted-foreground hidden md:inline">{dateFormatted} ·</span>
-              <span className="font-mono tabular-nums text-foreground">{timeFormatted}</span>
-              <span className="rounded bg-brand-soft px-1 text-[10px] font-bold text-primary">
+            <div className="flex items-center gap-1 sm:gap-1.5 text-xs font-semibold text-foreground truncate min-w-0">
+              <span className="text-muted-foreground hidden lg:inline">{dateFormatted} ·</span>
+              <span className="font-mono tabular-nums text-foreground tracking-tight">
+                {timeFormatted}
+              </span>
+              <span className="rounded bg-brand-soft px-1 py-0.5 text-[9px] min-[380px]:text-[10px] font-bold text-primary shrink-0 leading-none">
                 WIB
               </span>
             </div>
           </div>
 
-          {/* Filter Hari 7, 30, 90 Hari */}
-          <div className="flex w-fit shrink-0 rounded-full bg-card p-1 shadow-soft border border-border/60">
+          {/* Filter Hari 7, 30, 90 Hari di Kanan */}
+          <div className="flex shrink-0 items-center rounded-full bg-card p-1 shadow-soft border border-border/60">
             {periods.map((p) => (
               <button
                 key={p.d}
                 onClick={() => setDays(p.d)}
-                className={`rounded-full px-3 py-1.5 text-xs sm:text-sm font-semibold transition-all active:scale-95 ${
+                className={`rounded-full px-2 min-[380px]:px-2.5 sm:px-3 py-1 sm:py-1.5 text-[11px] min-[380px]:text-xs sm:text-sm font-semibold transition-all active:scale-95 whitespace-nowrap ${
                   days === p.d
                     ? "bg-primary text-primary-foreground shadow-xs"
                     : "text-muted-foreground hover:text-foreground"

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Check,
@@ -7,18 +7,24 @@ import {
   Building,
   User,
   Calendar,
-  Share2,
+  Download,
   Printer,
   Sparkles,
-  ChevronRight,
   Smile,
   ThumbsUp,
   RotateCcw,
-  MessageSquare,
   Barcode,
+  Copy,
+  ExternalLink,
+  Pause,
+  Play,
+  ShieldCheck,
 } from "lucide-react";
 import { submitGuestFeedback } from "@/lib/supabase";
 import { VisitorBadgeModal } from "@/components/VisitorBadgeModal";
+import { encodeCode39, formatBadgeCode } from "@/lib/barcode";
+import { downloadBadgeAsPng } from "@/lib/badge-download";
+import { toast } from "sonner";
 
 export type RegistrationSuccessData = {
   id?: string;
@@ -48,17 +54,41 @@ export function RegistrationSuccess({ data, onReset }: RegistrationSuccessProps)
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
   const [showBadgeModal, setShowBadgeModal] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // Countdown timer for auto-reset (starts at 30 seconds, pauses if user interacts)
   const [countdown, setCountdown] = useState(30);
   const [isPaused, setIsPaused] = useState(false);
 
+  // Deterministic Badge Code
+  const badgeCode = useMemo(() => {
+    if (data.badgeNumber) return data.badgeNumber;
+    return formatBadgeCode(data.id, new Date().toISOString());
+  }, [data.badgeNumber, data.id]);
+
+  // Generate SVG Code 39 Barcode Elements
+  const { elements: barcodeElements, totalWidth: barcodeWidth } = useMemo(() => {
+    return encodeCode39(badgeCode, 2, 5);
+  }, [badgeCode]);
+
+  const displayTime =
+    data.checkInTime ||
+    new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+  const displayDate =
+    data.checkInDate ||
+    new Date().toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+
   const availableTags = [
-    "⚡ Sangat Cepat (< 1 Menit)",
-    "📝 Form Jelas & Ringkas",
+    "⚡ Sangat Cepat",
+    "📝 Form Jelas",
     "📱 Nyaman di Ponsel",
     "🛡️ Privasi Aman",
-    "✨ Tampilan Ramah",
+    "✨ Pelayanan Ramah",
   ];
 
   const ratingDescriptions: Record<number, string> = {
@@ -84,6 +114,42 @@ export function RegistrationSuccess({ data, onReset }: RegistrationSuccessProps)
     }, 1000);
     return () => clearInterval(interval);
   }, [isPaused, onReset]);
+
+  // Handle direct download of barcode badge PNG
+  const handleDirectDownload = async () => {
+    setIsPaused(true);
+    setIsDownloading(true);
+    try {
+      await downloadBadgeAsPng({
+        name: data.name,
+        institution: data.institution,
+        badgeCode,
+        checkInTime: displayTime,
+        checkInDate: displayDate,
+        purposeName: data.purposeName,
+        employeeName: data.employeeName,
+        format: "compact",
+      });
+      toast.success("Barcode visitor pass berhasil diunduh!");
+    } catch {
+      toast.error("Gagal mengunduh gambar barcode");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  // Handle Copy Pass Code
+  const handleCopyPassCode = async () => {
+    setIsPaused(true);
+    try {
+      await navigator.clipboard.writeText(badgeCode);
+      setCopiedCode(true);
+      toast.success("Kode pass berhasil disalin!");
+      setTimeout(() => setCopiedCode(false), 2000);
+    } catch {
+      toast.error("Gagal menyalin kode");
+    }
+  };
 
   // Handle feedback submission
   const handleFeedbackSubmit = (e: React.FormEvent) => {
@@ -117,15 +183,14 @@ export function RegistrationSuccess({ data, onReset }: RegistrationSuccessProps)
         fill_duration_seconds: data.fillDurationSeconds || 0,
       });
     } catch {
-      // ignore errors
+      // ignore
     }
 
     setTimeout(() => {
       setSubmittingFeedback(false);
       setFeedbackSubmitted(true);
-      // Give visitor more time to view the result
-      setCountdown(20);
-    }, 400);
+      setCountdown(25);
+    }, 350);
   };
 
   const toggleTag = (tag: string) => {
@@ -140,228 +205,236 @@ export function RegistrationSuccess({ data, onReset }: RegistrationSuccessProps)
     window.print();
   };
 
-  // Generate celebration particles
-  const confettiParticles = Array.from({ length: 24 }).map((_, i) => {
-    const angle = (i / 24) * 360;
-    const radius = 90 + Math.random() * 80;
-    const x = Math.cos((angle * Math.PI) / 180) * radius;
-    const y = Math.sin((angle * Math.PI) / 180) * radius;
-    const colors = ["#07936E", "#10D5A0", "#38BDF8", "#F59E0B", "#10241E", "#34D399"];
-    const color = colors[i % colors.length] || "#07936E";
-    const size = 6 + (i % 5) * 2;
-    return { id: i, x, y, color, size };
-  });
-
   const activeRating = hoverRating !== null ? hoverRating : rating;
 
   return (
-    <div className="relative mx-auto w-full max-w-2xl px-4 py-8">
-      {/* Background Glow / Ambiance */}
+    <div className="relative mx-auto w-full max-w-2xl px-3.5 sm:px-6 pt-4 pb-36 sm:pb-24">
+      {/* Background Glow */}
       <div className="pointer-events-none absolute left-1/2 top-10 -translate-x-1/2 transform">
         <div className="h-64 w-64 rounded-full bg-brand/20 blur-3xl" />
       </div>
 
       <motion.div
-        initial={{ opacity: 0, y: 30, scale: 0.95 }}
+        initial={{ opacity: 0, y: 24, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="relative overflow-hidden rounded-3xl border border-border/80 bg-card p-6 shadow-soft sm:p-10"
+        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+        className="relative overflow-hidden rounded-3xl border border-border/80 bg-card p-4 sm:p-8 shadow-soft"
       >
-        {/* Animated Checkmark and Ripple Center */}
-        <div className="relative mx-auto mb-6 flex h-24 w-24 items-center justify-center">
-          {/* Pulsing Concentric Ripple Rings */}
+        {/* Animated Checkmark Badge */}
+        <div className="relative mx-auto mb-4 flex h-20 w-20 items-center justify-center">
           <motion.div
             initial={{ scale: 0.8, opacity: 0.8 }}
-            animate={{ scale: [1, 1.4, 1.6], opacity: [0.7, 0.3, 0] }}
+            animate={{ scale: [1, 1.4, 1.6], opacity: [0.7, 0.25, 0] }}
             transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }}
             className="absolute inset-0 rounded-full bg-brand/30"
           />
           <motion.div
             initial={{ scale: 0.8, opacity: 0.6 }}
-            animate={{ scale: [0.9, 1.25, 1.45], opacity: [0.6, 0.2, 0] }}
-            transition={{ duration: 2, repeat: Infinity, delay: 0.5, ease: "easeOut" }}
+            animate={{ scale: [0.9, 1.25, 1.45], opacity: [0.6, 0.15, 0] }}
+            transition={{ duration: 2, repeat: Infinity, delay: 0.4, ease: "easeOut" }}
             className="absolute inset-0 rounded-full bg-primary/20"
           />
 
-          {/* Confetti Particles Burst */}
-          {confettiParticles.map((p) => (
-            <motion.span
-              key={p.id}
-              initial={{ x: 0, y: 0, opacity: 1, scale: 0 }}
-              animate={{
-                x: p.x,
-                y: p.y,
-                opacity: [1, 0.9, 0],
-                scale: [0, 1.2, 0.4],
-                rotate: [0, p.id % 2 === 0 ? 180 : -180],
-              }}
-              transition={{
-                duration: 1.2 + (p.id % 4) * 0.2,
-                ease: "easeOut",
-                delay: 0.15,
-              }}
-              style={{
-                backgroundColor: p.color,
-                width: p.size,
-                height: p.size,
-              }}
-              className="absolute rounded-full shadow-sm"
-            />
-          ))}
-
-          {/* Main Badge Container */}
           <motion.div
-            initial={{ scale: 0, rotate: -45 }}
+            initial={{ scale: 0, rotate: -30 }}
             animate={{ scale: 1, rotate: 0 }}
-            transition={{
-              type: "spring",
-              stiffness: 260,
-              damping: 18,
-              delay: 0.1,
-            }}
-            className="relative flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-tr from-primary to-brand text-primary-foreground shadow-lg shadow-brand/30"
+            transition={{ type: "spring", stiffness: 280, damping: 20, delay: 0.1 }}
+            className="relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-tr from-primary to-brand text-primary-foreground shadow-lg shadow-brand/30"
           >
-            {/* SVG Checkmark Drawing */}
-            <svg
-              className="h-10 w-10 text-white"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="3.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <motion.path
-                initial={{ pathLength: 0 }}
-                animate={{ pathLength: 1 }}
-                transition={{ duration: 0.55, ease: "easeOut", delay: 0.3 }}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
+            <Check className="h-9 w-9 stroke-[3.5] text-white" />
           </motion.div>
         </div>
 
         {/* Header Text */}
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.35, duration: 0.4 }}
-          className="text-center"
-        >
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-soft px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-primary">
+        <div className="text-center">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-soft px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary">
             <Sparkles className="h-3.5 w-3.5 text-primary" />
             Registrasi Berhasil
           </span>
-          <h1 className="mt-2 font-display text-2xl font-black text-foreground sm:text-3xl">
-            Selamat Datang di Menara Nobu!
+          <h1 className="mt-2 font-display text-2xl font-black text-foreground sm:text-3xl leading-tight">
+            Selamat Datang di Menara Nobu
           </h1>
-          <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground sm:text-base">
+          <p className="mx-auto mt-2 max-w-md text-xs sm:text-sm text-muted-foreground leading-relaxed">
             Terima kasih, <span className="font-semibold text-foreground">{data.name}</span>. Data
-            kunjungan Anda telah tercatat dan pihak yang dituju telah diberi notifikasi.
+            kehadiran Anda telah tercatat dan pihak yang dituju sudah menerima notifikasi.
           </p>
-        </motion.div>
+        </div>
 
-        {/* Digital Visitor Badge / Card Summary */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.45, duration: 0.4 }}
-          className="mt-6 rounded-2xl border border-border bg-muted/40 p-5 print:border-none print:bg-white"
+        {/* KARTU AKSES & BARCODE DIGITAL TAMU (Responsif & Siap Unduh) */}
+        <section
+          aria-label="Kartu Akses & Barcode Tamu"
+          className="mt-6 overflow-hidden rounded-2xl border-2 border-primary/25 bg-gradient-to-b from-brand-soft/40 via-card to-card p-4 sm:p-5 shadow-xs"
         >
+          {/* Card Top: Branding & Status */}
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/80 pb-3">
-            <div className="flex items-center gap-2">
-              <Building className="h-4 w-4 text-primary" />
-              <span className="font-display text-xs font-bold uppercase tracking-wider text-foreground">
-                Bukti Registrasi Tamu
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
+                <Barcode className="h-4 w-4" />
+              </span>
+              <div className="min-w-0">
+                <p className="font-display text-xs font-bold uppercase tracking-wider text-foreground truncate">
+                  Visitor Pass Digital
+                </p>
+                <p className="text-[10px] text-muted-foreground truncate">Gedung Menara Nobu</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="inline-flex items-center gap-1 rounded-full bg-card border border-border px-2.5 py-1 text-[11px] font-semibold text-primary shadow-xs">
+                <Clock className="h-3 w-3" />
+                {displayTime} WIB
               </span>
             </div>
-            <div className="flex items-center gap-2">
+          </div>
+
+          {/* Visitor Primary Info */}
+          <div className="mt-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                Pengunjung
+              </span>
+              <h2 className="font-display text-lg sm:text-xl font-black text-foreground truncate">
+                {data.name}
+              </h2>
+              <p className="text-xs font-semibold text-primary truncate">{data.institution}</p>
+            </div>
+
+            {/* Pass Code Pill with Quick Copy */}
+            <div className="flex sm:flex-col items-center sm:items-end justify-between gap-1 shrink-0 pt-1 sm:pt-0">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
+                Kode Akses
+              </span>
               <button
                 type="button"
-                onClick={() => {
-                  setIsPaused(true);
-                  setShowBadgeModal(true);
-                }}
-                className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary hover:bg-primary hover:text-primary-foreground transition-all active:scale-95 shadow-xs"
+                onClick={handleCopyPassCode}
+                title="Salin kode pass"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-2.5 py-1 text-xs font-mono font-bold text-foreground hover:bg-brand-soft hover:text-primary transition-all active:scale-95 shadow-xs"
               >
-                <Barcode className="h-3.5 w-3.5" />
-                Badge & Barcode
+                {copiedCode ? (
+                  <Check className="h-3.5 w-3.5 text-primary" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+                )}
+                <span>{badgeCode}</span>
               </button>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-card px-2.5 py-1 text-xs font-semibold text-primary shadow-sm">
-                <Clock className="h-3.5 w-3.5" />
-                {data.checkInTime} WIB
+            </div>
+          </div>
+
+          {/* Purpose & Host Pill Grid */}
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-xl bg-card border border-border/70 p-2.5 text-xs">
+            <div className="min-w-0">
+              <span className="text-[10px] font-medium text-muted-foreground block">
+                Keperluan:
+              </span>
+              <span className="font-bold text-foreground truncate block">
+                {data.purposeName || "Kunjungan Resmi"}
+              </span>
+            </div>
+            <div className="min-w-0">
+              <span className="text-[10px] font-medium text-muted-foreground block">
+                Staf yang Dituju:
+              </span>
+              <span className="font-bold text-primary truncate block">
+                {data.employeeName || "Resepsionis Lobi"}
               </span>
             </div>
           </div>
 
-          <div className="mt-3.5 grid gap-3 text-xs sm:grid-cols-2 sm:text-sm">
-            <div>
-              <span className="text-muted-foreground">Nama Pengunjung:</span>
-              <p className="font-bold text-foreground">{data.name}</p>
+          {/* Scannable Code 39 Barcode Display */}
+          <div className="mt-3.5 rounded-xl border border-border/80 bg-white p-3 text-center shadow-xs">
+            <div className="flex justify-center items-center overflow-x-hidden py-1">
+              <svg
+                viewBox={`0 0 ${barcodeWidth} 46`}
+                className="w-full max-w-[280px] sm:max-w-[340px] h-10 max-h-12"
+                preserveAspectRatio="none"
+              >
+                {
+                  barcodeElements.reduce<{ x: number; nodes: React.ReactNode[] }>(
+                    (acc, el, idx) => {
+                      if (el.isBar) {
+                        acc.nodes.push(
+                          <rect
+                            key={idx}
+                            x={acc.x}
+                            y={0}
+                            width={el.width}
+                            height={46}
+                            fill="#10241E"
+                          />,
+                        );
+                      }
+                      acc.x += el.width;
+                      return acc;
+                    },
+                    { x: 0, nodes: [] },
+                  ).nodes
+                }
+              </svg>
             </div>
-            <div>
-              <span className="text-muted-foreground">Instansi / Perusahaan:</span>
-              <p className="font-bold text-foreground">{data.institution}</p>
-            </div>
-            {data.employeeName && (
-              <div>
-                <span className="text-muted-foreground">Karyawan yang Dituju:</span>
-                <p className="font-bold text-primary">{data.employeeName}</p>
-              </div>
-            )}
-            {data.purposeName && (
-              <div>
-                <span className="text-muted-foreground">Keperluan:</span>
-                <p className="font-bold text-foreground">{data.purposeName}</p>
-              </div>
-            )}
+            <p className="font-mono text-xs font-bold tracking-widest text-neutral-900 mt-1">
+              *{badgeCode}*
+            </p>
           </div>
 
-          {data.fillDurationSeconds && data.fillDurationSeconds > 0 && (
-            <div className="mt-3.5 flex items-center justify-between rounded-xl bg-card/80 px-3 py-2 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1.5 font-medium text-foreground">
-                <Clock className="h-3.5 w-3.5 text-brand" />
-                Durasi Pengisian Formulir:
-              </span>
-              <span className="font-bold text-primary">
-                {data.fillDurationSeconds} detik (
-                {data.fillDurationSeconds <= 60 ? "Sangat Cepat ⚡" : "Efisien"})
-              </span>
-            </div>
-          )}
-        </motion.div>
+          {/* Action Buttons for Barcode Pass */}
+          <div className="mt-3.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <button
+              type="button"
+              disabled={isDownloading}
+              onClick={handleDirectDownload}
+              className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95 disabled:opacity-60"
+            >
+              <Download className="h-4 w-4" />
+              <span>{isDownloading ? "Menyiapkan File..." : "Unduh Barcode (PNG)"}</span>
+            </button>
 
-        {/* FEEDBACK SECTION: Seberapa mudah & cepat pengisian form? */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.55, duration: 0.4 }}
-          className="mt-6 rounded-2xl border border-brand/30 bg-gradient-to-br from-brand-soft/60 via-card to-card p-5"
+            <button
+              type="button"
+              onClick={() => {
+                setIsPaused(true);
+                setShowBadgeModal(true);
+              }}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 text-xs font-semibold text-foreground shadow-xs transition-colors hover:bg-brand-soft hover:text-primary active:scale-95"
+            >
+              <ExternalLink className="h-4 w-4" />
+              <span>Format Badge Lengkap / Print</span>
+            </button>
+          </div>
+        </section>
+
+        {/* FEEDBACK SECTION: Seberapa Cepat & Mudah Pengisian? */}
+        <section
+          aria-label="Evaluasi Pengalaman Pengunjung"
+          className="mt-6 rounded-2xl border border-brand/30 bg-gradient-to-br from-brand-soft/50 via-card to-card p-4 sm:p-6"
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand/20 text-primary">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand/20 text-primary">
                 <Smile className="h-4 w-4" />
               </span>
-              <h2 className="font-display text-sm font-bold text-foreground sm:text-base">
-                Seberapa mudah & cepat pengisian buku tamu ini?
+              <h2 className="font-display text-sm font-bold text-foreground sm:text-base truncate">
+                Bagikan Pengalaman Anda
               </h2>
             </div>
             {isPaused && (
-              <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+              <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
                 Timer Dijeda
               </span>
             )}
           </div>
 
+          <p className="mt-1 text-xs text-muted-foreground">
+            Seberapa mudah dan cepat pengisian formulir registrasi buku tamu ini?
+          </p>
+
           <AnimatePresence mode="wait">
             {!feedbackSubmitted ? (
-              <form onSubmit={handleFeedbackSubmit} className="mt-4 space-y-4">
-                {/* 5 Star Rating */}
-                <div className="flex flex-col items-center justify-center rounded-xl bg-card p-4 shadow-sm">
-                  <div className="flex items-center gap-2">
+              <form onSubmit={handleFeedbackSubmit} className="mt-3.5 space-y-3.5">
+                {/* 5-Star Rating Buttons */}
+                <div className="flex flex-col items-center justify-center rounded-xl bg-card border border-border/70 p-3 sm:p-4 shadow-xs">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
                     {[1, 2, 3, 4, 5].map((star) => (
-                      <motion.button
+                      <button
                         key={star}
                         type="button"
                         onClick={() => {
@@ -370,38 +443,31 @@ export function RegistrationSuccess({ data, onReset }: RegistrationSuccessProps)
                         }}
                         onMouseEnter={() => setHoverRating(star)}
                         onMouseLeave={() => setHoverRating(null)}
-                        whileHover={{ scale: 1.25, rotate: 6 }}
-                        whileTap={{ scale: 0.9 }}
                         aria-label={`Beri nilai ${star} dari 5`}
-                        className="rounded-full p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-xl transition-transform active:scale-90 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                       >
                         <Star
-                          className={`h-8 w-8 transition-colors ${
+                          className={`h-7 w-7 sm:h-8 sm:w-8 transition-colors ${
                             star <= activeRating
-                              ? "fill-amber-400 text-amber-400 drop-shadow-sm"
+                              ? "fill-amber-400 text-amber-400 drop-shadow-xs"
                               : "text-muted-foreground/30 hover:text-amber-200"
                           }`}
                         />
-                      </motion.button>
+                      </button>
                     ))}
                   </div>
 
-                  <motion.p
-                    key={activeRating}
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mt-2 text-xs font-bold text-primary sm:text-sm"
-                  >
-                    {ratingDescriptions[activeRating] || "Beri Penilaian Anda"}
-                  </motion.p>
+                  <p className="mt-2 text-xs font-bold text-primary sm:text-sm text-center">
+                    {ratingDescriptions[activeRating] || "Pilih Bintang"}
+                  </p>
                 </div>
 
-                {/* Quick Aspect Tag Pills */}
+                {/* Quick Feedback Tags */}
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground">
-                    Apa yang paling Anda rasakan? (Pilih yang sesuai):
+                    Hal yang paling dirasakan:
                   </p>
-                  <div className="mt-2 flex flex-wrap gap-2">
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
                     {availableTags.map((tag) => {
                       const active = selectedTags.includes(tag);
                       return (
@@ -409,9 +475,9 @@ export function RegistrationSuccess({ data, onReset }: RegistrationSuccessProps)
                           key={tag}
                           type="button"
                           onClick={() => toggleTag(tag)}
-                          className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+                          className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all active:scale-95 ${
                             active
-                              ? "bg-primary text-primary-foreground shadow-sm"
+                              ? "bg-primary text-primary-foreground font-semibold shadow-xs"
                               : "border border-border bg-card text-foreground hover:bg-brand-soft"
                           }`}
                         >
@@ -423,7 +489,7 @@ export function RegistrationSuccess({ data, onReset }: RegistrationSuccessProps)
                 </div>
 
                 {/* Optional Comment Input */}
-                <div className="relative">
+                <div>
                   <input
                     type="text"
                     value={comment}
@@ -431,20 +497,20 @@ export function RegistrationSuccess({ data, onReset }: RegistrationSuccessProps)
                       setComment(e.target.value);
                       setIsPaused(true);
                     }}
-                    placeholder="Saran singkat untuk lobi Menara Nobu (opsional)..."
-                    className="w-full rounded-xl border border-input bg-card px-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground/70 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 sm:text-sm"
+                    placeholder="Saran singkat untuk kenyamanan lobi (opsional)..."
+                    className="w-full min-h-11 rounded-xl border border-input bg-card px-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground/70 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 sm:text-sm"
                   />
                 </div>
 
-                {/* Submit Feedback Button */}
-                <div className="flex items-center justify-between pt-1">
+                {/* Submit Feedback Action */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-1">
                   <p className="text-[11px] text-muted-foreground">
-                    Ulasan ini membantu resepsionis meningkatkan kenyamanan lobi.
+                    Ulasan ini membantu resepsionis menyambut Anda lebih baik.
                   </p>
                   <button
                     type="submit"
                     disabled={submittingFeedback}
-                    className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-primary px-4 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95 disabled:opacity-60"
+                    className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-1.5 rounded-xl bg-primary px-5 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95 disabled:opacity-60"
                   >
                     {submittingFeedback ? (
                       "Menyimpan..."
@@ -459,11 +525,11 @@ export function RegistrationSuccess({ data, onReset }: RegistrationSuccessProps)
               </form>
             ) : (
               <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
+                initial={{ opacity: 0, scale: 0.96 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="mt-3 flex items-center gap-3 rounded-xl bg-card p-4 text-left shadow-sm"
+                className="mt-3 flex items-center gap-3 rounded-xl bg-card border border-border/80 p-4 text-left shadow-xs"
               >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-primary">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-primary font-bold">
                   <Star className="h-5 w-5 fill-primary text-primary" />
                 </div>
                 <div>
@@ -471,64 +537,56 @@ export function RegistrationSuccess({ data, onReset }: RegistrationSuccessProps)
                     Terima kasih atas ulasan Anda!
                   </p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    Nilai <b>{rating} bintang</b> & masukan Anda telah kami simpan. Semoga pertemuan
-                    Anda di Menara Nobu berlangsung lancar!
+                    Nilai <b>{rating} bintang</b> telah kami simpan. Semoga pertemuan Anda di Menara
+                    Nobu berjalan lancar dan produktif!
                   </p>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
-        </motion.div>
+        </section>
 
-        {/* Action Controls & Auto-countdown */}
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => {
-                setIsPaused(true);
-                setShowBadgeModal(true);
-              }}
-              className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95 sm:flex-initial sm:text-sm"
-            >
-              <Barcode className="h-4 w-4" />
-              Cetak / Unduh Badge Tamu
-            </button>
+        {/* BOTTOM ACTION CONTROLS (Tamu Baru, Cetak Struk, Countdown) */}
+        <div className="mt-7 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2">
             <button
               onClick={printPass}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 text-xs font-semibold text-foreground shadow-sm transition-colors hover:bg-muted active:scale-95 sm:text-sm"
+              className="inline-flex min-h-11 flex-1 sm:flex-initial items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 text-xs font-semibold text-foreground shadow-xs transition-colors hover:bg-muted active:scale-95"
               title="Cetak struk ringkas halaman"
             >
               <Printer className="h-4 w-4 text-muted-foreground" />
-              Cetak Struk
+              <span>Cetak Struk</span>
             </button>
+
             <button
               onClick={() => setIsPaused(!isPaused)}
-              className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border bg-card px-3 text-xs text-muted-foreground hover:bg-muted sm:text-sm"
+              className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 text-xs text-muted-foreground hover:bg-muted active:scale-95"
               title={isPaused ? "Lanjutkan timer otomatis" : "Jeda timer otomatis"}
             >
-              {isPaused ? "Lanjutkan Timer" : "Jeda"}
+              {isPaused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
+              <span className="hidden sm:inline">{isPaused ? "Lanjutkan" : "Jeda"}</span>
             </button>
           </div>
 
           <button
             onClick={onReset}
-            className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-5 font-display text-xs font-bold text-foreground shadow-sm transition-all hover:bg-muted active:scale-95 sm:flex-initial sm:text-sm"
+            className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-foreground px-6 font-display text-xs sm:text-sm font-bold text-background shadow-soft transition-all hover:bg-foreground/90 active:scale-95"
           >
             <RotateCcw className="h-4 w-4" />
-            Selesai / Tamu Baru
+            <span>Selesai / Registrasi Baru</span>
             {!isPaused && countdown > 0 && (
-              <span className="ml-1 rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[11px]">
-                ({countdown}s)
+              <span className="ml-1 rounded-full bg-background/20 px-2 py-0.5 text-[11px] font-mono">
+                {countdown}s
               </span>
             )}
           </button>
         </div>
 
-        {/* Progress bar of countdown */}
+        {/* Countdown Progress Bar */}
         {!isPaused && countdown > 0 && (
-          <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+          <div className="mt-3.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
             <motion.div
-              className="h-full bg-brand"
+              className="h-full bg-primary"
               initial={{ width: "100%" }}
               animate={{ width: `${(countdown / 30) * 100}%` }}
               transition={{ ease: "linear", duration: 1 }}
@@ -537,7 +595,7 @@ export function RegistrationSuccess({ data, onReset }: RegistrationSuccessProps)
         )}
       </motion.div>
 
-      {/* Visitor Badge Modal with Barcode & Download */}
+      {/* Visitor Badge Modal (Format Lanyard / Compact Stiker & Print) */}
       <VisitorBadgeModal
         open={showBadgeModal}
         onClose={() => setShowBadgeModal(false)}

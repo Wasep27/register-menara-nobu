@@ -307,7 +307,7 @@ function GuestForm() {
 
   if (done && successData) {
     return (
-      <main className="min-h-screen bg-background">
+      <main className="min-h-screen bg-background pb-36 sm:pb-20">
         <SiteNav items={navItems} />
         <RegistrationSuccess data={successData} onReset={handleReset} />
       </main>

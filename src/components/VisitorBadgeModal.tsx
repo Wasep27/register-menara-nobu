@@ -17,6 +17,7 @@ import {
 import logo from "@/assets/logo.png";
 import { encodeCode39, formatBadgeCode, generateQrMatrix } from "@/lib/barcode";
 import { toast } from "sonner";
+import { downloadBadgeAsPng } from "@/lib/badge-download";
 
 export interface VisitorBadgeData {
   id?: string;
@@ -87,153 +88,20 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
     window.print();
   };
 
-  // Handle Download as PNG Image via HTML5 Canvas
+  // Handle Download as PNG Image via canvas
   const handleDownloadImage = async () => {
     setDownloading(true);
     try {
-      const isLanyard = format === "lanyard";
-      const width = isLanyard ? 480 : 640;
-      const height = isLanyard ? 760 : 420;
-      const canvas = document.createElement("canvas");
-      canvas.width = width * 2; // Retina 2x scale
-      canvas.height = height * 2;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) throw new Error("Canvas context unavailable");
-
-      ctx.scale(2, 2);
-
-      // 1. Background
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, width, height);
-
-      // Card border
-      ctx.strokeStyle = "#d6e7e0";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(1, 1, width - 2, height - 2);
-
-      // 2. Top Header Bar (Emerald Brand)
-      const grad = ctx.createLinearGradient(0, 0, width, 0);
-      grad.addColorStop(0, "#07936E");
-      grad.addColorStop(1, "#10D5A0");
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, width, isLanyard ? 110 : 80);
-
-      // Lanyard hole punch indicator (if lanyard format)
-      if (isLanyard) {
-        ctx.fillStyle = "#ffffff";
-        ctx.beginPath();
-        ctx.arc(width / 2, 20, 8, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = "#d6e7e0";
-        ctx.stroke();
-      }
-
-      // Header Text
-      ctx.fillStyle = "#ffffff";
-      ctx.textAlign = "center";
-      ctx.font = "bold 20px sans-serif";
-      ctx.fillText("MENARA NOBU", width / 2, isLanyard ? 58 : 38);
-
-      ctx.font = "bold 11px sans-serif";
-      ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
-      ctx.fillText("VISITOR PASS · BUKU TAMU DIGITAL", width / 2, isLanyard ? 80 : 58);
-
-      // 3. Status Tag / Date
-      ctx.fillStyle = "#e3faf3";
-      ctx.beginPath();
-      const badgeY = isLanyard ? 130 : 100;
-      ctx.roundRect(width / 2 - 110, badgeY, 220, 26, 13);
-      ctx.fill();
-
-      ctx.fillStyle = "#07936E";
-      ctx.font = "bold 11px sans-serif";
-      ctx.fillText(`✓ CHECK-IN: ${displayDate} · ${displayTime} WIB`, width / 2, badgeY + 17);
-
-      // 4. Visitor Name & Institution
-      const nameY = isLanyard ? 200 : 155;
-      ctx.fillStyle = "#10241E";
-      ctx.font = "bold 26px sans-serif";
-      ctx.fillText(data.name, width / 2, nameY);
-
-      ctx.fillStyle = "#4F625C";
-      ctx.font = "600 15px sans-serif";
-      ctx.fillText(data.institution, width / 2, nameY + 28);
-
-      // 5. Host & Purpose Info
-      if (isLanyard) {
-        const infoBoxY = 270;
-        ctx.fillStyle = "#f4fbf8";
-        ctx.beginPath();
-        ctx.roundRect(30, infoBoxY, width - 60, 95, 12);
-        ctx.fill();
-        ctx.strokeStyle = "#eaf3ef";
-        ctx.stroke();
-
-        ctx.textAlign = "left";
-        ctx.font = "11px sans-serif";
-        ctx.fillStyle = "#708780";
-        ctx.fillText("TUJUAN KUNJUNGAN", 48, infoBoxY + 28);
-        ctx.fillText("BERTEMU DENGAN", 48, infoBoxY + 68);
-
-        ctx.font = "bold 13px sans-serif";
-        ctx.fillStyle = "#10241E";
-        ctx.fillText(data.purposeName || "Kunjungan Resmi", 48, infoBoxY + 45);
-        ctx.fillStyle = "#07936E";
-        ctx.fillText(data.employeeName || "Resepsionis / Lobi", 48, infoBoxY + 85);
-      }
-
-      // 6. Draw Barcode (Code 39)
-      const barcodeStartY = isLanyard ? 405 : 225;
-      const barcodeH = isLanyard ? 55 : 45;
-      const scaleX = (width - 80) / barcodeWidth;
-      let currX = 40;
-
-      for (const el of barcodeElements) {
-        const elWidth = el.width * scaleX;
-        if (el.isBar) {
-          ctx.fillStyle = "#10241E";
-          ctx.fillRect(currX, barcodeStartY, elWidth, barcodeH);
-        }
-        currX += elWidth;
-      }
-
-      // Barcode Human-Readable Digits
-      ctx.textAlign = "center";
-      ctx.fillStyle = "#10241E";
-      ctx.font = "bold 13px monospace";
-      ctx.fillText(`*${badgeCode}*`, width / 2, barcodeStartY + barcodeH + 20);
-
-      // 7. Security Rules Footer
-      const footerY = isLanyard ? 530 : 330;
-      ctx.strokeStyle = "#eaf3ef";
-      ctx.beginPath();
-      ctx.moveTo(30, footerY);
-      ctx.lineTo(width - 30, footerY);
-      ctx.stroke();
-
-      ctx.fillStyle = "#708780";
-      ctx.font = "10px sans-serif";
-      ctx.fillText(
-        "Wajib dikalungkan / disematkan selama berada di area Menara Nobu",
-        width / 2,
-        footerY + 22,
-      );
-      ctx.fillText(
-        "Kembalikan visitor pass ke resepsionis lobi saat check-out",
-        width / 2,
-        footerY + 38,
-      );
-
-      // Trigger download
-      const pngUrl = canvas.toDataURL("image/png");
-      const a = document.createElement("a");
-      const cleanName = data.name.replace(/[^a-zA-Z0-9]/g, "-").toLowerCase();
-      a.download = `badge-tamu-nobu-${cleanName}.png`;
-      a.href = pngUrl;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-
+      await downloadBadgeAsPng({
+        name: data.name,
+        institution: data.institution,
+        badgeCode,
+        checkInTime: displayTime,
+        checkInDate: displayDate,
+        purposeName: data.purposeName,
+        employeeName: data.employeeName,
+        format,
+      });
       toast.success("Badge tamu berhasil diunduh dalam format PNG!");
     } catch (err) {
       console.error(err);
@@ -259,9 +127,9 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
       />
 
       {/* Modal Dialog Card */}
-      <div className="relative w-full max-w-xl overflow-hidden rounded-3xl border border-border/80 bg-card p-4 sm:p-6 shadow-2xl z-10 my-auto">
+      <div className="relative w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden rounded-3xl border border-border/80 bg-card p-4 sm:p-6 shadow-2xl z-10 my-auto">
         {/* Modal Top Bar */}
-        <div className="flex items-center justify-between border-b border-border/60 pb-3">
+        <div className="flex items-center justify-between border-b border-border/60 pb-3 shrink-0">
           <div className="flex items-center gap-2">
             <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-soft text-primary font-bold">
               <ShieldCheck className="h-4 w-4" />
@@ -285,7 +153,7 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
         </div>
 
         {/* Controls: Format switch & options */}
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-2.5 rounded-2xl bg-muted/40 p-2.5 text-xs">
+        <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2.5 rounded-2xl bg-muted/40 p-2.5 text-xs shrink-0">
           <div className="flex items-center gap-1.5">
             <span className="font-semibold text-muted-foreground">Ukuran:</span>
             <div className="inline-flex rounded-xl bg-card p-1 border border-border shadow-xs">
@@ -340,12 +208,14 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
         </div>
 
         {/* Preview Container: Printable Badge Card */}
-        <div className="mt-4 flex justify-center overflow-x-auto py-2">
+        <div className="mt-3 flex-1 overflow-y-auto overflow-x-hidden flex justify-center py-2 pr-1">
           <div
             id="printable-visitor-badge"
             ref={badgeCardRef}
             className={`relative overflow-hidden rounded-2xl border-2 border-primary/30 bg-card text-foreground shadow-lg transition-all duration-300 print:m-0 print:border-2 print:border-black print:shadow-none ${
-              format === "lanyard" ? "w-[320px] min-h-[480px]" : "w-[420px] min-h-[270px]"
+              format === "lanyard"
+                ? "w-full max-w-[290px] sm:max-w-[330px] min-h-[460px]"
+                : "w-full max-w-[310px] sm:max-w-[420px] min-h-[260px]"
             }`}
           >
             {/* Lanyard Clip Slot Punch Hole (Visual indicator for lanyard pass) */}
@@ -501,33 +371,33 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
         </div>
 
         {/* Modal Actions */}
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-4">
+        <div className="mt-4 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2.5 border-t border-border/60 pt-3.5 shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-border px-4 py-2.5 text-xs font-semibold text-foreground hover:bg-muted transition-colors active:scale-95"
+            className="w-full sm:w-auto rounded-xl border border-border px-4 py-2.5 text-xs font-semibold text-foreground hover:bg-muted transition-colors active:scale-95 text-center"
           >
             Tutup
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <button
               type="button"
               disabled={downloading}
               onClick={handleDownloadImage}
-              className="inline-flex items-center gap-2 rounded-xl border border-primary/40 bg-brand-soft px-4 py-2.5 text-xs font-bold text-primary transition-all hover:bg-brand-soft/80 active:scale-95 disabled:opacity-50"
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-primary/40 bg-brand-soft px-4 py-2 text-xs font-bold text-primary transition-all hover:bg-brand-soft/80 active:scale-95 disabled:opacity-50"
             >
               <Download className="h-4 w-4" />
-              {downloading ? "Memproses..." : "Unduh Gambar (PNG)"}
+              <span>{downloading ? "Memproses..." : "Unduh Gambar (PNG)"}</span>
             </button>
 
             <button
               type="button"
               onClick={handlePrint}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95"
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95"
             >
               <Printer className="h-4 w-4" />
-              Cetak Badge (Print / PDF)
+              <span>Cetak Badge (Print / PDF)</span>
             </button>
           </div>
         </div>
