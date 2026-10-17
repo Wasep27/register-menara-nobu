@@ -52,7 +52,6 @@ function GuestForm() {
     supabase.from("visit_purposes").select("*").eq("is_active", true).order("name").then(({ data }) => setPurposes(data ?? []));
     token.current = localStorage.getItem(LS_TOKEN) || crypto.randomUUID();
     localStorage.setItem(LS_TOKEN, token.current);
-    if (!localStorage.getItem(LS_OPENED)) localStorage.setItem(LS_OPENED, new Date().toISOString());
     const raw = localStorage.getItem(LS_DRAFT);
     if (raw) {
       try {
@@ -94,6 +93,8 @@ function GuestForm() {
 
   const update = (k: keyof Form, v: string) => {
     dirty.current = true;
+    // waktu isi dihitung sejak tamu mulai mengisi, bukan sejak halaman dibuka
+    if (!localStorage.getItem(LS_OPENED)) localStorage.setItem(LS_OPENED, new Date().toISOString());
     syncPending.current = true;
     setForm((f) => ({ ...f, [k]: v }));
     if (errors[k]) setErrors((e) => ({ ...e, [k]: "" }));
@@ -141,7 +142,6 @@ function GuestForm() {
       setStatus("idle");
       token.current = crypto.randomUUID();
       localStorage.setItem(LS_TOKEN, token.current);
-      localStorage.setItem(LS_OPENED, new Date().toISOString());
     }, 8000);
   };
 
