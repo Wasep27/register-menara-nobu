@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import logo from "@/assets/logo.png";
+import { PasswordInput } from "@/components/ui/password-input";
 
 export const Route = createFileRoute("/karyawan")({
   ssr: false,
@@ -126,12 +127,12 @@ function StaffLogin() {
         </label>
         <label className="block text-sm">
           Password
-          <input
+          <PasswordInput
             className={f}
-            type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            placeholder="••••••••"
           />
         </label>
         {err && (

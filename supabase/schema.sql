@@ -562,15 +562,74 @@ begin
   );
 
   -- 5b. Daftarkan ke auth.identities agar Supabase GoTrue Auth mengizinkan login email & password
+  -- GoTrue mewajibkan provider = 'email' dan provider_id = new_user_id::text
   begin
-    execute 'insert into auth.identities (id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at) values ($1, $2, $3, ''email'', $4, now(), now(), now())'
-    using new_user_id::text, new_user_id, jsonb_build_object('sub', new_user_id::text, 'email', clean_email), clean_email;
+    insert into auth.identities (
+      id,
+      user_id,
+      identity_data,
+      provider,
+      provider_id,
+      last_sign_in_at,
+      created_at,
+      updated_at
+    ) values (
+      gen_random_uuid(),
+      new_user_id,
+      jsonb_build_object('sub', new_user_id::text, 'email', clean_email),
+      'email',
+      new_user_id::text,
+      now(),
+      now(),
+      now()
+    );
   exception
-    when undefined_column then
-      execute 'insert into auth.identities (id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at) values ($1, $2, $3, ''email'', now(), now(), now())'
-      using new_user_id::text, new_user_id, jsonb_build_object('sub', new_user_id::text, 'email', clean_email);
     when others then
-      null;
+      begin
+        insert into auth.identities (
+          id,
+          user_id,
+          identity_data,
+          provider,
+          provider_id,
+          last_sign_in_at,
+          created_at,
+          updated_at
+        ) values (
+          new_user_id::text,
+          new_user_id,
+          jsonb_build_object('sub', new_user_id::text, 'email', clean_email),
+          'email',
+          new_user_id::text,
+          now(),
+          now(),
+          now()
+        );
+      exception
+        when others then
+          begin
+            insert into auth.identities (
+              id,
+              user_id,
+              identity_data,
+              provider,
+              last_sign_in_at,
+              created_at,
+              updated_at
+            ) values (
+              new_user_id::text,
+              new_user_id,
+              jsonb_build_object('sub', new_user_id::text, 'email', clean_email),
+              'email',
+              now(),
+              now(),
+              now()
+            );
+          exception
+            when others then
+              raise notice 'Peringatan: Gagal menambahkan identitas login auth.identities: %', sqlerrm;
+          end;
+      end;
   end;
 
   -- 6. Masukkan role ke public.user_roles
@@ -629,6 +688,146 @@ begin
 end $$;
 revoke all on function public.admin_reset_user_password(uuid, text) from public, anon;
 grant execute on function public.admin_reset_user_password(uuid, text) to authenticated;
+
+-- Perbaiki seluruh akun yang sudah terdaftar di auth.users namun belum memiliki identitas di auth.identities
+create or replace function public.admin_repair_identities()
+returns table(repaired_count integer, repaired_emails text[])
+language plpgsql security definer set search_path = public, auth as $$
+declare
+  r record;
+  cnt integer := 0;
+  emails text[] := array[]::text[];
+begin
+  if not public.has_role(auth.uid(), 'admin') then
+    raise exception 'Hanya administrator yang diizinkan menjalankan perbaikan identitas' using errcode = '42501';
+  end if;
+
+  for r in
+    select u.id, u.email
+    from auth.users u
+    where not exists (
+      select 1 from auth.identities i where i.user_id = u.id
+    ) and u.email is not null
+  loop
+    begin
+      insert into auth.identities (
+        id,
+        user_id,
+        identity_data,
+        provider,
+        provider_id,
+        last_sign_in_at,
+        created_at,
+        updated_at
+      ) values (
+        gen_random_uuid(),
+        r.id,
+        jsonb_build_object('sub', r.id::text, 'email', lower(r.email)),
+        'email',
+        r.id::text,
+        now(),
+        now(),
+        now()
+      );
+      cnt := cnt + 1;
+      emails := array_append(emails, r.email);
+    exception
+      when others then
+        begin
+          insert into auth.identities (
+            id,
+            user_id,
+            identity_data,
+            provider,
+            provider_id,
+            last_sign_in_at,
+            created_at,
+            updated_at
+          ) values (
+            r.id::text,
+            r.id,
+            jsonb_build_object('sub', r.id::text, 'email', lower(r.email)),
+            'email',
+            r.id::text,
+            now(),
+            now(),
+            now()
+          );
+          cnt := cnt + 1;
+          emails := array_append(emails, r.email);
+        exception
+          when others then
+            null;
+        end;
+    end;
+  end loop;
+
+  return query select cnt, emails;
+end $$;
+revoke all on function public.admin_repair_identities() from public, anon;
+grant execute on function public.admin_repair_identities() to authenticated;
+
+-- Otomatis perbaiki akun lama yang kehilangan provider di auth.identities saat schema.sql dijalankan
+do $$
+declare
+  r record;
+begin
+  for r in
+    select u.id, u.email
+    from auth.users u
+    where not exists (
+      select 1 from auth.identities i where i.user_id = u.id
+    ) and u.email is not null
+  loop
+    begin
+      insert into auth.identities (
+        id,
+        user_id,
+        identity_data,
+        provider,
+        provider_id,
+        last_sign_in_at,
+        created_at,
+        updated_at
+      ) values (
+        gen_random_uuid(),
+        r.id,
+        jsonb_build_object('sub', r.id::text, 'email', lower(r.email)),
+        'email',
+        r.id::text,
+        now(),
+        now(),
+        now()
+      );
+    exception
+      when others then
+        begin
+          insert into auth.identities (
+            id,
+            user_id,
+            identity_data,
+            provider,
+            provider_id,
+            last_sign_in_at,
+            created_at,
+            updated_at
+          ) values (
+            r.id::text,
+            r.id,
+            jsonb_build_object('sub', r.id::text, 'email', lower(r.email)),
+            'email',
+            r.id::text,
+            now(),
+            now(),
+            now()
+          );
+        exception
+          when others then
+            null;
+        end;
+    end;
+  end loop;
+end $$;
 
 -- ============================================================
 -- FEEDBACK TAMU (CSAT & KEPUASAN PENGISIAN BUKU TAMU)

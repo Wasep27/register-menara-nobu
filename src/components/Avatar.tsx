@@ -1,4 +1,26 @@
-/** Avatar inisial dengan warna konsisten berdasarkan nama. */
+/** Palet warna yang senada dan harmonis dengan tema utama Menara Nobu (Emerald, Teal, Forest, Sage, Slate Pine).
+ * Menghindari warna yang terlalu kontras/menyolok (seperti neon merah/pink/kuning terang) agar visual tetap elegan dan menyatu.
+ */
+const NOBU_AVATAR_PALETTES = [
+  // 1. Signature Nobu Emerald
+  { bg: "linear-gradient(135deg, #07936e, #046249)", border: "rgba(16, 213, 160, 0.3)" },
+  // 2. Deep Ocean Teal
+  { bg: "linear-gradient(135deg, #0d9488, #0f766e)", border: "rgba(45, 212, 191, 0.3)" },
+  // 3. Dark Pine Forest
+  { bg: "linear-gradient(135deg, #166534, #14532d)", border: "rgba(74, 222, 128, 0.25)" },
+  // 4. Cyan Teal
+  { bg: "linear-gradient(135deg, #0891b2, #0e7490)", border: "rgba(56, 189, 248, 0.25)" },
+  // 5. Deep Spruce Slate
+  { bg: "linear-gradient(135deg, #164e63, #083344)", border: "rgba(6, 182, 212, 0.25)" },
+  // 6. Forest Evergreen
+  { bg: "linear-gradient(135deg, #065f46, #064e3b)", border: "rgba(52, 211, 153, 0.25)" },
+  // 7. Dark Teal Jade
+  { bg: "linear-gradient(135deg, #115e59, #134e4a)", border: "rgba(45, 212, 191, 0.25)" },
+  // 8. Slate Moss / Deep Nobu Pine
+  { bg: "linear-gradient(135deg, #1f4e43, #123029)", border: "rgba(16, 213, 160, 0.3)" },
+];
+
+/** Avatar inisial dengan warna harmonis dan konsisten berdasarkan nama. */
 export function Avatar({ name, size = "md" }: { name: string; size?: "sm" | "md" }) {
   const initials =
     name
@@ -7,16 +29,23 @@ export function Avatar({ name, size = "md" }: { name: string; size?: "sm" | "md"
       .slice(0, 2)
       .map((w) => w[0]?.toUpperCase() ?? "")
       .join("") || "?";
-  // Warna diturunkan dari nama agar tiap akun punya warna tetap
-  let h = 0;
-  for (const c of name) h = (h * 31 + c.charCodeAt(0)) % 360;
+
+  // Hitung hash deterministik dari nama agar tiap akun punya warna tetap yang senada
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
+  }
+  const palette =
+    NOBU_AVATAR_PALETTES[hash % NOBU_AVATAR_PALETTES.length] ?? NOBU_AVATAR_PALETTES[0]!;
+
   const cls = size === "sm" ? "h-8 w-8 text-xs" : "h-10 w-10 text-sm";
   return (
     <span
       aria-hidden
-      className={`grid ${cls} shrink-0 select-none place-items-center rounded-full font-display font-bold text-white`}
+      className={`grid ${cls} shrink-0 select-none place-items-center rounded-full font-display font-bold text-white shadow-xs`}
       style={{
-        background: `linear-gradient(135deg, hsl(${h} 65% 42%), hsl(${(h + 40) % 360} 65% 32%))`,
+        background: palette.bg,
+        boxShadow: `inset 0 0 0 1px ${palette.border}, 0 2px 6px -1px rgba(7, 147, 110, 0.25)`,
       }}
     >
       {initials}

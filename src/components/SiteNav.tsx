@@ -144,6 +144,13 @@ const ROUTE_METADATA: Record<
   },
 };
 
+const CORE_PUBLIC_LINKS = [
+  { to: "/", label: "Beranda", icon: Home },
+  { to: "/registrasi", label: "Registrasi", icon: Users },
+  { to: "/panduan", label: "Panduan", icon: BookOpen },
+  { to: "/karyawan", label: "Karyawan", icon: UserCheck },
+];
+
 export function SiteNav({
   items,
   right,
@@ -417,16 +424,8 @@ export function SiteNav({
     );
   }
 
-  // Core items for the bottom floating dock
-  const corePublicLinks = [
-    { to: "/", label: "Beranda", icon: Home },
-    { to: "/registrasi", label: "Registrasi", icon: Users },
-    { to: "/panduan", label: "Panduan", icon: BookOpen },
-    { to: "/karyawan", label: "Karyawan", icon: UserCheck },
-  ];
-
   const bottomDockLinks = useMemo(() => {
-    if (!isDashboardMode) return corePublicLinks;
+    if (!isDashboardMode) return CORE_PUBLIC_LINKS;
     const permittedRoutes = new Set(items.map((it) => it.to));
     const allCandidates = [
       { to: "/admin", label: "Ringkasan", icon: LayoutDashboard },

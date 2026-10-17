@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { PasswordInput } from "@/components/ui/password-input";
 
 export const Route = createFileRoute("/reset-password")({
   ssr: false,
@@ -67,20 +68,20 @@ function Reset() {
           <>
             <label className="block text-sm">
               Password baru
-              <input
+              <PasswordInput
                 className={f}
-                type="password"
                 value={pw}
                 onChange={(e) => setPw(e.target.value)}
+                placeholder="Minimal 8 karakter..."
               />
             </label>
             <label className="block text-sm">
               Ulangi password
-              <input
+              <PasswordInput
                 className={f}
-                type="password"
                 value={pw2}
                 onChange={(e) => setPw2(e.target.value)}
+                placeholder="Ulangi password..."
               />
             </label>
             {msg && (

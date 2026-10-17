@@ -22,6 +22,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { PasswordInput } from "@/components/ui/password-input";
 
 type Row = {
   id: string;
@@ -578,8 +579,7 @@ export function MasterCrud({
                       Kata Sandi Awal Login (min. 6 karakter){" "}
                       <span className="text-destructive">*</span>
                     </label>
-                    <input
-                      type="password"
+                    <PasswordInput
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
                       placeholder="Masukkan kata sandi..."
@@ -640,8 +640,7 @@ export function MasterCrud({
                 {accountTarget?.user_id ? "Kata Sandi Baru" : "Kata Sandi Akun"}{" "}
                 <span className="text-destructive">*</span>
               </label>
-              <input
-                type="password"
+              <PasswordInput
                 required
                 value={accountPassword}
                 onChange={(e) => setAccountPassword(e.target.value)}

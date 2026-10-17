@@ -13,8 +13,10 @@ import {
   Trash2,
   X,
   Lock,
+  RefreshCw,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { PasswordInput } from "@/components/ui/password-input";
 import {
   Dialog,
   DialogContent,
@@ -95,6 +97,7 @@ function UsersPage() {
   // State Dialog Hapus Akun
   const [deleteTarget, setDeleteTarget] = useState<Row | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [repairLoading, setRepairLoading] = useState(false);
 
   const fetchUsers = () => {
     supabase.rpc("list_users_with_roles").then(({ data, error }) => {
@@ -102,6 +105,33 @@ function UsersPage() {
         setErr("Gagal memuat pengguna. Pastikan schema.sql terbaru sudah dijalankan di Supabase.");
       else setRows((data ?? []) as Row[]);
     });
+  };
+
+  const handleRepairIdentities = async () => {
+    setRepairLoading(true);
+    try {
+      const { data, error } = await supabase.rpc("admin_repair_identities");
+      if (error) {
+        toast.error(
+          `Gagal memperbaiki identitas: ${error.message}. Pastikan schema.sql terbaru sudah dijalankan.`,
+        );
+      } else {
+        const rowsRes = Array.isArray(data) ? data : [data];
+        const count = rowsRes[0]?.repaired_count ?? 0;
+        if (count > 0) {
+          toast.success(
+            `Berhasil memperbaiki ${count} akun! Provider 'email' sekarang aktif dan akun dapat langsung login.`,
+          );
+        } else {
+          toast.info("Semua akun sudah memiliki provider 'email' aktif di Supabase.");
+        }
+        fetchUsers();
+      }
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setRepairLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -149,7 +179,7 @@ function UsersPage() {
 
     setCreateLoading(true);
     try {
-      const { data, error } = await supabase.rpc("admin_create_user", {
+      const { error } = await supabase.rpc("admin_create_user", {
         _email: createEmail.trim().toLowerCase(),
         _password: createPassword,
         _full_name: createName.trim() || null,
@@ -159,8 +189,10 @@ function UsersPage() {
       if (error) {
         toast.error(`Gagal membuat akun: ${error.message}`);
       } else {
+        // Otomatis sinkronkan identitas jika ada Supabase schema baru
+        await supabase.rpc("admin_repair_identities").catch(() => null);
         toast.success(
-          `Akun baru (${createEmail}) berhasil dibuat dengan peran ${createRole.toUpperCase()}!`,
+          `Akun baru (${createEmail}) berhasil dibuat dengan peran ${createRole.toUpperCase()} dan provider email aktif!`,
         );
         setCreateOpen(false);
         setCreateName("");
@@ -250,15 +282,29 @@ function UsersPage() {
           </p>
         </div>
 
-        {/* Tombol Buat Akun Baru */}
-        <button
-          type="button"
-          onClick={() => setCreateOpen(true)}
-          className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs sm:text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95 shrink-0"
-        >
-          <UserPlus className="h-4 w-4" />
-          <span>+ Tambah Akun Petugas</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Tombol Sinkronkan & Perbaiki Provider Akun */}
+          <button
+            type="button"
+            disabled={repairLoading}
+            onClick={handleRepairIdentities}
+            title="Sinkronkan provider email di Supabase Auth untuk akun yang belum bisa login"
+            className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full border border-primary/30 bg-brand-soft px-3.5 py-2 text-xs font-semibold text-primary transition-all hover:bg-brand-soft/80 active:scale-95 shrink-0 disabled:opacity-60"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${repairLoading ? "animate-spin" : ""}`} />
+            <span>{repairLoading ? "Memperbaiki…" : "Sinkronkan Provider Akun"}</span>
+          </button>
+
+          {/* Tombol Buat Akun Baru */}
+          <button
+            type="button"
+            onClick={() => setCreateOpen(true)}
+            className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs sm:text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95 shrink-0"
+          >
+            <UserPlus className="h-4 w-4" />
+            <span>+ Tambah Akun Petugas</span>
+          </button>
+        </div>
       </div>
 
       {/* Role explanation cards */}
@@ -531,8 +577,7 @@ function UsersPage() {
                 <label className="text-xs font-semibold text-foreground block mb-1">
                   Password Awal <span className="text-destructive">*</span>
                 </label>
-                <input
-                  type="password"
+                <PasswordInput
                   required
                   minLength={6}
                   placeholder="Minimal 6 karakter"
@@ -540,6 +585,11 @@ function UsersPage() {
                   onChange={(e) => setCreatePassword(e.target.value)}
                   className="w-full rounded-xl border border-input bg-card px-3.5 py-2 text-sm shadow-xs focus:ring-2 focus:ring-primary/20"
                 />
+              </div>
+
+              <div className="rounded-xl border border-primary/20 bg-brand-soft/70 p-2.5 text-xs text-primary leading-relaxed">
+                ✓ Akun otomatis terdaftar dengan provider <strong>email</strong> aktif di Supabase
+                Auth sehingga bisa langsung dipakai login.
               </div>
 
               <div>
@@ -611,8 +661,7 @@ function UsersPage() {
               <label className="text-xs font-semibold text-foreground block mb-1">
                 Password Baru
               </label>
-              <input
-                type="password"
+              <PasswordInput
                 required
                 minLength={6}
                 autoFocus

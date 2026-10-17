@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import logo from "@/assets/logo.png";
+import { PasswordInput } from "@/components/ui/password-input";
 
 export const Route = createFileRoute("/admin_/login")({
   head: () => ({
@@ -63,7 +64,9 @@ function Login() {
       }
       const msg = error.message.toLowerCase();
       if (msg.includes("not confirmed") || msg.includes("unconfirmed")) {
-        return setErr("Email belum dikonfirmasi di Supabase. Hubungi Admin atau centang 'Auto Confirm User' di Supabase.");
+        return setErr(
+          "Email belum dikonfirmasi di Supabase. Hubungi Admin atau centang 'Auto Confirm User' di Supabase.",
+        );
       }
       if (msg.includes("invalid login credentials")) {
         return setErr(
@@ -112,7 +115,8 @@ function Login() {
         <img src={logo} alt="Nobu" className="mx-auto h-9 w-auto" />
         <h1 className="text-center text-xl font-bold text-foreground">Login Petugas & Admin</h1>
         <p className="text-center text-xs text-muted-foreground">
-          Portal masuk untuk <strong>Admin</strong>, <strong>Petugas Keamanan (Security)</strong>, dan <strong>Staf Resepsionis</strong>.
+          Portal masuk untuk <strong>Admin</strong>, <strong>Petugas Keamanan (Security)</strong>,
+          dan <strong>Staf Resepsionis</strong>.
         </p>
         <label className="block text-sm">
           Email
@@ -126,12 +130,12 @@ function Login() {
         </label>
         <label className="block text-sm">
           Password
-          <input
+          <PasswordInput
             className={f}
-            type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            placeholder="••••••••"
           />
         </label>
         {err && (
