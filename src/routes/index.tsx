@@ -50,8 +50,8 @@ const nav = [
   { to: "#fitur", label: "Fitur" },
   { to: "#cara", label: "Cara Kerja" },
   { to: "#faq", label: "FAQ" },
-  { to: "/registrasi", label: "Registrasi Tamu" },
   { to: "/panduan", label: "Panduan" },
+  { to: "/registrasi", label: "Registrasi Tamu" },
   { to: "/admin/login", label: "Admin" },
 ];
 

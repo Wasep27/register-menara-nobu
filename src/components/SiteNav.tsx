@@ -306,9 +306,9 @@ export function SiteNav({
     "outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background";
   const linkBase =
     focusRing +
-    " relative rounded-full px-4 py-2 text-sm font-medium transition-colors duration-300";
+    " relative rounded-full px-3 py-1.5 lg:px-3.5 text-sm font-medium transition-colors duration-200";
   const idleCls = "text-muted-foreground hover:bg-brand-soft hover:text-primary";
-  const activeCls = "bg-brand-soft text-primary font-semibold";
+  const activeCls = "bg-brand-soft text-primary font-semibold shadow-2xs";
 
   function desktopItem(l: NavItem) {
     if (l.to.startsWith("#")) {
@@ -497,17 +497,42 @@ export function SiteNav({
     };
   }, [isDashboardMode, items]);
 
+  // For public desktop navbar: cleanly separate content navigation from actions (Registrasi CTA & Admin link)
+  const { publicContentItems, publicCtaItem, publicAdminItem } = useMemo(() => {
+    if (isDashboardMode) {
+      return { publicContentItems: items, publicCtaItem: null, publicAdminItem: null };
+    }
+
+    const content: NavItem[] = [];
+    let cta: NavItem | null = null;
+    let admin: NavItem | null = null;
+
+    for (const it of items) {
+      const isReg = it.to === "/registrasi" || it.label.toLowerCase().includes("registrasi");
+      const isAdmin = it.to.startsWith("/admin") || it.label.toLowerCase() === "admin";
+
+      if (isReg && !cta) {
+        cta = it;
+      } else if (isAdmin && !admin) {
+        admin = it;
+      } else {
+        content.push(it);
+      }
+    }
+
+    return { publicContentItems: content, publicCtaItem: cta, publicAdminItem: admin };
+  }, [isDashboardMode, items]);
+
   // SVG curved notch path calculation:
-  // Smooth organic scoop curve in the center for the protruding FAB button
+  // Original relaxed organic scoop curve that avoids constricting the center FAB button
   const notchPath = useMemo(() => {
     const w = barWidth;
     const h = 64;
-    const r = 28; // full radius on pill ends
+    const r = 28; // original pill radius
     const cx = w / 2;
 
-    // Organic scoop curve around the center circle:
-    // Shoulder starts at cx - 44, dips smoothly to depth 39, and rises back to cx + 44
-    return `M ${r} 0 L ${cx - 44} 0 C ${cx - 30} 0, ${cx - 32} 20, ${cx - 22} 30 C ${cx - 12} 39, ${cx + 12} 39, ${cx + 22} 30 C ${cx + 32} 20, ${cx + 30} 0, ${cx + 44} 0 L ${w - r} 0 A ${r} ${r} 0 0 1 ${w} ${r} L ${w} ${h - r} A ${r} ${r} 0 0 1 ${w - r} ${h} L ${r} ${h} A ${r} ${r} 0 0 1 0 ${h - r} L 0 ${r} A ${r} ${r} 0 0 1 ${r} 0 Z`;
+    // Organic cubic bezier scoop
+    return `M ${r} 0 H ${cx - 44} C ${cx - 30} 0, ${cx - 28} 26, ${cx} 26 C ${cx + 28} 26, ${cx + 30} 0, ${cx + 44} 0 H ${w - r} A ${r} ${r} 0 0 1 ${w} ${r} V ${h - r} A ${r} ${r} 0 0 1 ${w - r} ${h} H ${r} A ${r} ${r} 0 0 1 0 ${h - r} V ${r} A ${r} ${r} 0 0 1 ${r} 0 Z`;
   }, [barWidth]);
 
   const centerActive = isItemActive(centerDockItem.to);
@@ -526,36 +551,33 @@ export function SiteNav({
           Lewati ke konten utama
         </a>
         <div
-          className={`mx-auto flex max-w-6xl items-center justify-between gap-3 rounded-full border px-4 py-2.5 transition-all duration-300 md:px-5 ${
+          className={`mx-auto flex max-w-6xl items-center justify-between gap-3 rounded-full border px-4 py-2 transition-all duration-300 md:px-5 ${
             scrolled || isDashboardMode
               ? "border-border/70 bg-card/95 shadow-soft backdrop-blur-xl"
-              : "border-transparent bg-card/50 backdrop-blur-md"
+              : "border-border/40 bg-card/85 shadow-xs backdrop-blur-md"
           }`}
         >
+          {/* Logo Brand: Text Menara Nobu removed on public desktop as requested */}
           <Link
             to="/"
             aria-label="Menara Nobu — Beranda"
-            className={`${focusRing} rounded-full flex min-w-0 items-center gap-2.5`}
+            className={`${focusRing} rounded-full flex shrink-0 items-center`}
             onClick={() => setOpen(false)}
           >
             <img
               src={logo}
-              alt="Nobu"
+              alt="Menara Nobu"
               className="h-7 w-auto shrink-0 transition-transform duration-300 hover:scale-105 md:h-8"
             />
-            <div className="flex flex-col min-w-0">
-              <span className="hidden truncate text-sm font-bold text-foreground sm:inline leading-none">
-                Menara Nobu
+            {isDashboardMode && (
+              <span className="hidden ml-2 text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full sm:inline leading-none">
+                Dashboard
               </span>
-              {isDashboardMode && (
-                <span className="hidden text-[10px] font-medium text-primary sm:inline leading-tight mt-0.5">
-                  Dashboard
-                </span>
-              )}
-            </div>
+            )}
           </Link>
 
-          <nav aria-label="Navigasi utama" className="hidden items-center gap-1 md:flex">
+          {/* Desktop Navigation: neatly structured, spacious, and never cramped */}
+          <nav aria-label="Navigasi utama" className="hidden items-center gap-1 lg:gap-1.5 md:flex">
             {isDashboardMode && items.length > 5 ? (
               <>
                 {primaryDesktopItems.map(desktopItem)}
@@ -564,7 +586,7 @@ export function SiteNav({
                   onClick={() => setOpen(!open)}
                   aria-expanded={open}
                   aria-label={open ? "Tutup drawer menu" : "Buka semua menu"}
-                  className={`${focusRing} relative flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium transition-all duration-200 active:scale-95 ${
+                  className={`${focusRing} relative flex items-center gap-1.5 rounded-full px-3 py-1.5 lg:px-3.5 text-sm font-medium transition-all duration-200 active:scale-95 ${
                     open || isSecondaryMenuActive
                       ? "bg-brand-soft text-primary font-semibold shadow-xs"
                       : "text-muted-foreground hover:bg-brand-soft hover:text-primary"
@@ -582,12 +604,39 @@ export function SiteNav({
                   />
                 </button>
               </>
-            ) : (
+            ) : isDashboardMode ? (
               items.map(desktopItem)
+            ) : (
+              publicContentItems.map(desktopItem)
             )}
           </nav>
 
-          <div className="hidden items-center gap-2 md:flex">{right}</div>
+          {/* Desktop Right Actions: Admin and Primary Registration CTA */}
+          <div className="hidden items-center gap-2 lg:gap-2.5 md:flex">
+            {right ? (
+              right
+            ) : !isDashboardMode ? (
+              <>
+                {publicAdminItem && (
+                  <Link
+                    to={publicAdminItem.to}
+                    className={`${focusRing} rounded-full border border-border/80 px-3.5 py-1.5 text-xs font-semibold text-muted-foreground transition-all duration-200 hover:border-primary/40 hover:bg-brand-soft hover:text-primary active:scale-95`}
+                  >
+                    {publicAdminItem.label}
+                  </Link>
+                )}
+                {publicCtaItem && (
+                  <Link
+                    to={publicCtaItem.to}
+                    className={`${focusRing} inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground shadow-xs transition-all duration-200 hover:brightness-110 active:scale-95`}
+                  >
+                    <span>{publicCtaItem.label}</span>
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </Link>
+                )}
+              </>
+            ) : null}
+          </div>
 
           {/* Mobile Right: Avatar instead of Hamburger button to eliminate double hamburger */}
           <div className="flex items-center gap-1.5 md:hidden">
@@ -598,7 +647,7 @@ export function SiteNav({
               aria-label={open ? "Tutup profil dan menu" : `Profil ${avatarName}`}
               aria-expanded={open}
               onClick={() => setOpen(!open)}
-              className={`${focusRing} group relative flex items-center justify-center rounded-full border border-border/80 bg-card/90 p-1 transition-all active:scale-95 shadow-xs hover:border-primary/40 hover:bg-brand-soft/40`}
+              className={`${focusRing} group relative flex items-center justify-center rounded-xl border border-border/80 bg-card/90 p-1 transition-all active:scale-95 shadow-xs hover:border-primary/40 hover:bg-brand-soft/40`}
             >
               <Avatar name={avatarName} size="sm" />
               {isSecondaryMenuActive && (
@@ -615,7 +664,7 @@ export function SiteNav({
         className="fixed bottom-[max(0.85rem,env(safe-area-inset-bottom))] inset-x-3 z-40 mx-auto max-w-[430px] md:hidden pointer-events-none"
       >
         <div ref={barRef} className="pointer-events-auto relative w-full h-[64px]">
-          {/* Custom Organic Curved-Notch SVG Background */}
+          {/* Custom Organic Curved-Notch SVG Background with original pill radius */}
           <svg
             className="absolute inset-0 w-full h-full pointer-events-none drop-shadow-[0_12px_28px_rgba(0,0,0,0.15)] dark:drop-shadow-[0_14px_32px_rgba(0,0,0,0.5)]"
             width={barWidth}
@@ -630,18 +679,18 @@ export function SiteNav({
             />
           </svg>
 
-          {/* Central Protruding Floating Action Button (FAB) nestled in the curved notch */}
-          <div className="absolute left-1/2 -translate-x-1/2 -top-5 z-20 flex flex-col items-center">
+          {/* Central Protruding Floating Action Button (FAB) nestled comfortably without constricting */}
+          <div className="absolute left-1/2 -translate-x-1/2 -top-4 z-20 flex flex-col items-center">
             <Link
               to={centerDockItem.to}
               onClick={() => setOpen(false)}
               aria-label={centerDockItem.label}
-              className={`${focusRing} group relative flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_10px_24px_-4px_rgba(16,36,30,0.4)] dark:shadow-[0_10px_28px_-4px_rgba(16,185,129,0.45)] transition-all duration-200 active:scale-90 hover:brightness-110 ${
-                centerActive ? "ring-4 ring-primary/25 scale-105" : ""
+              className={`${focusRing} group relative flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_8px_20px_-3px_rgba(16,36,30,0.38)] dark:shadow-[0_8px_22px_-3px_rgba(16,185,129,0.42)] transition-all duration-200 active:scale-90 hover:brightness-110 ${
+                centerActive ? "ring-3 ring-primary/30 scale-105" : ""
               }`}
             >
               <CenterIcon
-                className={`h-6 w-6 ${
+                className={`h-5 w-5 ${
                   isDashboardMode ? "stroke-[2.25]" : "stroke-[2.5]"
                 } transition-transform group-hover:scale-110`}
               />
@@ -685,19 +734,24 @@ export function SiteNav({
               );
             })}
 
-            {/* Center Column: spacing under the protruding FAB button with label */}
-            <div className="flex flex-col items-center justify-end pb-1.5 pointer-events-none">
+            {/* Center Column: spacing under the protruding FAB button with label positioned clearly below notch */}
+            <Link
+              to={centerDockItem.to}
+              onClick={() => setOpen(false)}
+              aria-label={centerDockItem.label}
+              className={`${focusRing} flex h-full flex-col items-center justify-end pb-1.5 text-center transition-all duration-200 active:scale-95`}
+            >
               <span
-                className={`text-[9.5px] font-bold tracking-tight leading-tight transition-colors ${
-                  centerActive ? "text-primary" : "text-muted-foreground"
+                className={`max-w-[72px] truncate text-[9.5px] font-bold tracking-tight text-center leading-tight transition-colors ${
+                  centerActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {centerDockItem.label}
               </span>
               {centerActive && (
-                <span aria-hidden className="mt-0.5 h-1 w-2.5 rounded-full bg-primary" />
+                <span aria-hidden className="mt-0.5 h-1 w-2 rounded-full bg-primary" />
               )}
-            </div>
+            </Link>
 
             {/* Right Item 1 (e.g. Karyawan) */}
             {rightDockItems.map((item) => {
