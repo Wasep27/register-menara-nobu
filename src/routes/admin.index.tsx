@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -48,38 +48,61 @@ function greeting() {
   return "Selamat malam";
 }
 
+const LiveWibClock = memo(function LiveWibClock() {
+  const [clock, setClock] = useState<Date>(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (document.hidden) return;
+      setClock(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const timeFormatted = clock.toLocaleTimeString("id-ID", {
+    timeZone: "Asia/Jakarta",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+
+  const dateFormatted = clock.toLocaleDateString("id-ID", {
+    timeZone: "Asia/Jakarta",
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+
+  return (
+    <div
+      title="Waktu Real-time Indonesia Barat (WIB)"
+      className="flex flex-1 sm:flex-initial items-center gap-1.5 sm:gap-2 rounded-full border border-border/80 bg-card px-2.5 sm:px-3.5 py-1.5 shadow-soft transition-all hover:border-primary/40 min-w-0"
+    >
+      <span className="relative flex h-2 w-2 shrink-0">
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+        <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+      </span>
+      <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
+      <div className="flex items-center gap-1 sm:gap-1.5 text-xs font-semibold text-foreground truncate min-w-0">
+        <span className="text-muted-foreground hidden lg:inline">{dateFormatted} ·</span>
+        <span className="font-mono tabular-nums text-foreground tracking-tight">
+          {timeFormatted}
+        </span>
+        <span className="rounded bg-brand-soft px-1 py-0.5 text-[9px] min-[380px]:text-[10px] font-bold text-primary shrink-0 leading-none">
+          WIB
+        </span>
+      </div>
+    </div>
+  );
+});
+
 function Dashboard() {
   const { isAdmin, isSecurity, isStaff } = useAdminRole();
   const [days, setDays] = useState(7);
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(true);
   const [badgeGuest, setBadgeGuest] = useState<VisitorBadgeData | null>(null);
-
-  // Jam Real-Time Indonesia (WIB - Asia/Jakarta)
-  const [clock, setClock] = useState<Date>(new Date());
-  useEffect(() => {
-    const timer = setInterval(() => setClock(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const timeFormatted = useMemo(() => {
-    return clock.toLocaleTimeString("id-ID", {
-      timeZone: "Asia/Jakarta",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-    });
-  }, [clock]);
-
-  const dateFormatted = useMemo(() => {
-    return clock.toLocaleDateString("id-ID", {
-      timeZone: "Asia/Jakarta",
-      weekday: "short",
-      day: "numeric",
-      month: "short",
-    });
-  }, [clock]);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -251,26 +274,8 @@ function Dashboard() {
 
         {/* Real-time Clock and (for non-security) Period Selector */}
         <div className="flex w-full sm:w-auto items-center justify-between sm:justify-end gap-1.5 min-[380px]:gap-2 sm:gap-2.5 flex-nowrap shrink-0">
-          {/* Jam Real-time Indonesia (WIB) */}
-          <div
-            title="Waktu Real-time Indonesia Barat (WIB)"
-            className="flex flex-1 sm:flex-initial items-center gap-1.5 sm:gap-2 rounded-full border border-border/80 bg-card px-2.5 sm:px-3.5 py-1.5 shadow-soft transition-all hover:border-primary/40 min-w-0"
-          >
-            <span className="relative flex h-2 w-2 shrink-0">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-            </span>
-            <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
-            <div className="flex items-center gap-1 sm:gap-1.5 text-xs font-semibold text-foreground truncate min-w-0">
-              <span className="text-muted-foreground hidden lg:inline">{dateFormatted} ·</span>
-              <span className="font-mono tabular-nums text-foreground tracking-tight">
-                {timeFormatted}
-              </span>
-              <span className="rounded bg-brand-soft px-1 py-0.5 text-[9px] min-[380px]:text-[10px] font-bold text-primary shrink-0 leading-none">
-                WIB
-              </span>
-            </div>
-          </div>
+          {/* Jam Real-time Indonesia (WIB) - Terisolasi agar tidak mere-render halaman setiap detik */}
+          <LiveWibClock />
 
           {/* Filter Periode — hanya untuk Admin dan Staff (sembunyikan dari Security) */}
           {!isSecurity && (

@@ -221,14 +221,20 @@ function Inbox({ user }: { user: User }) {
       )
       .subscribe();
     const tick = async () => {
+      if (document.hidden) return;
       await supabase.rpc("generate_visit_reminders");
       load(emp.id);
     };
     tick();
     const iv = setInterval(tick, 30000);
+    const onVisibility = () => {
+      if (!document.hidden) void tick();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
       supabase.removeChannel(ch);
       clearInterval(iv);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [emp, load]);
 

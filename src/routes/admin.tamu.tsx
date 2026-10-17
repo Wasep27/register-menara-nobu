@@ -28,6 +28,17 @@ function Guests() {
   const [count, setCount] = useState(0);
   const [page, setPage] = useState(0);
   const [q, setQ] = useState("");
+  const [debouncedQ, setDebouncedQ] = useState("");
+
+  // Debounce search input to avoid firing database requests on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQ(q);
+      setPage(0);
+    }, 280);
+    return () => clearTimeout(timer);
+  }, [q]);
+
   const [date, setDate] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [purpose, setPurpose] = useState("");
@@ -99,7 +110,7 @@ function Guests() {
     let qb = supabase
       .from("guests")
       .select("*, employees(name), visit_purposes(name)", { count: "exact" });
-    const term = q.replace(/[,()%*]/g, " ").trim();
+    const term = debouncedQ.replace(/[,()%*]/g, " ").trim();
     if (term) qb = qb.or(`name.ilike.%${term}%,institution.ilike.%${term}%,phone.ilike.%${term}%`);
     if (date) qb = qb.gte("check_in_time", new Date(`${date}T00:00:00`).toISOString());
     if (dateTo || date) {
@@ -110,7 +121,7 @@ function Guests() {
     if (purpose) qb = qb.eq("visit_purpose_id", purpose);
     if (emp) qb = qb.eq("employee_id", emp);
     return qb.order("check_in_time", { ascending: asc });
-  }, [q, date, dateTo, purpose, emp, asc]);
+  }, [debouncedQ, date, dateTo, purpose, emp, asc]);
 
   const [exporting, setExporting] = useState(false);
   const exportCsv = async () => {
