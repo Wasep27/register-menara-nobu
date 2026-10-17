@@ -1,156 +1,24 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  Activity,
-  BarChart3,
-  BookOpen,
-  Building2,
-  ChevronDown,
-  ChevronRight,
-  Compass,
-  ExternalLink,
-  HelpCircle,
-  Home,
-  LayoutDashboard,
-  LayoutGrid,
-  LogOut,
-  Mail,
-  Menu,
-  MessageSquareHeart,
-  QrCode,
-  ShieldCheck,
-  Sparkles,
-  UserCheck,
-  Users,
-  X,
-  Plus,
-} from "lucide-react";
+import { ChevronDown, ChevronRight, LayoutGrid } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { Avatar } from "@/components/Avatar";
+import type { NavItem, SiteNavProps } from "./navigation/navTypes";
+import { ROUTE_METADATA } from "./navigation/routeMetadata";
+import { MobileBottomDock } from "./navigation/MobileBottomDock";
+import { NavDrawerModal } from "./navigation/NavDrawerModal";
+import {
+  LayoutDashboard,
+  Users,
+  QrCode,
+  UserCheck,
+  BarChart3,
+  Home,
+  BookOpen,
+  Plus,
+} from "lucide-react";
 
-export type NavItem = {
-  to: string;
-  label: string;
-  icon?: React.ComponentType<{ className?: string }>;
-  description?: string;
-  category?: string;
-};
-
-interface SiteNavProps {
-  items: NavItem[];
-  right?: React.ReactNode;
-  userName?: string;
-  onLogout?: () => void;
-  isDashboard?: boolean;
-  hideRegistration?: boolean;
-}
-
-const ROUTE_METADATA: Record<
-  string,
-  {
-    icon: React.ComponentType<{ className?: string }>;
-    desc: string;
-    category: "Menu Utama" | "Operasional & Data" | "Sistem & Akses" | "Informasi" | "Navigasi";
-  }
-> = {
-  "/admin": {
-    icon: LayoutDashboard,
-    desc: "Ikhtisar statistik & metrik hari ini",
-    category: "Menu Utama",
-  },
-  "/admin/tamu": {
-    icon: Users,
-    desc: "Kelola daftar hadir & check-in tamu",
-    category: "Menu Utama",
-  },
-  "/admin/laporan": {
-    icon: BarChart3,
-    desc: "Grafik analitik & ekspor data",
-    category: "Menu Utama",
-  },
-  "/admin/aktivitas": {
-    icon: Activity,
-    desc: "Jejak audit & riwayat operasional",
-    category: "Menu Utama",
-  },
-  "/admin/karyawan": {
-    icon: UserCheck,
-    desc: "Direktori staf penerima tamu",
-    category: "Operasional & Data",
-  },
-  "/admin/tujuan": {
-    icon: Building2,
-    desc: "Unit kerja, divisi & ruang meeting",
-    category: "Operasional & Data",
-  },
-  "/admin/feedback": {
-    icon: MessageSquareHeart,
-    desc: "Evaluasi & indeks kepuasan tamu",
-    category: "Operasional & Data",
-  },
-  "/admin/email-admin": {
-    icon: Mail,
-    desc: "Konfigurasi penerima notifikasi",
-    category: "Sistem & Akses",
-  },
-  "/admin/pengguna": {
-    icon: ShieldCheck,
-    desc: "Pengaturan akun admin & akses",
-    category: "Sistem & Akses",
-  },
-  "/admin/panduan": {
-    icon: BookOpen,
-    desc: "Dokumentasi & panduan teknis",
-    category: "Sistem & Akses",
-  },
-  "#fitur": {
-    icon: Sparkles,
-    desc: "Keunggulan & fitur sistem",
-    category: "Informasi",
-  },
-  "#alur": {
-    icon: Compass,
-    desc: "Alur pendaftaran & kunjungan",
-    category: "Informasi",
-  },
-  "#faq": {
-    icon: HelpCircle,
-    desc: "Pertanyaan yang sering diajukan",
-    category: "Informasi",
-  },
-  "/panduan": {
-    icon: BookOpen,
-    desc: "Buku petunjuk operasional",
-    category: "Navigasi",
-  },
-  "/registrasi": {
-    icon: Users,
-    desc: "Pendaftaran tamu & buku tamu",
-    category: "Navigasi",
-  },
-  "/admin/scan": {
-    icon: QrCode,
-    desc: "Pos verifikasi keamanan & pemindai pass",
-    category: "Operasional & Data",
-  },
-  "/karyawan": {
-    icon: UserCheck,
-    desc: "Portal notifikasi staf",
-    category: "Navigasi",
-  },
-  "/": {
-    icon: Home,
-    desc: "Halaman beranda utama",
-    category: "Navigasi",
-  },
-};
-
-const CORE_PUBLIC_LINKS = [
-  { to: "/", label: "Beranda", icon: Home },
-  { to: "/registrasi", label: "Registrasi", icon: Users },
-  { to: "/panduan", label: "Panduan", icon: BookOpen },
-  { to: "/karyawan", label: "Karyawan", icon: UserCheck },
-];
+export type { NavItem, SiteNavProps };
 
 export function SiteNav({
   items,
@@ -165,61 +33,11 @@ export function SiteNav({
   const [activeAnchor, setActiveAnchor] = useState<string | null>(null);
   const pathname = useLocation().pathname;
   const btnRef = useRef<HTMLButtonElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-  const wasOpen = useRef(false);
 
   const isDashboardMode =
     isDashboard !== undefined
       ? isDashboard
       : pathname.startsWith("/admin") && pathname !== "/admin/login";
-
-  // Keyboard navigation & accessibility
-  useEffect(() => {
-    if (open) {
-      wasOpen.current = true;
-      const first = panelRef.current?.querySelector<HTMLElement>("a,button");
-      first?.focus();
-      const onKey = (e: KeyboardEvent) => {
-        if (e.key === "Escape") {
-          setOpen(false);
-          return;
-        }
-        if (e.key !== "Tab" || !panelRef.current) return;
-        const els = [
-          btnRef.current,
-          ...panelRef.current.querySelectorAll<HTMLElement>("a,button"),
-        ].filter(Boolean) as HTMLElement[];
-        const i = els.indexOf(document.activeElement as HTMLElement);
-        if (e.shiftKey && i <= 0) {
-          e.preventDefault();
-          els[els.length - 1]?.focus();
-        } else if (!e.shiftKey && i === els.length - 1) {
-          e.preventDefault();
-          els[0]?.focus();
-        }
-      };
-      document.addEventListener("keydown", onKey);
-      return () => document.removeEventListener("keydown", onKey);
-    } else if (wasOpen.current) {
-      wasOpen.current = false;
-      btnRef.current?.focus();
-    }
-    return undefined;
-  }, [open]);
-
-  useEffect(() => {
-    const on = () => setScrolled(window.scrollY > 8);
-    on();
-    window.addEventListener("scroll", on, { passive: true });
-    return () => window.removeEventListener("scroll", on);
-  }, []);
-
-  useEffect(() => {
-    document.body.style.overflow = open ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [open]);
 
   // Global trigger listener (e.g. from desktop header avatar)
   useEffect(() => {
@@ -228,23 +46,37 @@ export function SiteNav({
     return () => window.removeEventListener("toggle-sitenav-drawer", handler);
   }, []);
 
-  // Scroll-spy for page anchors
+  // Optimized high-performance scroll listener with requestAnimationFrame to prevent layout thrashing
   const anchors = useMemo(() => items.filter((l) => l.to.startsWith("#")), [items]);
   useEffect(() => {
-    if (anchors.length === 0) return;
+    let ticking = false;
+
     const onScroll = () => {
-      let current: string | null = null;
-      if (window.scrollY >= 80) {
-        for (const a of anchors) {
-          const el = document.getElementById(a.to.slice(1));
-          if (el && el.getBoundingClientRect().top <= 200) current = a.to;
-        }
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const isScrolled = window.scrollY > 8;
+          setScrolled(isScrolled);
+
+          if (anchors.length > 0) {
+            let current: string | null = null;
+            if (window.scrollY >= 80) {
+              for (const a of anchors) {
+                const el = document.getElementById(a.to.slice(1));
+                if (el && el.getBoundingClientRect().top <= 200) current = a.to;
+              }
+            }
+            setActiveAnchor(current);
+          }
+
+          ticking = false;
+        });
+        ticking = true;
       }
-      setActiveAnchor(current);
     };
+
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
+    window.addEventListener("resize", onScroll, { passive: true });
     return () => {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
@@ -367,6 +199,32 @@ export function SiteNav({
     return items.find((it) => isItemActive(it.to));
   }, [isSecondaryMenuActive, items, isItemActive]);
 
+  // For public desktop navbar: cleanly separate content navigation from actions (Registrasi CTA & Admin link)
+  const { publicContentItems, publicCtaItem, publicAdminItem } = useMemo(() => {
+    if (isDashboardMode) {
+      return { publicContentItems: items, publicCtaItem: null, publicAdminItem: null };
+    }
+
+    const content: NavItem[] = [];
+    let cta: NavItem | null = null;
+    let admin: NavItem | null = null;
+
+    for (const it of items) {
+      const isReg = it.to === "/registrasi" || it.label.toLowerCase().includes("registrasi");
+      const isAdmin = it.to.startsWith("/admin") || it.label.toLowerCase() === "admin";
+
+      if (isReg && !cta) {
+        cta = it;
+      } else if (isAdmin && !admin) {
+        admin = it;
+      } else {
+        content.push(it);
+      }
+    }
+
+    return { publicContentItems: content, publicCtaItem: cta, publicAdminItem: admin };
+  }, [isDashboardMode, items]);
+
   const focusRing =
     "outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background";
   const linkBase =
@@ -408,152 +266,6 @@ export function SiteNav({
     );
   }
 
-  // Modern native app card item for mobile sheet
-  function renderMobileDrawerItem(l: NavItem, i: number) {
-    const meta = ROUTE_METADATA[l.to];
-    const IconComponent = l.icon || meta?.icon || Compass;
-    const description = l.description || meta?.desc || "";
-    const active = isItemActive(l.to);
-
-    const content = (
-      <>
-        <div className="flex items-center gap-3 min-w-0">
-          <div
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-all duration-200 ${
-              active
-                ? "bg-primary text-primary-foreground shadow-sm shadow-primary/30"
-                : "bg-muted/80 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
-            }`}
-          >
-            <IconComponent className="h-5 w-5" />
-          </div>
-          <div className="min-w-0 text-left">
-            <div className="flex items-center gap-2">
-              <span
-                className={`truncate text-sm font-semibold transition-colors ${
-                  active ? "text-primary font-bold" : "text-foreground group-hover:text-primary"
-                }`}
-              >
-                {l.label}
-              </span>
-            </div>
-            {description && (
-              <p className="truncate text-xs text-muted-foreground mt-0.5">{description}</p>
-            )}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-1.5 shrink-0">
-          {active ? (
-            <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
-              Aktif
-            </span>
-          ) : (
-            <ChevronRight className="h-4 w-4 text-muted-foreground/35 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-muted-foreground" />
-          )}
-        </div>
-      </>
-    );
-
-    const commonCls = `${focusRing} group flex w-full items-center justify-between gap-3 rounded-2xl border p-2.5 transition-all duration-200 active:scale-[0.98] ${
-      active
-        ? "border-primary/25 bg-brand-soft/80 shadow-xs"
-        : "border-transparent bg-card/60 hover:border-border/60 hover:bg-muted/40"
-    }`;
-
-    if (l.to.startsWith("#")) {
-      return (
-        <a
-          key={l.to}
-          href={l.to}
-          aria-current={active ? "location" : undefined}
-          onClick={() => setOpen(false)}
-          style={{ transitionDelay: `${Math.min(i * 25, 200)}ms` }}
-          className={commonCls}
-        >
-          {content}
-        </a>
-      );
-    }
-
-    return (
-      <Link
-        key={l.to}
-        to={l.to}
-        aria-current={active ? "page" : undefined}
-        onClick={() => setOpen(false)}
-        style={{ transitionDelay: `${Math.min(i * 25, 200)}ms` }}
-        className={commonCls}
-      >
-        {content}
-      </Link>
-    );
-  }
-
-  // Resize observer to ensure the curved notch SVG is always pixel-perfect on any mobile screen width
-  const [barWidth, setBarWidth] = useState(380);
-  const barRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!barRef.current) return;
-    const updateWidth = () => {
-      if (barRef.current) {
-        const w = barRef.current.offsetWidth;
-        if (w > 0) setBarWidth(w);
-      }
-    };
-    updateWidth();
-    const ro = new ResizeObserver(updateWidth);
-    ro.observe(barRef.current);
-    window.addEventListener("resize", updateWidth);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", updateWidth);
-    };
-  }, []);
-
-  // For public desktop navbar: cleanly separate content navigation from actions (Registrasi CTA & Admin link)
-  const { publicContentItems, publicCtaItem, publicAdminItem } = useMemo(() => {
-    if (isDashboardMode) {
-      return { publicContentItems: items, publicCtaItem: null, publicAdminItem: null };
-    }
-
-    const content: NavItem[] = [];
-    let cta: NavItem | null = null;
-    let admin: NavItem | null = null;
-
-    for (const it of items) {
-      const isReg = it.to === "/registrasi" || it.label.toLowerCase().includes("registrasi");
-      const isAdmin = it.to.startsWith("/admin") || it.label.toLowerCase() === "admin";
-
-      if (isReg && !cta) {
-        cta = it;
-      } else if (isAdmin && !admin) {
-        admin = it;
-      } else {
-        content.push(it);
-      }
-    }
-
-    return { publicContentItems: content, publicCtaItem: cta, publicAdminItem: admin };
-  }, [isDashboardMode, items]);
-
-  // SVG curved notch path calculation:
-  // Smooth concentric scoop curve closely cradling the center FAB button with uniform clearance
-  const notchPath = useMemo(() => {
-    const w = barWidth;
-    const h = 64;
-    const r = 28; // original pill radius
-    const cx = w / 2;
-
-    // Elegant, snug cubic bezier cradle brought closer to the 48px circular button without feeling too distant
-    // Scoop spans from cx - 42 to cx + 42 (84px wide) and dips gracefully to y = 36 for clean, uniform clearance
-    return `M ${r} 0 H ${cx - 42} C ${cx - 29} 0, ${cx - 27} 36, ${cx} 36 C ${cx + 27} 36, ${cx + 29} 0, ${cx + 42} 0 H ${w - r} A ${r} ${r} 0 0 1 ${w} ${r} V ${h - r} A ${r} ${r} 0 0 1 ${w - r} ${h} H ${r} A ${r} ${r} 0 0 1 0 ${h - r} V ${r} A ${r} ${r} 0 0 1 ${r} 0 Z`;
-  }, [barWidth]);
-
-  const centerActive = isItemActive(centerDockItem.to);
-  const CenterIcon = centerDockItem.icon || Plus;
-
   const avatarName = userName || (isDashboardMode ? "Admin" : "Tamu");
 
   return (
@@ -573,12 +285,11 @@ export function SiteNav({
               : "border-border/40 bg-card/85 shadow-xs backdrop-blur-md"
           }`}
         >
-          {/* Logo Brand: Text Menara Nobu removed on public desktop as requested */}
+          {/* Logo brand */}
           <Link
-            to="/"
-            aria-label="Menara Nobu — Beranda"
-            className={`${focusRing} rounded-full flex shrink-0 items-center`}
-            onClick={() => setOpen(false)}
+            to={isDashboardMode ? "/admin" : "/"}
+            className={`${focusRing} flex items-center rounded-full`}
+            aria-label="Menara Nobu Beranda"
           >
             <img
               src={logo}
@@ -675,307 +386,32 @@ export function SiteNav({
       </header>
 
       {/* Modern Curved-Notch Mobile Floating Bottom Navigation Bar (Scooped Center FAB Style) */}
-      <aside
-        aria-label="Navigasi cepat ponsel"
-        className="fixed bottom-[max(0.85rem,env(safe-area-inset-bottom))] inset-x-3 z-40 mx-auto max-w-[430px] md:hidden pointer-events-none"
-      >
-        <div ref={barRef} className="pointer-events-auto relative w-full h-[64px]">
-          {/* Custom Organic Curved-Notch SVG Background with original pill radius */}
-          <svg
-            className="absolute inset-0 w-full h-full pointer-events-none drop-shadow-[0_12px_28px_rgba(0,0,0,0.15)] dark:drop-shadow-[0_14px_32px_rgba(0,0,0,0.5)]"
-            width={barWidth}
-            height={64}
-            viewBox={`0 0 ${barWidth} 64`}
-            fill="none"
-          >
-            <path
-              d={notchPath}
-              className="fill-card/95 dark:fill-card/95 stroke-border/80"
-              strokeWidth="1.25"
-            />
-          </svg>
-
-          {/* Central Protruding Floating Action Button (FAB) nestled comfortably with clear breathing room */}
-          <div className="absolute left-1/2 -translate-x-1/2 -top-[18px] z-20 flex flex-col items-center">
-            <Link
-              to={centerDockItem.to}
-              onClick={() => setOpen(false)}
-              aria-label={centerDockItem.label}
-              className={`${focusRing} group relative flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_8px_20px_-3px_rgba(16,36,30,0.38)] dark:shadow-[0_8px_22px_-3px_rgba(16,185,129,0.42)] transition-all duration-200 active:scale-90 hover:brightness-110 ${
-                centerActive ? "ring-3 ring-primary/30 scale-105" : ""
-              }`}
-            >
-              <CenterIcon
-                className={`h-5 w-5 ${
-                  isDashboardMode ? "stroke-[2.25]" : "stroke-[2.5]"
-                } transition-transform group-hover:scale-110`}
-              />
-            </Link>
-          </div>
-
-          {/* 5-Column Grid: Flanking items on left & right of the center curved notch */}
-          <nav className="relative z-10 grid grid-cols-5 h-full items-center px-1">
-            {/* Left 2 items */}
-            {leftDockItems.map((item) => {
-              const active = isItemActive(item.to);
-              const IconComp = item.icon || Compass;
-              return (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  onClick={() => setOpen(false)}
-                  className={`${focusRing} relative flex flex-col items-center justify-center py-1.5 px-0.5 text-center transition-all duration-200 active:scale-95 ${
-                    active
-                      ? "text-primary font-bold"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <div
-                    className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
-                      active ? "bg-brand-soft shadow-2xs" : ""
-                    }`}
-                  >
-                    <IconComp className={`h-5 w-5 ${active ? "stroke-[2.25]" : "stroke-[1.75]"}`} />
-                  </div>
-                  <span className="mt-0.5 text-[10px] leading-tight tracking-tight">
-                    {item.label}
-                  </span>
-                </Link>
-              );
-            })}
-
-            {/* Center Column: spacing under the protruding FAB button with label positioned clearly below notch */}
-            <Link
-              to={centerDockItem.to}
-              onClick={() => setOpen(false)}
-              aria-label={centerDockItem.label}
-              className={`${focusRing} flex h-full flex-col items-center justify-end pb-2 text-center transition-all duration-200 active:scale-95`}
-            >
-              <span
-                className={`max-w-[72px] truncate text-[9.5px] font-bold tracking-tight text-center leading-tight transition-colors ${
-                  centerActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {centerDockItem.label}
-              </span>
-            </Link>
-
-            {/* Right Item 1 (e.g. Karyawan) */}
-            {rightDockItems.map((item) => {
-              const active = isItemActive(item.to);
-              const IconComp = item.icon || Compass;
-              return (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  onClick={() => setOpen(false)}
-                  className={`${focusRing} relative flex flex-col items-center justify-center py-1.5 px-0.5 text-center transition-all duration-200 active:scale-95 ${
-                    active
-                      ? "text-primary font-bold"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <div
-                    className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
-                      active ? "bg-brand-soft shadow-2xs" : ""
-                    }`}
-                  >
-                    <IconComp className={`h-5 w-5 ${active ? "stroke-[2.25]" : "stroke-[1.75]"}`} />
-                  </div>
-                  <span className="mt-0.5 text-[10px] leading-tight tracking-tight">
-                    {item.label}
-                  </span>
-                </Link>
-              );
-            })}
-
-            {/* Right Item 2: Menu Drawer Toggle Button */}
-            <button
-              type="button"
-              onClick={() => setOpen(!open)}
-              aria-label={open ? "Tutup drawer menu" : "Buka semua menu"}
-              aria-expanded={open}
-              className={`${focusRing} relative flex flex-col items-center justify-center py-1.5 px-0.5 text-center transition-all duration-200 active:scale-95 ${
-                open || isSecondaryMenuActive
-                  ? "text-primary font-bold"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <div
-                className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
-                  open || isSecondaryMenuActive ? "bg-brand-soft shadow-2xs" : ""
-                }`}
-              >
-                {open ? (
-                  <X className="h-5 w-5 stroke-[2.25]" />
-                ) : isDashboardMode ? (
-                  <LayoutGrid className="h-5 w-5 stroke-[1.75]" />
-                ) : (
-                  <Menu className="h-5 w-5 stroke-[1.75]" />
-                )}
-              </div>
-              <span className="mt-0.5 text-[10px] leading-tight tracking-tight">
-                {open ? "Tutup" : "Menu"}
-              </span>
-            </button>
-          </nav>
-        </div>
-      </aside>
+      <MobileBottomDock
+        leftDockItems={leftDockItems}
+        centerDockItem={centerDockItem}
+        rightDockItems={rightDockItems}
+        isItemActive={isItemActive}
+        isDashboardMode={isDashboardMode}
+        open={open}
+        onToggleMenu={() => setOpen(!open)}
+        isSecondaryMenuActive={isSecondaryMenuActive}
+        focusRing={focusRing}
+      />
 
       {/* Modern Native App Menu Drawer / Sheet (Mobile Bottom Sheet & Desktop Command Modal) */}
-      <div
-        className={`fixed inset-0 z-50 transition-all duration-300 ${
-          open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
-        }`}
-        aria-hidden={!open}
-      >
-        {/* Soft backdrop blur overlay */}
-        <div
-          className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300"
-          onClick={() => setOpen(false)}
-        />
-
-        {/* Floating Native App Card Container with generous rounded radius */}
-        <div
-          id="menu-ponsel-modern"
-          ref={panelRef}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Semua Menu Navigasi"
-          className={`absolute inset-x-3.5 top-3.5 bottom-20 sm:bottom-auto sm:max-h-[85vh] max-w-lg md:max-w-xl mx-auto flex flex-col overflow-hidden rounded-3xl border border-border/80 bg-card/95 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.35)] backdrop-blur-2xl transition-all duration-300 ease-out md:top-20 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 ${
-            open ? "translate-y-0 opacity-100 scale-100" : "-translate-y-4 opacity-0 scale-95"
-          }`}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Native Grab Handle Pill */}
-          <div className="pt-2 pb-1 text-center shrink-0">
-            <div className="mx-auto h-1.5 w-12 rounded-full bg-muted-foreground/20" />
-          </div>
-
-          {/* Header Bar */}
-          <div className="flex items-center justify-between border-b border-border/50 px-4 py-2.5 shrink-0">
-            <Link
-              to="/"
-              onClick={() => setOpen(false)}
-              aria-label="Menara Nobu"
-              className="flex items-center"
-            >
-              <img src={logo} alt="Menara Nobu" className="h-7 w-auto shrink-0" />
-            </Link>
-
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              aria-label="Tutup menu"
-              className={`${focusRing} flex h-8 w-8 items-center justify-center rounded-full bg-muted/60 text-muted-foreground transition-all hover:bg-muted hover:text-foreground active:scale-90`}
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-
-          {/* User Profile Quick Card */}
-          <div className="mx-4 mt-3 rounded-2xl border border-border/60 bg-muted/30 p-3 shrink-0">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <Avatar name={avatarName} size="sm" />
-                <div className="min-w-0">
-                  <p className="truncate text-xs font-bold text-foreground">
-                    {userName || (isDashboardMode ? "Administrator" : "Pengunjung Menara Nobu")}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
-                    {isDashboardMode ? "Admin Nobu" : "Tamu Digital"}
-                  </p>
-                </div>
-              </div>
-
-              {onLogout ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOpen(false);
-                    onLogout();
-                  }}
-                  className="inline-flex items-center gap-1 rounded-xl border border-destructive/30 bg-destructive/10 px-2.5 py-1.5 text-xs font-semibold text-destructive transition-all hover:bg-destructive hover:text-destructive-foreground active:scale-95"
-                >
-                  <LogOut className="h-3.5 w-3.5" />
-                  Keluar
-                </button>
-              ) : !isDashboardMode ? (
-                <Link
-                  to="/admin/login"
-                  onClick={() => setOpen(false)}
-                  className="inline-flex items-center gap-1 rounded-xl border border-primary/30 bg-primary/10 px-2.5 py-1.5 text-xs font-semibold text-primary transition-all hover:bg-primary hover:text-primary-foreground active:scale-95"
-                >
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                  Masuk
-                </Link>
-              ) : null}
-            </div>
-          </div>
-
-          {/* Scrollable Categories & Navigation items */}
-          <div className="flex-1 overflow-y-auto px-3.5 py-3 space-y-4">
-            {Object.entries(groupedItems).map(([category, catItems], groupIdx) => (
-              <div key={category} className="space-y-1.5">
-                <div className="flex items-center justify-between px-2">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">
-                    {category}
-                  </span>
-                  <span className="text-[10px] font-medium text-muted-foreground/50">
-                    {catItems.length} menu
-                  </span>
-                </div>
-                <div className="space-y-1">
-                  {catItems.map((item, itemIdx) =>
-                    renderMobileDrawerItem(item, groupIdx * 4 + itemIdx),
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Drawer Footer with Quick Shortcuts */}
-          <div className="border-t border-border/60 bg-card/60 p-3 shrink-0">
-            <div className="flex items-center justify-between gap-2">
-              {hideRegistration ? (
-                <Link
-                  to="/admin/scan"
-                  onClick={() => setOpen(false)}
-                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-primary/40 bg-brand-soft px-3 py-2 text-xs font-semibold text-primary transition-all hover:bg-primary hover:text-primary-foreground active:scale-95"
-                >
-                  <QrCode className="h-3.5 w-3.5" />
-                  Pos Pindai Pass
-                </Link>
-              ) : (
-                <Link
-                  to="/registrasi"
-                  onClick={() => setOpen(false)}
-                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border/70 bg-card px-3 py-2 text-xs font-semibold text-foreground transition-all hover:bg-brand-soft hover:text-primary active:scale-95"
-                >
-                  <Users className="h-3.5 w-3.5 text-primary" />
-                  Buku Tamu Depan
-                  <ExternalLink className="h-3 w-3 text-muted-foreground" />
-                </Link>
-              )}
-
-              {onLogout && !isDashboardMode && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOpen(false);
-                    onLogout();
-                  }}
-                  className="inline-flex items-center justify-center gap-1 rounded-xl border border-destructive/30 px-3 py-2 text-xs font-semibold text-destructive hover:bg-destructive hover:text-destructive-foreground active:scale-95"
-                >
-                  <LogOut className="h-3.5 w-3.5" />
-                  Keluar
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      <NavDrawerModal
+        open={open}
+        onClose={() => setOpen(false)}
+        userName={userName}
+        avatarName={avatarName}
+        isDashboardMode={isDashboardMode}
+        hideRegistration={hideRegistration}
+        onLogout={onLogout}
+        groupedItems={groupedItems}
+        isItemActive={isItemActive}
+        focusRing={focusRing}
+        triggerBtnRef={btnRef}
+      />
     </>
   );
 }
