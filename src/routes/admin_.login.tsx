@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import logo from "@/assets/logo.png";
 
@@ -24,6 +24,19 @@ function Login() {
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
   const [info, setInfo] = useState("");
+  const [checking, setChecking] = useState(true);
+
+  // Jika sudah login, langsung alihkan ke dashboard agar tidak bingung
+  useEffect(() => {
+    let active = true;
+    supabase.auth.getUser().then(({ data }) => {
+      if (!active) return;
+      if (data.user) nav({ to: "/admin", replace: true });
+      else setChecking(false);
+    });
+    return () => { active = false; };
+  }, [nav]);
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr(""); setInfo("");
@@ -48,6 +61,7 @@ function Login() {
     setInfo("Jika email terdaftar, tautan untuk mengatur ulang password sudah dikirim.");
   };
   const f = "mt-1 w-full rounded-lg border border-input bg-card px-3 py-3 text-foreground";
+  if (checking) return <main className="flex min-h-screen items-center justify-center bg-background p-4"><p className="text-muted-foreground">Memeriksa sesi…</p></main>;
   return (
     <main className="relative flex min-h-screen items-center justify-center bg-background p-4">
       <Link to="/" className="absolute left-4 top-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-card px-4 text-sm font-medium text-primary shadow-soft transition-transform hover:-translate-x-0.5">← Kembali</Link>

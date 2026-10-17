@@ -83,13 +83,13 @@ function Guests() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold text-foreground">Data Tamu</h1>
-      <div className="flex flex-wrap gap-2">
-        <input className={`${i} min-w-0 flex-1 sm:flex-none sm:w-64`} type="search" placeholder="Cari nama / instansi / telepon" value={q} onChange={(e) => { setQ(e.target.value); setPage(0); }} />
-        <label className="flex items-center gap-1 text-sm text-muted-foreground">Dari<input className={i} type="date" value={date} onChange={(e) => { setDate(e.target.value); setPage(0); }} /></label>
-        <label className="flex items-center gap-1 text-sm text-muted-foreground">Sampai<input className={i} type="date" value={dateTo} min={date || undefined} onChange={(e) => { setDateTo(e.target.value); setPage(0); }} /></label>
-        <select className={i} value={purpose} onChange={(e) => { setPurpose(e.target.value); setPage(0); }}><option value="">Semua tujuan</option>{purps.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
-        <select className={i} value={emp} onChange={(e) => { setEmp(e.target.value); setPage(0); }}><option value="">Semua karyawan</option>{emps.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
-        <button className={i} onClick={() => { setQ(""); setDate(""); setDateTo(""); setPurpose(""); setEmp(""); setPage(0); }}>Reset filter</button>
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+        <input className={`${i} col-span-2 w-full sm:w-64`} type="search" placeholder="Cari nama / instansi / telepon" value={q} onChange={(e) => { setQ(e.target.value); setPage(0); }} />
+        <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">Dari<input className={`${i} w-full`} type="date" value={date} onChange={(e) => { setDate(e.target.value); setPage(0); }} /></label>
+        <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">Sampai<input className={`${i} w-full`} type="date" value={dateTo} min={date || undefined} onChange={(e) => { setDateTo(e.target.value); setPage(0); }} /></label>
+        <select className={`${i} col-span-2 w-full sm:col-span-1 sm:w-auto`} value={purpose} onChange={(e) => { setPurpose(e.target.value); setPage(0); }}><option value="">Semua tujuan</option>{purps.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
+        <select className={`${i} col-span-2 w-full sm:col-span-1 sm:w-auto`} value={emp} onChange={(e) => { setEmp(e.target.value); setPage(0); }}><option value="">Semua karyawan</option>{emps.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
+        <button className={`${i} col-span-2 sm:col-span-1`} onClick={() => { setQ(""); setDate(""); setDateTo(""); setPurpose(""); setEmp(""); setPage(0); }}>Reset filter</button>
       </div>
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">{count} kunjungan ditemukan</p>
