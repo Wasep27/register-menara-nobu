@@ -53,13 +53,20 @@ const PAGE_TITLES: Record<string, string> = {
 
 import { AdminRoleContext, type AdminRoleContextType } from "@/hooks/useAdminRole";
 
-const SECURITY_ALLOWED_ROUTES = ["/admin", "/admin/scan", "/admin/tamu", "/admin/karyawan"];
+const SECURITY_ALLOWED_ROUTES = [
+  "/admin",
+  "/admin/scan",
+  "/admin/tamu",
+  "/admin/karyawan",
+  "/admin/aktivitas",
+];
 const STAFF_ALLOWED_ROUTES = [
   "/admin",
   "/admin/tamu",
   "/admin/scan",
   "/admin/karyawan",
   "/admin/feedback",
+  "/admin/aktivitas",
 ];
 
 function AdminLayout() {

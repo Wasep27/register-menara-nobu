@@ -39,6 +39,7 @@ import {
   filterActivityLogs,
   calculateActivityStats,
 } from "@/lib/activity-log-utils";
+import { useAdminRole } from "@/hooks/useAdminRole";
 
 export const Route = createFileRoute("/admin/aktivitas")({
   head: () => ({
@@ -54,6 +55,7 @@ export const Route = createFileRoute("/admin/aktivitas")({
 });
 
 export function AdminActivityLogPage() {
+  const { isAdmin } = useAdminRole();
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [todayGuestRegistrations, setTodayGuestRegistrations] = useState<number>(0);
@@ -89,52 +91,109 @@ export function AdminActivityLogPage() {
   const loadActivities = useCallback(async () => {
     setLoading(true);
     try {
-      // Ambil data agregasi jumlah registrasi tamu hari ini & total keseluruhan
       const startOfToday = new Date();
       startOfToday.setHours(0, 0, 0, 0);
 
-      const [todayGuestsRes, totalGuestsRes, logsRes] = await Promise.all([
-        supabase
-          .from("guests")
-          .select("id", { count: "exact", head: true })
-          .gte("check_in_time", startOfToday.toISOString()),
-        supabase.from("guests").select("id", { count: "exact", head: true }),
-        supabase
+      // 1. Fetch counts independently
+      void supabase
+        .from("guests")
+        .select("id", { count: "exact", head: true })
+        .gte("check_in_time", startOfToday.toISOString())
+        .then((res) => {
+          if (typeof res.count === "number") setTodayGuestRegistrations(res.count);
+        })
+        .catch(() => {});
+
+      void supabase
+        .from("guests")
+        .select("id", { count: "exact", head: true })
+        .then((res) => {
+          if (typeof res.count === "number") setTotalGuestRegistrations(res.count);
+        })
+        .catch(() => {});
+
+      // 2. Coba ambil dari tabel activity_logs
+      let directLogs: ActivityLog[] = [];
+      try {
+        const { data, error } = await supabase
           .from("activity_logs")
           .select("*")
           .order("created_at", { ascending: false })
-          .limit(1000),
-      ]);
+          .limit(1000);
 
-      if (typeof todayGuestsRes.count === "number") {
-        setTodayGuestRegistrations(todayGuestsRes.count);
-      }
-      if (typeof totalGuestsRes.count === "number") {
-        setTotalGuestRegistrations(totalGuestsRes.count);
+        if (!error && data && data.length > 0) {
+          directLogs = data as ActivityLog[];
+        }
+      } catch (err) {
+        console.warn("Query activity_logs ditangani dengan fallback", err);
       }
 
-      if (!logsRes.error && logsRes.data && logsRes.data.length > 0) {
-        setLogs(logsRes.data as ActivityLog[]);
+      if (directLogs.length > 0) {
+        setLogs(directLogs);
         setLoading(false);
         return;
       }
 
-      // 2. Jika tabel activity_logs belum ada / kosong, buat synthetic logs dari guests & feedback
-      const [guestsRes, feedbackRes, employeesRes] = await Promise.all([
-        supabase
+      // 3. Fallback sintetis: ambil data tamu, feedback, dan karyawan secara terpisah
+      let guestsData: unknown[] = [];
+      try {
+        const res = await supabase
           .from("guests")
           .select("*, employees(name), visit_purposes(name)")
           .order("check_in_time", { ascending: false })
-          .limit(300),
-        supabase
+          .limit(300);
+
+        if (!res.error && res.data) {
+          guestsData = res.data;
+        } else {
+          // Coba tanpa join jika foreign key schema belum sinkron
+          const fallbackRes = await supabase
+            .from("guests")
+            .select("*")
+            .order("check_in_time", { ascending: false })
+            .limit(300);
+          if (fallbackRes.data) guestsData = fallbackRes.data;
+        }
+      } catch (err) {
+        console.warn("Fallback guests query error", err);
+      }
+
+      let feedbackData: unknown[] = [];
+      try {
+        const res = await supabase
           .from("guest_feedback")
           .select("*")
           .order("created_at", { ascending: false })
-          .limit(50),
-        supabase.from("employees").select("*").order("created_at", { ascending: false }).limit(20),
-      ]);
+          .limit(50);
 
-      const synthetic = buildSyntheticLogs(guestsRes.data, feedbackRes.data, employeesRes.data);
+        if (!res.error && res.data) {
+          feedbackData = res.data;
+        } else if (typeof window !== "undefined") {
+          feedbackData = JSON.parse(localStorage.getItem("nobu_guest_feedback") || "[]");
+        }
+      } catch {
+        if (typeof window !== "undefined") {
+          try {
+            feedbackData = JSON.parse(localStorage.getItem("nobu_guest_feedback") || "[]");
+          } catch {
+            feedbackData = [];
+          }
+        }
+      }
+
+      let employeesData: unknown[] = [];
+      try {
+        const res = await supabase
+          .from("employees")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(20);
+        if (res.data) employeesData = res.data;
+      } catch (err) {
+        console.warn("Fallback employees query error", err);
+      }
+
+      const synthetic = buildSyntheticLogs(guestsData, feedbackData, employeesData);
       setLogs(synthetic);
     } catch (err) {
       console.warn("Gagal memuat activity logs", err);
@@ -478,6 +537,15 @@ export function AdminActivityLogPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {isAdmin && logs.length > 0 && (
+            <button
+              onClick={() => setToClearLogs(true)}
+              className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-destructive/30 bg-destructive/10 px-3.5 text-xs font-semibold text-destructive shadow-sm transition-all hover:bg-destructive hover:text-destructive-foreground active:scale-95"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Bersihkan Log
+            </button>
+          )}
           <button
             onClick={exportLogCsv}
             className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-border bg-card px-4 text-xs font-semibold text-foreground shadow-sm transition-all hover:bg-muted active:scale-95"

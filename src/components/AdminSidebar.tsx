@@ -152,6 +152,12 @@ const SECURITY_NAV_GROUPS: NavGroup[] = [
         icon: UserCheck,
         description: "Cari kontak karyawan penerima",
       },
+      {
+        to: "/admin/aktivitas",
+        label: "Log Aktivitas",
+        icon: Activity,
+        description: "Jejak audit & riwayat check-in",
+      },
     ],
   },
 ];
@@ -189,6 +195,12 @@ const STAFF_NAV_GROUPS: NavGroup[] = [
         label: "Feedback Tamu",
         icon: MessageSquareHeart,
         description: "Indeks kepuasan pengunjung",
+      },
+      {
+        to: "/admin/aktivitas",
+        label: "Log Aktivitas",
+        icon: Activity,
+        description: "Jejak audit & riwayat kunjungan",
       },
     ],
   },

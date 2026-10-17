@@ -59,7 +59,8 @@ export function calculateDashboardStats(rows: Guest[], days: number): DashboardS
     calculatedAvg = Math.round(normalizedDurs.reduce((a, b) => a + b, 0) / normalizedDurs.length);
   }
 
-  const busiest = Object.entries(hour).sort((a, b) => b[1] - a[1])[0] as [string, number] | undefined;
+  const busiest = Object.entries(hour).sort((a, b) => b[1] - a[1])[0] as
+    [string, number] | undefined;
   const toArr = (o: Record<string, number>) =>
     Object.entries(o)
       .map(([name, value]) => ({ name, value }))

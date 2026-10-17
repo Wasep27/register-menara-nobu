@@ -876,8 +876,14 @@ create table if not exists public.guest_feedback (
 alter table public.guest_feedback enable row level security;
 grant all on public.guest_feedback to service_role;
 
--- Kebijakan RLS: Hanya admin yang dapat melihat dan menghapus feedback
+-- Kebijakan RLS: Admin dan Staf dapat melihat feedback, hanya admin yang dapat menghapus
+grant select on public.guest_feedback to authenticated;
 drop policy if exists "admin_manage_feedback" on public.guest_feedback;
+drop policy if exists "staff_select_feedback" on public.guest_feedback;
+create policy "staff_select_feedback" on public.guest_feedback
+for select to authenticated
+using (public.has_any_role(auth.uid(), array['admin', 'staff']));
+
 create policy "admin_manage_feedback" on public.guest_feedback
 for all to authenticated
 using (public.has_role(auth.uid(), 'admin'))
@@ -944,8 +950,14 @@ create index if not exists activity_logs_cat_idx on public.activity_logs(categor
 alter table public.activity_logs enable row level security;
 grant all on public.activity_logs to service_role;
 
--- Kebijakan RLS: Hanya admin yang dapat melihat dan membersihkan log
+-- Kebijakan RLS: Admin, Keamanan, dan Staf dapat melihat log; hanya admin yang dapat membersihkan log
+grant select on public.activity_logs to authenticated;
 drop policy if exists "admin_manage_activity_logs" on public.activity_logs;
+drop policy if exists "staff_select_activity_logs" on public.activity_logs;
+create policy "staff_select_activity_logs" on public.activity_logs
+for select to authenticated
+using (public.has_any_role(auth.uid(), array['admin', 'security', 'staff']));
+
 create policy "admin_manage_activity_logs" on public.activity_logs
 for all to authenticated
 using (public.has_role(auth.uid(), 'admin'))
