@@ -524,15 +524,16 @@ export function SiteNav({
   }, [isDashboardMode, items]);
 
   // SVG curved notch path calculation:
-  // Original relaxed organic scoop curve that avoids constricting the center FAB button
+  // Smooth concentric scoop curve with comfortable clearance so it cradles the center FAB button without sticking/clinging
   const notchPath = useMemo(() => {
     const w = barWidth;
     const h = 64;
     const r = 28; // original pill radius
     const cx = w / 2;
 
-    // Organic cubic bezier scoop
-    return `M ${r} 0 H ${cx - 44} C ${cx - 30} 0, ${cx - 28} 26, ${cx} 26 C ${cx + 28} 26, ${cx + 30} 0, ${cx + 44} 0 H ${w - r} A ${r} ${r} 0 0 1 ${w} ${r} V ${h - r} A ${r} ${r} 0 0 1 ${w - r} ${h} H ${r} A ${r} ${r} 0 0 1 0 ${h - r} V ${r} A ${r} ${r} 0 0 1 ${r} 0 Z`;
+    // Elegant, smooth cubic bezier cradle with comfortable breathing room around the 48px circular button
+    // Scoop spans from cx - 50 to cx + 50 (100px wide) and dips gracefully to y = 36 for clean, uniform clearance
+    return `M ${r} 0 H ${cx - 50} C ${cx - 35} 0, ${cx - 32} 36, ${cx} 36 C ${cx + 32} 36, ${cx + 35} 0, ${cx + 50} 0 H ${w - r} A ${r} ${r} 0 0 1 ${w} ${r} V ${h - r} A ${r} ${r} 0 0 1 ${w - r} ${h} H ${r} A ${r} ${r} 0 0 1 0 ${h - r} V ${r} A ${r} ${r} 0 0 1 ${r} 0 Z`;
   }, [barWidth]);
 
   const centerActive = isItemActive(centerDockItem.to);
@@ -638,7 +639,7 @@ export function SiteNav({
             ) : null}
           </div>
 
-          {/* Mobile Right: Avatar instead of Hamburger button to eliminate double hamburger */}
+          {/* Mobile Right: Full radius circular Avatar button */}
           <div className="flex items-center gap-1.5 md:hidden">
             <button
               ref={btnRef}
@@ -647,7 +648,7 @@ export function SiteNav({
               aria-label={open ? "Tutup profil dan menu" : `Profil ${avatarName}`}
               aria-expanded={open}
               onClick={() => setOpen(!open)}
-              className={`${focusRing} group relative flex items-center justify-center rounded-xl border border-border/80 bg-card/90 p-1 transition-all active:scale-95 shadow-xs hover:border-primary/40 hover:bg-brand-soft/40`}
+              className={`${focusRing} group relative flex items-center justify-center rounded-full border border-border/80 bg-card p-0.5 transition-all duration-200 active:scale-95 shadow-2xs hover:border-primary/50 hover:shadow-xs`}
             >
               <Avatar name={avatarName} size="sm" />
               {isSecondaryMenuActive && (
@@ -679,8 +680,8 @@ export function SiteNav({
             />
           </svg>
 
-          {/* Central Protruding Floating Action Button (FAB) nestled comfortably without constricting */}
-          <div className="absolute left-1/2 -translate-x-1/2 -top-4 z-20 flex flex-col items-center">
+          {/* Central Protruding Floating Action Button (FAB) nestled comfortably with clear breathing room */}
+          <div className="absolute left-1/2 -translate-x-1/2 -top-[18px] z-20 flex flex-col items-center">
             <Link
               to={centerDockItem.to}
               onClick={() => setOpen(false)}
