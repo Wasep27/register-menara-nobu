@@ -4,6 +4,7 @@ import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tansta
 import { useEffect, useState } from "react";
 import { signOutLocal, startIdleLogout, supabase } from "@/lib/supabase";
 import { SiteNav } from "@/components/SiteNav";
+import { Avatar } from "@/components/Avatar";
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
@@ -36,6 +37,7 @@ function AdminLayout() {
   const nav = useNavigate();
   const [state, setState] = useState<"loading" | "ok" | "noadmin" | "out">("loading");
   const [idle, setIdle] = useState(false);
+  const [name, setName] = useState("");
   const isLogin = loc.pathname === "/admin/login";
 
   // Periksa ulang akses ke server (getUser memvalidasi token, bukan hanya membaca lokal)
