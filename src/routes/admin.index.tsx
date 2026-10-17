@@ -464,8 +464,8 @@ function Dashboard() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
-                        <span className="text-muted-foreground text-[11px]">
+                      <div className="flex items-center justify-between sm:justify-end gap-2.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/50 shrink-0">
+                        <span className="text-muted-foreground whitespace-nowrap text-[11px]">
                           {new Date(r.check_in_time).toLocaleTimeString("id-ID", {
                             hour: "2-digit",
                             minute: "2-digit",
@@ -475,7 +475,7 @@ function Dashboard() {
                         <button
                           type="button"
                           onClick={() => openBadgeForGuest(r)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-primary/30 bg-card px-2.5 py-1 text-xs font-semibold text-primary hover:bg-primary hover:text-primary-foreground transition-colors active:scale-95 shadow-2xs"
+                          className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl border border-primary/30 bg-brand-soft px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary hover:text-primary-foreground transition-all active:scale-95 shadow-2xs"
                         >
                           <IdCard className="h-3.5 w-3.5" />
                           <span>Cek Badge</span>
@@ -700,8 +700,8 @@ function Dashboard() {
                         </p>
                       </div>
 
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-muted-foreground text-[11px]">
+                      <div className="flex items-center justify-between sm:justify-end gap-2.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/50 shrink-0">
+                        <span className="text-muted-foreground whitespace-nowrap text-[11px]">
                           {new Date(r.check_in_time).toLocaleTimeString("id-ID", {
                             hour: "2-digit",
                             minute: "2-digit",
@@ -711,7 +711,7 @@ function Dashboard() {
                         <button
                           type="button"
                           onClick={() => openBadgeForGuest(r)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-primary/30 bg-card px-2.5 py-1 text-xs font-semibold text-primary hover:bg-primary hover:text-primary-foreground transition-colors active:scale-95 shadow-2xs"
+                          className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl border border-primary/30 bg-brand-soft px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary hover:text-primary-foreground transition-all active:scale-95 shadow-2xs"
                         >
                           <IdCard className="h-3.5 w-3.5" />
                           <span>Cetak Badge</span>
@@ -904,20 +904,20 @@ function Dashboard() {
                   {rows.slice(0, 4).map((r) => (
                     <div
                       key={r.id}
-                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 rounded-xl border border-border/60 bg-background/60 p-3 text-xs transition-colors hover:border-brand/40"
+                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 rounded-xl border border-border/60 bg-background/60 p-3 sm:p-3.5 text-xs transition-colors hover:border-primary/40"
                     >
-                      <div className="flex items-center gap-2.5">
-                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-soft text-xs font-bold text-primary">
+                      <div className="flex items-start sm:items-center gap-2.5 min-w-0">
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-soft text-xs font-bold text-primary mt-0.5 sm:mt-0">
                           ✓
                         </span>
-                        <div>
-                          <p className="font-bold text-foreground">
+                        <div className="min-w-0">
+                          <p className="font-bold text-foreground text-sm leading-tight truncate">
                             {r.name}
-                            <span className="ml-1.5 font-normal text-muted-foreground">
+                            <span className="ml-1.5 font-normal text-muted-foreground text-xs">
                               ({r.institution})
                             </span>
                           </p>
-                          <p className="text-muted-foreground">
+                          <p className="text-muted-foreground mt-0.5 text-xs">
                             Menemui:{" "}
                             <span className="font-semibold text-primary">
                               {r.employees?.name ?? "-"}
@@ -927,8 +927,8 @@ function Dashboard() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground self-start sm:self-auto whitespace-nowrap text-[11px]">
+                      <div className="flex items-center justify-between sm:justify-end gap-2.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/50 shrink-0">
+                        <span className="text-muted-foreground whitespace-nowrap text-[11px]">
                           {new Date(r.check_in_time).toLocaleString("id-ID", {
                             day: "numeric",
                             month: "short",
@@ -940,10 +940,10 @@ function Dashboard() {
                         <button
                           type="button"
                           onClick={() => openBadgeForGuest(r)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-primary/30 bg-card px-2 py-0.5 text-xs font-semibold text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+                          className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl border border-primary/30 bg-brand-soft px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary hover:text-primary-foreground transition-all active:scale-95 shadow-2xs"
                         >
-                          <IdCard className="h-3 w-3" />
-                          Badge
+                          <IdCard className="h-3.5 w-3.5" />
+                          <span>Lihat Badge</span>
                         </button>
                       </div>
                     </div>

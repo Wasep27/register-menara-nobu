@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   QrCode,
   Barcode as BarcodeIcon,
@@ -290,61 +291,64 @@ export function VisitorQrCodePass({
       </div>
 
       {/* FULLSCREEN POPUP MODE (Untuk scanner lobi tanpa gangguan pantulan cahaya) */}
-      {isFullscreen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Tampilan Penuh QR Pass Tamu"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 backdrop-blur-md animate-in fade-in duration-200"
-          onClick={() => setIsFullscreen(false)}
-        >
+      {isFullscreen &&
+        typeof document !== "undefined" &&
+        createPortal(
           <div
-            className="relative w-full max-w-sm rounded-3xl bg-white p-6 text-center text-neutral-900 shadow-2xl animate-in zoom-in-95"
-            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Tampilan Penuh QR Pass Tamu"
+            className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/90 p-4 backdrop-blur-md animate-in fade-in duration-200"
+            onClick={() => setIsFullscreen(false)}
           >
-            <button
-              type="button"
-              onClick={() => setIsFullscreen(false)}
-              className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-full bg-neutral-100 text-neutral-600 hover:bg-neutral-200 transition-colors"
+            <div
+              className="relative w-full max-w-sm rounded-3xl bg-white p-6 text-center text-neutral-900 shadow-2xl animate-in zoom-in-95"
+              onClick={(e) => e.stopPropagation()}
             >
-              <X className="h-4 w-4" />
-            </button>
+              <button
+                type="button"
+                onClick={() => setIsFullscreen(false)}
+                className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-full bg-neutral-100 text-neutral-600 hover:bg-neutral-200 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
 
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 mb-2">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              <span>Kartu Akses Menara Nobu</span>
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 mb-2">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                <span>Kartu Akses Menara Nobu</span>
+              </div>
+
+              <h3 className="font-display text-xl font-black text-neutral-900">{name}</h3>
+              <p className="text-xs font-semibold text-emerald-700">{institution}</p>
+
+              <div className="my-4 mx-auto w-56 h-56 flex items-center justify-center p-3 rounded-2xl bg-white border-2 border-emerald-500 shadow-md">
+                <svg viewBox="0 0 25 25" className="h-full w-full">
+                  {qrMatrix.map((row, r) =>
+                    row.map((val, c) =>
+                      val ? (
+                        <rect key={`${r}-${c}`} x={c} y={r} width={1} height={1} fill="#10241E" />
+                      ) : null,
+                    ),
+                  )}
+                </svg>
+              </div>
+
+              <p className="font-mono text-sm font-bold text-neutral-900">*{badgeCode}*</p>
+              <p className="mt-1 text-xs text-neutral-500">
+                Tunjukkan layar ini langsung ke pemindai lobi / resepsionis
+              </p>
+
+              <button
+                type="button"
+                onClick={() => setIsFullscreen(false)}
+                className="mt-4 w-full rounded-xl bg-neutral-900 py-2.5 text-xs font-bold text-white transition-all hover:bg-neutral-800 active:scale-95"
+              >
+                Tutup Tampilan Penuh
+              </button>
             </div>
-
-            <h3 className="font-display text-xl font-black text-neutral-900">{name}</h3>
-            <p className="text-xs font-semibold text-emerald-700">{institution}</p>
-
-            <div className="my-4 mx-auto w-56 h-56 flex items-center justify-center p-3 rounded-2xl bg-white border-2 border-emerald-500 shadow-md">
-              <svg viewBox="0 0 25 25" className="h-full w-full">
-                {qrMatrix.map((row, r) =>
-                  row.map((val, c) =>
-                    val ? (
-                      <rect key={`${r}-${c}`} x={c} y={r} width={1} height={1} fill="#10241E" />
-                    ) : null,
-                  ),
-                )}
-              </svg>
-            </div>
-
-            <p className="font-mono text-sm font-bold text-neutral-900">*{badgeCode}*</p>
-            <p className="mt-1 text-xs text-neutral-500">
-              Tunjukkan layar ini langsung ke pemindai lobi / resepsionis
-            </p>
-
-            <button
-              type="button"
-              onClick={() => setIsFullscreen(false)}
-              className="mt-4 w-full rounded-xl bg-neutral-900 py-2.5 text-xs font-bold text-white transition-all hover:bg-neutral-800 active:scale-95"
-            >
-              Tutup Tampilan Penuh
-            </button>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </>
   );
 }

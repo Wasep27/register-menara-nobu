@@ -96,9 +96,13 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, onClose]);
 
-  // Lock body scroll when modal is open to prevent background scrolling on mobile
+  // Lock body scroll safely without losing scroll position on mobile
   useEffect(() => {
     if (!open) return;
+    const scrollY = window.scrollY || window.pageYOffset;
+    const originalPosition = document.body.style.position;
+    const originalTop = document.body.style.top;
+    const originalWidth = document.body.style.width;
     const originalOverflow = document.body.style.overflow;
     const originalPaddingRight = document.body.style.paddingRight;
 
@@ -107,11 +111,19 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
     if (scrollbarWidth > 0) {
       document.body.style.paddingRight = `${scrollbarWidth}px`;
     }
+
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = "100%";
     document.body.style.overflow = "hidden";
 
     return () => {
+      document.body.style.position = originalPosition;
+      document.body.style.top = originalTop;
+      document.body.style.width = originalWidth;
       document.body.style.overflow = originalOverflow;
       document.body.style.paddingRight = originalPaddingRight;
+      window.scrollTo(0, scrollY);
     };
   }, [open]);
 
@@ -162,7 +174,8 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-badge-title"
-      className="fixed inset-0 z-[99999] flex sm:items-center sm:justify-center overflow-hidden bg-black/80 backdrop-blur-sm sm:p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-y-auto overscroll-contain bg-black/80 backdrop-blur-sm"
+      onClick={onClose}
     >
       {/* Print-specific style override: hide all ambient UI during print */}
       <style>{`
@@ -190,20 +203,13 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
         }
       `}</style>
 
-      {/* Accessible Backdrop with click to dismiss covering full viewport (desktop) */}
+      {/* Modal Dialog: Properly centered with safe margins preventing navbar and bottom nav overlap */}
       <div
-        className="hidden sm:block fixed inset-0 bg-transparent"
-        aria-hidden="true"
-        onClick={onClose}
-      />
-
-      {/* Modal Dialog: Full page on mobile, centered modal card on sm+ */}
-      <div
-        className="relative w-full h-[100dvh] sm:h-auto sm:max-h-[92dvh] sm:max-w-xl flex flex-col rounded-none sm:rounded-3xl border-0 sm:border border-border/80 bg-card shadow-2xl z-10 overflow-hidden animate-in zoom-in-95 duration-200"
+        className="relative w-full max-w-lg sm:max-w-xl max-h-[calc(100dvh-2.5rem)] sm:max-h-[92dvh] flex flex-col rounded-2xl sm:rounded-3xl border border-border/80 bg-card shadow-2xl z-10 overflow-hidden my-auto animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Top Header Bar */}
-        <div className="flex items-center justify-between border-b border-border/60 px-4 py-3 sm:px-6 sm:py-4 pt-[max(0.75rem,env(safe-area-inset-top))] sm:pt-4 shrink-0 bg-card">
+        <div className="flex items-center justify-between border-b border-border/60 px-4 py-3 sm:px-6 sm:py-3.5 shrink-0 bg-card">
           <div className="flex items-center gap-2.5 min-w-0">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-primary font-bold shadow-xs">
               <ShieldCheck className="h-5 w-5" />
@@ -455,11 +461,11 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
         </div>
 
         {/* Modal Bottom Action Controls */}
-        <div className="border-t border-border/60 bg-card px-3.5 py-3 sm:px-6 sm:py-4 pb-[max(0.85rem,env(safe-area-inset-bottom))] sm:pb-4 flex flex-col-reverse sm:flex-row items-stretch sm:items-center sm:justify-between gap-2 shrink-0">
+        <div className="border-t border-border/60 bg-card px-4 py-3 sm:px-6 sm:py-3.5 flex flex-col-reverse sm:flex-row items-stretch sm:items-center sm:justify-between gap-2.5 shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="w-full sm:w-auto rounded-xl border border-border px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted transition-colors active:scale-95 text-center"
+            className="w-full sm:w-auto rounded-xl border border-border px-4 py-2.5 text-xs font-semibold text-foreground hover:bg-muted transition-colors active:scale-95 text-center min-h-10"
           >
             Tutup
           </button>

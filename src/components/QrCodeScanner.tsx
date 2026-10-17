@@ -599,8 +599,8 @@ export function QrCodeScanner({
       ) : (
         /* CAMERA SCANNER VIEWPORT */
         <div className="space-y-3">
-          {/* Responsive Camera Viewport Frame with Polished Indicators */}
-          <div className="relative h-60 xs:h-64 sm:h-72 w-full max-w-[340px] sm:max-w-[390px] mx-auto overflow-hidden rounded-2xl border-2 border-primary/40 bg-neutral-950 shadow-md flex items-center justify-center">
+          {/* Responsive Camera Viewport Frame with Clean Minimalist Guide */}
+          <div className="relative h-64 sm:h-72 w-full max-w-[360px] sm:max-w-[400px] mx-auto overflow-hidden rounded-2xl border border-border/80 bg-neutral-950 shadow-md flex items-center justify-center">
             {/* Live Video Element */}
             <video
               ref={videoRef}
@@ -612,56 +612,15 @@ export function QrCodeScanner({
               }`}
             />
 
-            {/* Polished Active Camera Status Overlay HUD (Top) */}
-            {cameraState === "active" && (
-              <div className="absolute top-2.5 inset-x-3 z-20 flex items-center justify-between pointer-events-none">
-                {/* Active Indicator Badge with Pulsing Emerald Glow */}
-                <div className="inline-flex items-center gap-2 rounded-full bg-neutral-900/90 backdrop-blur-md px-3 py-1 text-[11px] font-bold text-white border border-emerald-500/50 shadow-sm">
-                  <span className="relative flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 shadow-[0_0_8px_#10b981]"></span>
-                  </span>
-                  <span className="tracking-wide">KAMERA AKTIF</span>
-                </div>
-
-                {/* Lens Orientation & Torch Pill */}
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-neutral-900/85 backdrop-blur-md px-2.5 py-1 text-[10px] font-mono text-neutral-200 border border-white/10 shadow-sm">
-                  <span>{facingMode === "environment" ? "Lensa Belakang" : "Lensa Depan"}</span>
-                  {hasTorch && torchOn && (
-                    <span className="text-amber-400 font-bold flex items-center gap-0.5">
-                      • ⚡ Senter
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Scanning Viewfinder Overlay Reticle */}
-            {cameraState === "active" && (
-              <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-4">
-                {/* Viewfinder Target Box with Sharp Glowing Corner Brackets */}
-                <div className="relative h-44 w-44 xs:h-48 xs:w-48 sm:h-52 sm:w-52 rounded-2xl border border-white/20">
-                  {/* Glowing Emerald Corner Brackets */}
-                  <div className="absolute -top-1 -left-1 h-6 w-6 border-t-[3px] border-l-[3px] border-emerald-400 rounded-tl-lg shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
-                  <div className="absolute -top-1 -right-1 h-6 w-6 border-t-[3px] border-r-[3px] border-emerald-400 rounded-tr-lg shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
-                  <div className="absolute -bottom-1 -left-1 h-6 w-6 border-b-[3px] border-l-[3px] border-emerald-400 rounded-bl-lg shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
-                  <div className="absolute -bottom-1 -right-1 h-6 w-6 border-b-[3px] border-r-[3px] border-emerald-400 rounded-br-lg shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
-
-                  {/* Center Subtle Crosshair Guide */}
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-30">
-                    <div className="w-5 h-0.5 bg-white/70"></div>
-                    <div className="h-5 w-0.5 bg-white/70 -ml-2.5"></div>
-                  </div>
-
-                  {/* Sweeping Laser Line with Neon Glow */}
-                  <div className="absolute inset-x-2 h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_12px_#34d399] scan-laser" />
-                </div>
-
-                {/* Bottom Instruction Pill */}
-                <div className="absolute bottom-2.5 inset-x-3 flex justify-center pointer-events-none z-20">
-                  <span className="rounded-full bg-neutral-900/90 backdrop-blur-md px-3 py-1 text-[11px] font-medium text-neutral-200 border border-white/10 shadow-sm text-center">
-                    Posisikan barcode atau QR pass di dalam kotak
-                  </span>
+            {/* Simple, Minimalist Viewfinder Reticle (Unobstructed View) */}
+            {cameraState === "active" && !isProcessingScan && !loadingSearch && (
+              <div className="absolute inset-0 pointer-events-none flex items-center justify-center p-6">
+                <div className="relative h-48 w-48 sm:h-56 sm:w-56">
+                  {/* Subtle, sleek corner brackets only - Simple & Unobtrusive */}
+                  <div className="absolute top-0 left-0 h-5 w-5 border-t-2 border-l-2 border-emerald-400/90 rounded-tl-md" />
+                  <div className="absolute top-0 right-0 h-5 w-5 border-t-2 border-r-2 border-emerald-400/90 rounded-tr-md" />
+                  <div className="absolute bottom-0 left-0 h-5 w-5 border-b-2 border-l-2 border-emerald-400/90 rounded-bl-md" />
+                  <div className="absolute bottom-0 right-0 h-5 w-5 border-b-2 border-r-2 border-emerald-400/90 rounded-br-md" />
                 </div>
               </div>
             )}
@@ -669,7 +628,7 @@ export function QrCodeScanner({
             {/* Loading / Verifying Scan Overlay */}
             {(isProcessingScan || loadingSearch) && (
               <div className="absolute inset-0 z-30 bg-neutral-950/80 backdrop-blur-xs flex flex-col items-center justify-center p-4">
-                <div className="h-9 w-9 animate-spin rounded-full border-3 border-emerald-500/30 border-t-emerald-400 mb-2" />
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-500/30 border-t-emerald-400 mb-2" />
                 <p className="text-xs font-bold text-white">Memverifikasi kode pass...</p>
                 {scannedRawCode && (
                   <p className="text-[10px] text-emerald-300 font-mono mt-0.5">{scannedRawCode}</p>
@@ -679,7 +638,7 @@ export function QrCodeScanner({
 
             {/* Permission Denied / Error State */}
             {cameraState === "denied" && (
-              <div className="absolute inset-0 p-4 flex flex-col items-center justify-center text-center bg-card text-foreground">
+              <div className="absolute inset-0 p-4 flex flex-col items-center justify-center text-center bg-card text-foreground z-20">
                 <AlertCircle className="h-8 w-8 text-amber-500 mb-1.5" />
                 <h3 className="font-display text-xs sm:text-sm font-bold">
                   Izin Kamera Dinonaktifkan
@@ -711,7 +670,7 @@ export function QrCodeScanner({
 
             {/* Requesting / Loading State */}
             {cameraState === "requesting" && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-center bg-neutral-900 text-white p-4">
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center bg-neutral-900 text-white p-4 z-20">
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-emerald-400 mb-2" />
                 <p className="text-xs font-semibold">Mengaktifkan kamera pemindai...</p>
               </div>
@@ -719,7 +678,7 @@ export function QrCodeScanner({
 
             {/* Unsupported Camera */}
             {cameraState === "unsupported" && (
-              <div className="absolute inset-0 p-4 flex flex-col items-center justify-center text-center bg-card text-foreground">
+              <div className="absolute inset-0 p-4 flex flex-col items-center justify-center text-center bg-card text-foreground z-20">
                 <Camera className="h-8 w-8 text-muted-foreground mb-1.5" />
                 <h3 className="font-display text-xs sm:text-sm font-bold">Kamera Tidak Tersedia</h3>
                 <p className="mt-1 text-[11px] text-muted-foreground">
@@ -736,6 +695,13 @@ export function QrCodeScanner({
               </div>
             )}
           </div>
+
+          {/* Simple Clean Guide Outside Camera Frame */}
+          {cameraState === "active" && (
+            <p className="text-center text-xs text-muted-foreground">
+              Arahkan kamera ke barcode atau kode QR pass
+            </p>
+          )}
 
           {/* Camera Quick Controls: Responsive Balanced Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full max-w-[390px] mx-auto pt-1">

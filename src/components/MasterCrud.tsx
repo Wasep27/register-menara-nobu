@@ -9,6 +9,9 @@ import {
   Lock,
   KeyRound,
   Loader2,
+  Mail,
+  Edit3,
+  Trash2,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { employeeSchema, purposeSchema, fieldErrors } from "@/lib/validation";
@@ -394,113 +397,266 @@ export function MasterCrud({
           </div>
         ) : (
           filteredRows.map((r) => (
-            <div
-              key={r.id}
-              className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 p-3 sm:p-3.5 text-sm last:border-0 hover:bg-muted/30 transition-colors"
-            >
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-semibold text-foreground">{r.name}</span>
-                  {r.department && (
-                    <span className="rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground font-medium">
-                      {r.department}
-                    </span>
-                  )}
-                  {withDept &&
-                    (r.user_id ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">
-                        <UserCheck className="h-3 w-3" />
-                        Portal Aktif
+            <div key={r.id} className="border-b border-border/60 last:border-0">
+              {/* TAMPILAN RESPONSIVE MOBILE (< md): Kartu Elegan, Bebas Tumpukan */}
+              <div className="md:hidden p-3.5 sm:p-4 space-y-3 hover:bg-muted/15 transition-colors">
+                {/* Baris 1: Nama, Departemen & Status Keaktifan */}
+                <div className="flex items-start justify-between gap-2.5">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-bold text-foreground text-sm leading-snug">
+                        {r.name}
                       </span>
-                    ) : r.email ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
-                        Belum Punya Akun Login
-                      </span>
+                      {r.department && (
+                        <span className="rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground shrink-0">
+                          {r.department}
+                        </span>
+                      )}
+                    </div>
+                    {r.email ? (
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1 truncate">
+                        <Mail className="h-3 w-3 shrink-0 opacity-70" />
+                        <span className="truncate">{r.email}</span>
+                      </div>
                     ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                        Email Belum Diisi
+                      <span className="text-[11px] text-muted-foreground/70 italic mt-0.5 block">
+                        Belum ada email resmi
                       </span>
-                    ))}
+                    )}
+                  </div>
+
+                  {/* Toggle Aktif / Nonaktif */}
+                  <div className="shrink-0">
+                    {canToggle ? (
+                      <button
+                        type="button"
+                        title={r.is_active ? "Klik untuk menonaktifkan" : "Klik untuk mengaktifkan"}
+                        className={`rounded-full px-2.5 py-1 text-xs font-semibold transition-all active:scale-95 ${
+                          r.is_active
+                            ? "bg-primary text-primary-foreground shadow-2xs hover:brightness-110"
+                            : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        }`}
+                        onClick={() => toggle(r)}
+                      >
+                        {r.is_active ? "Aktif" : "Nonaktif"}
+                      </button>
+                    ) : (
+                      <span
+                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                          r.is_active
+                            ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+                            : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {r.is_active ? "Aktif" : "Nonaktif"}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                {r.email && (
-                  <span className="block text-xs text-muted-foreground/80 mt-0.5 truncate">
-                    {r.email}
-                  </span>
+
+                {/* Baris 2: Indikator Akses Portal Karyawan Terpadu (Tidak Bertumpuk) */}
+                {withDept && (
+                  <div className="pt-0.5">
+                    {r.user_id ? (
+                      /* Karyawan sudah punya akun portal aktif */
+                      <div className="flex items-center justify-between gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/25 px-3 py-2 text-xs">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600 text-white shrink-0">
+                            <UserCheck className="h-3 w-3" />
+                          </span>
+                          <span className="font-semibold text-emerald-800 dark:text-emerald-300 truncate">
+                            Akun Portal Aktif
+                          </span>
+                        </div>
+                        {canAdd && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAccountTarget(r);
+                              setAccountPassword("");
+                            }}
+                            className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-emerald-600/30 bg-card px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-muted active:scale-95 transition-all shadow-2xs"
+                          >
+                            <KeyRound className="h-3 w-3 text-muted-foreground" />
+                            <span>Reset Sandi</span>
+                          </button>
+                        )}
+                      </div>
+                    ) : r.email ? (
+                      /* Karyawan memiliki email tapi belum dibuatkan akun portal */
+                      <div className="flex items-center justify-between gap-2 rounded-xl bg-amber-500/10 border border-amber-500/25 px-3 py-2 text-xs">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="h-2 w-2 rounded-full bg-amber-500 shrink-0" />
+                          <span className="font-medium text-amber-900 dark:text-amber-200 truncate">
+                            Belum punya akun portal
+                          </span>
+                        </div>
+                        {canAdd && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAccountTarget(r);
+                              setAccountPassword("");
+                            }}
+                            className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-primary hover:brightness-110 text-primary-foreground px-2.5 py-1 text-xs font-bold shadow-xs active:scale-95 transition-all"
+                          >
+                            <KeyRound className="h-3 w-3" />
+                            <span>+ Buat Akun</span>
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      /* Belum ada email resmi */
+                      <div className="flex items-center justify-between gap-2 rounded-xl bg-muted/40 border border-border/50 px-3 py-2 text-[11px] text-muted-foreground">
+                        <span className="truncate">Isi email untuk akses portal</span>
+                        {canEdit && (
+                          <button
+                            type="button"
+                            onClick={() => openForm(r)}
+                            className="font-semibold text-primary hover:underline shrink-0 text-xs"
+                          >
+                            + Tambah Email
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Baris 3: Tombol Aksi Bersih & Ramah Sentuhan */}
+                {(canEdit || canDelete) && (
+                  <div className="flex items-center gap-2 pt-1 border-t border-border/40">
+                    {canEdit && (
+                      <button
+                        type="button"
+                        className="flex-1 inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3.5 py-1.5 text-xs font-semibold text-foreground hover:bg-muted transition-colors active:scale-95"
+                        onClick={() => openForm(r)}
+                      >
+                        <Edit3 className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span>Edit Data</span>
+                      </button>
+                    )}
+
+                    {canDelete && (
+                      <button
+                        type="button"
+                        className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl border border-destructive/20 bg-destructive/5 px-3 py-1.5 text-xs font-semibold text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors active:scale-95"
+                        onClick={() => setToDelete(r)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        <span>Hapus</span>
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
 
-              <div className="flex flex-wrap items-center gap-2 shrink-0">
-                {/* Tombol Cepat Buat / Reset Akun Portal Karyawan */}
-                {withDept && canAdd && r.email && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAccountTarget(r);
-                      setAccountPassword("");
-                    }}
-                    title={
-                      r.user_id
-                        ? "Reset kata sandi portal karyawan"
-                        : "Buatkan akun login portal karyawan"
-                    }
-                    className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all active:scale-95 ${
-                      r.user_id
-                        ? "border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
-                        : "border border-primary/20 bg-brand-soft text-primary hover:bg-primary hover:text-primary-foreground shadow-2xs"
-                    }`}
-                  >
-                    <KeyRound className="h-3 w-3" />
-                    <span>{r.user_id ? "Reset Sandi" : "+ Akun Portal"}</span>
-                  </button>
-                )}
+              {/* TAMPILAN DESKTOP & TABLET (>= md): Baris Horizontal Rapi & Proporsional */}
+              <div className="hidden md:flex items-center justify-between gap-3 p-3.5 text-sm hover:bg-muted/30 transition-colors">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-foreground">{r.name}</span>
+                    {r.department && (
+                      <span className="rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground font-medium shrink-0">
+                        {r.department}
+                      </span>
+                    )}
+                    {withDept &&
+                      (r.user_id ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 shrink-0">
+                          <UserCheck className="h-3 w-3" />
+                          Portal Aktif
+                        </span>
+                      ) : r.email ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400 shrink-0">
+                          Belum Punya Akun
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-[10px] font-medium text-muted-foreground shrink-0">
+                          Email Kosong
+                        </span>
+                      ))}
+                  </div>
+                  {r.email && (
+                    <span className="block text-xs text-muted-foreground/80 mt-0.5 truncate">
+                      {r.email}
+                    </span>
+                  )}
+                </div>
 
-                {/* Active status button (or badge if read-only) */}
-                {canToggle ? (
-                  <button
-                    type="button"
-                    title={r.is_active ? "Klik untuk menonaktifkan" : "Klik untuk mengaktifkan"}
-                    className={`rounded-full px-2.5 py-1 text-xs font-semibold transition-all active:scale-95 ${
-                      r.is_active
-                        ? "bg-primary text-primary-foreground shadow-2xs hover:brightness-110"
-                        : "bg-muted text-muted-foreground hover:bg-muted/80"
-                    }`}
-                    onClick={() => toggle(r)}
-                  >
-                    {r.is_active ? "Aktif" : "Nonaktif"}
-                  </button>
-                ) : (
-                  <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                      r.is_active
-                        ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {r.is_active ? "Aktif" : "Nonaktif"}
-                  </span>
-                )}
+                <div className="flex items-center gap-2 shrink-0">
+                  {/* Tombol Cepat Buat / Reset Akun Portal Karyawan */}
+                  {withDept && canAdd && r.email && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAccountTarget(r);
+                        setAccountPassword("");
+                      }}
+                      title={
+                        r.user_id
+                          ? "Reset kata sandi portal karyawan"
+                          : "Buatkan akun login portal karyawan"
+                      }
+                      className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all active:scale-95 ${
+                        r.user_id
+                          ? "border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
+                          : "border border-primary/20 bg-brand-soft text-primary hover:bg-primary hover:text-primary-foreground shadow-2xs"
+                      }`}
+                    >
+                      <KeyRound className="h-3 w-3" />
+                      <span>{r.user_id ? "Reset Sandi" : "+ Akun Portal"}</span>
+                    </button>
+                  )}
 
-                {/* Edit button - Admin and Staff */}
-                {canEdit && (
-                  <button
-                    type="button"
-                    className="rounded-lg px-2.5 py-1 text-xs font-semibold text-primary hover:bg-brand-soft transition-colors active:scale-95"
-                    onClick={() => openForm(r)}
-                  >
-                    Edit
-                  </button>
-                )}
+                  {/* Active status button (or badge if read-only) */}
+                  {canToggle ? (
+                    <button
+                      type="button"
+                      title={r.is_active ? "Klik untuk menonaktifkan" : "Klik untuk mengaktifkan"}
+                      className={`rounded-full px-2.5 py-1 text-xs font-semibold transition-all active:scale-95 ${
+                        r.is_active
+                          ? "bg-primary text-primary-foreground shadow-2xs hover:brightness-110"
+                          : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      }`}
+                      onClick={() => toggle(r)}
+                    >
+                      {r.is_active ? "Aktif" : "Nonaktif"}
+                    </button>
+                  ) : (
+                    <span
+                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                        r.is_active
+                          ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {r.is_active ? "Aktif" : "Nonaktif"}
+                    </span>
+                  )}
 
-                {/* Delete button - Admin ONLY */}
-                {canDelete && (
-                  <button
-                    type="button"
-                    className="rounded-lg px-2.5 py-1 text-xs font-semibold text-destructive hover:bg-destructive/10 transition-colors active:scale-95"
-                    onClick={() => setToDelete(r)}
-                  >
-                    Hapus
-                  </button>
-                )}
+                  {/* Edit button - Admin and Staff */}
+                  {canEdit && (
+                    <button
+                      type="button"
+                      className="rounded-lg px-2.5 py-1 text-xs font-semibold text-primary hover:bg-brand-soft transition-colors active:scale-95"
+                      onClick={() => openForm(r)}
+                    >
+                      Edit
+                    </button>
+                  )}
+
+                  {/* Delete button - Admin ONLY */}
+                  {canDelete && (
+                    <button
+                      type="button"
+                      className="rounded-lg px-2.5 py-1 text-xs font-semibold text-destructive hover:bg-destructive/10 transition-colors active:scale-95"
+                      onClick={() => setToDelete(r)}
+                    >
+                      Hapus
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))
