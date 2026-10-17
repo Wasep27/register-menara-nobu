@@ -12,6 +12,8 @@ import {
   Sparkles,
 } from "lucide-react";
 import { supabase, type Guest } from "@/lib/supabase";
+import { exportToCsv } from "@/lib/csv-export";
+import { formatWibDateTime } from "@/lib/date-utils";
 
 export const Route = createFileRoute("/admin/laporan")({ component: Report });
 
@@ -86,10 +88,10 @@ function Report() {
   };
 
   const csv = () => {
-    if (!rows) return;
-    const esc = (s: unknown) => `"${String(s ?? "").replace(/"/g, '""')}"`;
-    const lines = [
-      [
+    if (!rows || rows.length === 0) return;
+    exportToCsv({
+      filename: `laporan-tamu-${from}-${to}`,
+      headers: [
         "Waktu",
         "Nama",
         "Instansi",
@@ -98,28 +100,18 @@ function Report() {
         "Dituju",
         "Catatan",
         "Durasi isi (detik)",
-      ].join(","),
-    ];
-    rows.forEach((r) =>
-      lines.push(
-        [
-          new Date(r.check_in_time).toLocaleString("id-ID"),
-          r.name,
-          r.institution,
-          r.phone,
-          r.visit_purposes?.name,
-          r.employees?.name,
-          r.notes,
-          r.fill_duration_seconds,
-        ]
-          .map(esc)
-          .join(","),
-      ),
-    );
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([lines.join("\n")], { type: "text/csv" }));
-    a.download = `laporan-tamu-${from}-${to}.csv`;
-    a.click();
+      ],
+      rows: rows.map((r) => [
+        formatWibDateTime(r.check_in_time),
+        r.name,
+        r.institution,
+        r.phone,
+        r.visit_purposes?.name || "-",
+        r.employees?.name || "-",
+        r.notes || "",
+        r.fill_duration_seconds ?? "",
+      ]),
+    });
   };
   const i = "rounded-lg border border-input bg-card px-3 py-2 text-sm";
   return (

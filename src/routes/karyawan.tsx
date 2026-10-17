@@ -36,13 +36,7 @@ type Visit = {
   is_important: boolean;
 };
 
-const fmt = (d: string) =>
-  new Date(d).toLocaleString("id-ID", {
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+import { formatWibDateTime as fmt } from "@/lib/date-utils";
 
 function StaffPortal() {
   const [user, setUser] = useState<User | null | undefined>(undefined);

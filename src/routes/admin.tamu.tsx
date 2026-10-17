@@ -15,8 +15,14 @@ import {
   Trash2,
 } from "lucide-react";
 import { supabase, type Employee, type Guest, type Purpose } from "@/lib/supabase";
-import { VisitorBadgeModal, type VisitorBadgeData } from "@/components/VisitorBadgeModal";
-import { useAdminRole } from "@/routes/admin";
+import {
+  VisitorBadgeModal,
+  createVisitorBadgeFromGuest,
+  type VisitorBadgeData,
+} from "@/components/VisitorBadgeModal";
+import { useAdminRole } from "@/hooks/useAdminRole";
+import { exportToCsv } from "@/lib/csv-export";
+import { formatWibDateTime } from "@/lib/date-utils";
 
 export const Route = createFileRoute("/admin/tamu")({ component: Guests });
 const PAGE = 20;
@@ -73,37 +79,20 @@ function Guests() {
   }, [edit]);
 
   const openBadgeModal = (r: Guest) => {
-    setBadgeGuest({
-      id: r.id,
-      name: r.name,
-      institution: r.institution,
-      phone: r.phone,
-      employeeName: r.employees?.name ?? undefined,
-      purposeName: r.visit_purposes?.name ?? undefined,
-      checkInTime: new Date(r.check_in_time).toLocaleTimeString("id-ID", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      checkInDate: new Date(r.check_in_time).toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      }),
-      badgeNumber: r.badge_code || undefined,
-    });
+    setBadgeGuest(createVisitorBadgeFromGuest(r));
   };
 
   useEffect(() => {
     supabase
       .from("employees")
-      .select("*")
+      .select("id, name, department, is_active")
       .order("name")
-      .then(({ data }) => setEmps(data ?? []));
+      .then(({ data }) => setEmps((data as Employee[]) ?? []));
     supabase
       .from("visit_purposes")
-      .select("*")
+      .select("id, name, is_active")
       .order("name")
-      .then(({ data }) => setPurps(data ?? []));
+      .then(({ data }) => setPurps((data as Purpose[]) ?? []));
   }, []);
 
   const buildQuery = useCallback(() => {
@@ -126,56 +115,41 @@ function Guests() {
   const [exporting, setExporting] = useState(false);
   const exportCsv = async () => {
     setExporting(true);
-    const all: Guest[] = [];
-    for (let from = 0; ; from += 1000) {
-      const { data } = await buildQuery().range(from, from + 999);
-      all.push(...((data as Guest[]) ?? []));
-      if (!data || data.length < 1000) break;
-    }
-    const esc = (v: unknown) => {
-      let t = String(v ?? "");
-      if (/^[=+\-@]/.test(t)) t = "'" + t;
-      return `"${t.replace(/"/g, '""')}"`;
-    };
-    const lines = [
-      [
-        "Waktu",
-        "Nama",
-        "Instansi",
-        "Telepon",
-        "Tujuan",
-        "Dituju",
-        "Catatan",
-        "Durasi isi (detik)",
-      ].join(","),
-    ];
-    all.forEach((r) =>
-      lines.push(
-        [
-          new Date(r.check_in_time).toLocaleString("id-ID"),
+    try {
+      const all: Guest[] = [];
+      for (let from = 0; ; from += 1000) {
+        const { data } = await buildQuery().range(from, from + 999);
+        all.push(...((data as Guest[]) ?? []));
+        if (!data || data.length < 1000) break;
+      }
+      exportToCsv({
+        filename: `data-tamu-${new Date().toISOString().slice(0, 10)}`,
+        headers: [
+          "Waktu",
+          "Nama",
+          "Instansi",
+          "Telepon",
+          "Tujuan",
+          "Dituju",
+          "Catatan",
+          "Durasi isi (detik)",
+        ],
+        rows: all.map((r) => [
+          formatWibDateTime(r.check_in_time),
           r.name,
           r.institution,
           r.phone,
-          r.visit_purposes?.name,
-          r.employees?.name,
-          r.notes,
-          r.fill_duration_seconds,
-        ]
-          .map(esc)
-          .join(","),
-      ),
-    );
-    const url = URL.createObjectURL(
-      new Blob(["\ufeff" + lines.join("\n")], { type: "text/csv;charset=utf-8" }),
-    );
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `data-tamu-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 30000);
-    setExporting(false);
+          r.visit_purposes?.name || "-",
+          r.employees?.name || "-",
+          r.notes || "",
+          r.fill_duration_seconds ?? "",
+        ]),
+      });
+    } catch {
+      toast.error("Gagal mengekspor data tamu");
+    } finally {
+      setExporting(false);
+    }
   };
 
   const load = useCallback(async () => {

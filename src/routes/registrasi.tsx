@@ -77,13 +77,13 @@ function GuestForm() {
   useEffect(() => {
     supabase
       .from("employees")
-      .select("*")
+      .select("id, name, department, is_active")
       .eq("is_active", true)
       .order("name")
       .then(({ data }) => setEmployees(data ?? []));
     supabase
       .from("visit_purposes")
-      .select("*")
+      .select("id, name, is_active")
       .eq("is_active", true)
       .order("name")
       .then(({ data }) => setPurposes(data ?? []));

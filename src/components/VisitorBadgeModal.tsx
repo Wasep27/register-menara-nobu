@@ -18,17 +18,8 @@ import { encodeCode39, formatBadgeCode, generateQrMatrix } from "@/lib/barcode";
 import { toast } from "sonner";
 import { downloadBadgeAsPng } from "@/lib/badge-download";
 
-export interface VisitorBadgeData {
-  id?: string;
-  name: string;
-  institution: string;
-  phone?: string;
-  employeeName?: string;
-  purposeName?: string;
-  checkInTime?: string;
-  checkInDate?: string;
-  badgeNumber?: string;
-}
+import { type VisitorBadgeData } from "@/lib/badge-utils";
+export type { VisitorBadgeData };
 
 interface VisitorBadgeModalProps {
   open: boolean;
@@ -502,4 +493,4 @@ export const VisitorBadgeModal = React.memo(function VisitorBadgeModal({
     </div>,
     document.body,
   );
-}
+});

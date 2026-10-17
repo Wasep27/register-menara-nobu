@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
@@ -50,25 +50,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/panduan": "Panduan Teknis",
 };
 
-export interface AdminRoleContextType {
-  userRoles: AppRole[];
-  isAdmin: boolean;
-  isSecurity: boolean;
-  isStaff: boolean;
-  userName: string;
-}
-
-export const AdminRoleContext = createContext<AdminRoleContextType>({
-  userRoles: ["admin"],
-  isAdmin: true,
-  isSecurity: false,
-  isStaff: false,
-  userName: "",
-});
-
-export function useAdminRole(): AdminRoleContextType {
-  return useContext(AdminRoleContext);
-}
+import { AdminRoleContext, type AdminRoleContextType } from "@/hooks/useAdminRole";
 
 const SECURITY_ALLOWED_ROUTES = ["/admin", "/admin/scan", "/admin/tamu", "/admin/karyawan"];
 const STAFF_ALLOWED_ROUTES = [

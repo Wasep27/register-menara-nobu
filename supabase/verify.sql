@@ -80,6 +80,19 @@ checks as (
     case when to_regclass('public.visit_purposes') is null then 'KURANG'
       when (xpath('/row/c/text()', query_to_xml('select count(*) as c from public.visit_purposes where is_active', false, true, '')))[1]::text::int > 0 then 'OK' else 'PERINGATAN' end,
     'Tamu tidak bisa memilih tujuan'
+  union all
+  select 10, 'Indeks Performa', idx.name,
+    case when to_regclass('public.' || idx.name) is not null then 'OK' else 'PERINGATAN' end,
+    'Jalankan ulang supabase/schema.sql untuk mengaktifkan indeks optimasi query'
+  from (values
+    ('guests_check_in_time_idx'),
+    ('guests_badge_code_idx'),
+    ('guests_employee_id_idx'),
+    ('guests_visit_purpose_id_idx'),
+    ('guest_feedback_created_at_idx'),
+    ('employees_is_active_name_idx'),
+    ('visit_purposes_is_active_name_idx')
+  ) idx(name)
 )
 select kategori, item, status, case when status='OK' then '' else saran end as saran
 from checks

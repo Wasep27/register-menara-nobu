@@ -31,8 +31,14 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { ActivitySummaryDashboard } from "@/components/ActivitySummaryDashboard";
 import { supabase, type ActivityLog, type Guest, type Employee } from "@/lib/supabase";
+import { exportToCsv } from "@/lib/csv-export";
+import { formatWibDateTime } from "@/lib/date-utils";
+import {
+  buildSyntheticLogs,
+  filterActivityLogs,
+  calculateActivityStats,
+} from "@/lib/activity-log-utils";
 
 export const Route = createFileRoute("/admin/aktivitas")({
   head: () => ({
@@ -128,80 +134,7 @@ export function AdminActivityLogPage() {
         supabase.from("employees").select("*").order("created_at", { ascending: false }).limit(20),
       ]);
 
-      const synthetic: ActivityLog[] = [];
-
-      // Guests as registration activities
-      if (guestsRes.data) {
-        (guestsRes.data as Record<string, unknown>[]).forEach((g) => {
-          synthetic.push({
-            id: `guest-${String(g["id"])}`,
-            category: "registration",
-            action: "GUEST_REGISTERED",
-            title: `Registrasi Tamu: ${String(g["name"])}`,
-            details: {
-              guest_name: g["name"],
-              institution: g["institution"],
-              phone: g["phone"],
-              employee_name: (g["employees"] as Record<string, unknown> | null)?.["name"] ?? "-",
-              purpose_name:
-                (g["visit_purposes"] as Record<string, unknown> | null)?.["name"] ?? "-",
-              is_important: g["is_important"],
-              fill_duration_seconds: g["fill_duration_seconds"],
-            },
-            actor_type: "guest",
-            actor_id: null,
-            actor_email: "Pengunjung Lobi",
-            created_at: String(g["check_in_time"]),
-          });
-        });
-      }
-
-      // Feedback as feedback activities
-      if (feedbackRes.data) {
-        (feedbackRes.data as Record<string, unknown>[]).forEach((f) => {
-          synthetic.push({
-            id: `feedback-${String(f["id"])}`,
-            category: "feedback",
-            action: "FEEDBACK_RECEIVED",
-            title: `Ulasan Tamu: ${Number(f["rating"])} ⭐ dari ${String(f["guest_name"] || "Pengunjung")}`,
-            details: {
-              rating: f["rating"],
-              tags: f["tags"],
-              comment: f["comment"],
-              guest_name: f["guest_name"],
-              institution: f["institution"],
-            },
-            actor_type: "guest",
-            actor_id: null,
-            actor_email: String(f["guest_name"] || "Pengunjung Lobi"),
-            created_at: String(f["created_at"]),
-          });
-        });
-      }
-
-      // Employees as master data activities
-      if (employeesRes.data) {
-        (employeesRes.data as Record<string, unknown>[]).forEach((e) => {
-          synthetic.push({
-            id: `emp-${String(e["id"])}`,
-            category: "master_data",
-            action: "EMPLOYEE_RECORD",
-            title: `Master Karyawan: ${String(e["name"])} (${String(e["department"] || "Umum")})`,
-            details: {
-              name: e["name"],
-              department: e["department"],
-              is_active: e["is_active"],
-            },
-            actor_type: "admin",
-            actor_id: null,
-            actor_email: "Sistem Admin",
-            created_at: String(e["created_at"] || new Date().toISOString()),
-          });
-        });
-      }
-
-      // Sort descending
-      synthetic.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      const synthetic = buildSyntheticLogs(guestsRes.data, feedbackRes.data, employeesRes.data);
       setLogs(synthetic);
     } catch (err) {
       console.warn("Gagal memuat activity logs", err);
@@ -287,74 +220,14 @@ export function AdminActivityLogPage() {
     };
   }, []);
 
-  // Filtered Activities
+  // Filtered Activities menggunakan pure utility function terpisah
   const filteredLogs = useMemo(() => {
-    const now = new Date();
-    const todayStr = now.toDateString();
-
-    return logs.filter((l) => {
-      // Category filter
-      if (selectedCategory !== "all" && l.category !== selectedCategory) {
-        return false;
-      }
-
-      // Explicit Date Range filter
-      const logDate = new Date(l.created_at);
-
-      if (startDate) {
-        const start = new Date(`${startDate}T00:00:00`);
-        if (logDate < start) return false;
-      }
-
-      if (endDate) {
-        const end = new Date(`${endDate}T23:59:59.999`);
-        if (logDate > end) return false;
-      }
-
-      // Quick time preset (applies when no custom date range is set)
-      if (!startDate && !endDate) {
-        if (timeFilter === "today" && logDate.toDateString() !== todayStr) {
-          return false;
-        }
-        if (timeFilter === "7d") {
-          const diffDays = (now.getTime() - logDate.getTime()) / (1000 * 3600 * 24);
-          if (diffDays > 7) return false;
-        }
-        if (timeFilter === "30d") {
-          const diffDays = (now.getTime() - logDate.getTime()) / (1000 * 3600 * 24);
-          if (diffDays > 30) return false;
-        }
-      }
-
-      // Search filter with special support for guest registration fields
-      const term = searchQuery.trim().toLowerCase();
-      if (term) {
-        const matchesTitle = l.title.toLowerCase().includes(term);
-        const matchesAction = l.action.toLowerCase().includes(term);
-        const matchesActor = (l.actor_email || l.actor_type || "").toLowerCase().includes(term);
-
-        // Guest registration specific detail fields
-        const guestName = String(l.details?.["guest_name"] || "").toLowerCase();
-        const guestInst = String(l.details?.["institution"] || "").toLowerCase();
-        const guestPhone = String(l.details?.["phone"] || "").toLowerCase();
-        const employeeName = String(l.details?.["employee_name"] || "").toLowerCase();
-        const purposeName = String(l.details?.["purpose_name"] || "").toLowerCase();
-        const detailsJson = JSON.stringify(l.details || {}).toLowerCase();
-
-        return (
-          matchesTitle ||
-          matchesAction ||
-          matchesActor ||
-          guestName.includes(term) ||
-          guestInst.includes(term) ||
-          guestPhone.includes(term) ||
-          employeeName.includes(term) ||
-          purposeName.includes(term) ||
-          detailsJson.includes(term)
-        );
-      }
-
-      return true;
+    return filterActivityLogs(logs, {
+      selectedCategory,
+      timeFilter,
+      startDate,
+      endDate,
+      searchQuery,
     });
   }, [logs, selectedCategory, timeFilter, startDate, endDate, searchQuery]);
 
@@ -384,71 +257,36 @@ export function AdminActivityLogPage() {
     return pages;
   }, [validCurrentPage, totalPages]);
 
-  // Statistics calculation
+  // Statistics calculation menggunakan pure utility function terpisah
   const stats = useMemo(() => {
-    const todayStr = new Date().toDateString();
-    let todayCount = 0;
-    let todayRegistrations = 0;
-    let registrations = 0;
-    let masterDataMutations = 0;
-    let feedbackCount = 0;
-
-    logs.forEach((l) => {
-      const isToday = new Date(l.created_at).toDateString() === todayStr;
-      if (isToday) {
-        todayCount++;
-        if (l.category === "registration") todayRegistrations++;
-      }
-      if (l.category === "registration") registrations++;
-      if (l.category === "master_data") masterDataMutations++;
-      if (l.category === "feedback") feedbackCount++;
-    });
-
-    return {
-      total: logs.length,
-      todayCount,
-      todayRegistrations,
-      registrations,
-      masterDataMutations,
-      feedbackCount,
-    };
+    return calculateActivityStats(logs);
   }, [logs]);
 
-  // Export CSV
+  // Export CSV menggunakan centralized exportToCsv
   const exportLogCsv = () => {
     if (filteredLogs.length === 0) {
       toast.error("Tidak ada aktivitas untuk diekspor");
       return;
     }
-    const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const lines = [
-      ["Waktu (WIB)", "Kategori", "Aksi", "Judul Aktivitas", "Pelaku / Pengguna", "Rincian"].join(
-        ",",
-      ),
-    ];
-
-    filteredLogs.forEach((l) => {
-      lines.push(
-        [
-          new Date(l.created_at).toLocaleString("id-ID"),
-          l.category,
-          l.action,
-          l.title,
-          l.actor_email || l.actor_type,
-          JSON.stringify(l.details),
-        ]
-          .map(esc)
-          .join(","),
-      );
+    exportToCsv({
+      filename: `log-aktivitas-menara-nobu-${new Date().toISOString().slice(0, 10)}`,
+      headers: [
+        "Waktu (WIB)",
+        "Kategori",
+        "Aksi",
+        "Judul Aktivitas",
+        "Pelaku / Pengguna",
+        "Rincian",
+      ],
+      rows: filteredLogs.map((l) => [
+        formatWibDateTime(l.created_at),
+        l.category,
+        l.action,
+        l.title,
+        l.actor_email || l.actor_type,
+        JSON.stringify(l.details),
+      ]),
     });
-
-    const blob = new Blob(["\ufeff" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `log-aktivitas-menara-nobu-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 30000);
     toast.success("Log aktivitas berhasil diekspor");
   };
 

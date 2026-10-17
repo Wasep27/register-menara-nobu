@@ -27,8 +27,12 @@ import {
   Users,
 } from "lucide-react";
 import { supabase, type Guest } from "@/lib/supabase";
-import { useAdminRole } from "@/routes/admin";
-import { VisitorBadgeModal, type VisitorBadgeData } from "@/components/VisitorBadgeModal";
+import { useAdminRole } from "@/hooks/useAdminRole";
+import {
+  VisitorBadgeModal,
+  createVisitorBadgeFromGuest,
+  type VisitorBadgeData,
+} from "@/components/VisitorBadgeModal";
 
 export const Route = createFileRoute("/admin/")({ component: Dashboard });
 
@@ -129,11 +133,13 @@ function Dashboard() {
     Promise.all([
       supabase
         .from("guests")
-        .select("*, employees(name), visit_purposes(name)")
+        .select(
+          "id, name, institution, phone, check_in_time, fill_duration_seconds, badge_code, is_important, scheduled_at, employees(name), visit_purposes(name)",
+        )
         .gte("check_in_time", start.toISOString())
         .order("check_in_time", { ascending: false })
         .limit(5000)
-        .then(({ data }) => setRows((data as Guest[]) ?? [])),
+        .then(({ data }) => setRows((data as unknown as Guest[]) ?? [])),
       supabase
         .from("guests")
         .select("id", { count: "exact", head: true })
@@ -215,24 +221,7 @@ function Dashboard() {
       : "Ikhtisar lengkap analitik kunjungan, direktori master, dan sistem keamanan Menara Nobu.";
 
   const openBadgeForGuest = (r: Guest) => {
-    setBadgeGuest({
-      id: r.id,
-      name: r.name,
-      institution: r.institution,
-      phone: r.phone,
-      employeeName: r.employees?.name ?? undefined,
-      purposeName: r.visit_purposes?.name ?? undefined,
-      checkInTime: new Date(r.check_in_time).toLocaleTimeString("id-ID", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      checkInDate: new Date(r.check_in_time).toLocaleDateString("id-ID", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      }),
-      badgeNumber: r.badge_code || undefined,
-    });
+    setBadgeGuest(createVisitorBadgeFromGuest(r));
   };
 
   return (

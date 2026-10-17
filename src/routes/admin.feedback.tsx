@@ -44,7 +44,8 @@ export function AdminFeedbackPage() {
       const { data, error } = await supabase
         .from("guest_feedback")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(500);
 
       if (error) {
         // Fallback to local storage if table is not yet migrated

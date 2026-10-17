@@ -355,10 +355,14 @@ do $$ begin
   alter publication supabase_realtime add table public.notifications;
 exception when others then null; end $$;
 
--- submit_guest versi baru: mendukung jadwal & tanda penting
+-- submit_guest versi baru: mendukung jadwal, badge_code instan, durasi aktif, & auto-cleanup draft
 create or replace function public.submit_guest(_payload jsonb, _token uuid)
 returns uuid language plpgsql security definer set search_path = public as $$
-declare new_id uuid; opened timestamptz; sched timestamptz;
+declare
+  new_id uuid := gen_random_uuid();
+  opened timestamptz;
+  sched timestamptz;
+  gen_badge text;
 begin
   if not exists (select 1 from employees where id=(_payload->>'employee_id')::uuid and is_active) then
     raise exception 'Karyawan tidak valid'; end if;
@@ -368,14 +372,39 @@ begin
   sched := nullif(_payload->>'scheduled_at','')::timestamptz;
   if sched is not null and (sched < now() - interval '5 minutes' or sched > now() + interval '180 days') then
     raise exception 'Jadwal tidak valid'; end if;
-  insert into guests(name,institution,phone,employee_id,visit_purpose_id,notes,form_opened_at,fill_duration_seconds,scheduled_at,is_important)
-  values (trim(_payload->>'name'), trim(_payload->>'institution'), trim(_payload->>'phone'),
-    (_payload->>'employee_id')::uuid, (_payload->>'visit_purpose_id')::uuid,
-    nullif(trim(coalesce(_payload->>'notes','')),''), opened,
-    case when opened is not null then greatest(0, extract(epoch from now()-opened))::int end,
-    sched, coalesce((_payload->>'is_important')::boolean, false))
-  returning id into new_id;
-  if _token is not null then delete from guest_drafts where draft_token=_token; end if;
+
+  -- Format badge unik: VTR-YYMMDD-XXXX
+  gen_badge := 'VTR-' || to_char(now(), 'YYMMDD') || '-' || upper(substring(replace(new_id::text, '-', '') from 1 for 4));
+
+  insert into guests(
+    id, name, institution, phone, employee_id, visit_purpose_id,
+    notes, form_opened_at, fill_duration_seconds, scheduled_at, is_important, badge_code
+  ) values (
+    new_id,
+    trim(_payload->>'name'),
+    trim(_payload->>'institution'),
+    trim(_payload->>'phone'),
+    (_payload->>'employee_id')::uuid,
+    (_payload->>'visit_purpose_id')::uuid,
+    nullif(trim(coalesce(_payload->>'notes','')),''),
+    opened,
+    case
+      when _payload->>'fill_duration_seconds' is not null and (_payload->>'fill_duration_seconds')::int > 0
+        then least(360, greatest(10, (_payload->>'fill_duration_seconds')::int))
+      when opened is not null
+        then least(360, greatest(10, extract(epoch from now()-opened)::int))
+    end,
+    sched,
+    coalesce((_payload->>'is_important')::boolean, false),
+    gen_badge
+  );
+
+  -- Bersihkan draft milik pengguna & draft yang sudah kedaluwarsa secara berkala
+  if _token is not null then
+    delete from guest_drafts where draft_token = _token;
+  end if;
+  delete from guest_drafts where expires_at < now();
+
   return new_id;
 end $$;
 
@@ -1201,6 +1230,27 @@ end $$;
 grant execute on function public.check_guest_status(text) to anon, authenticated;
 revoke execute on function public.quick_checkin_by_code(text) from anon, public;
 grant execute on function public.quick_checkin_by_code(text) to authenticated;
+
+-- ============================================================
+-- INDEKS PERFORMA & OPTIMASI QUERY DATABASE TINGKAT TINGGI
+-- Mempercepat query dashboard, pencarian tamu, dan filter laporan
+-- ============================================================
+create index if not exists guests_check_in_time_idx on public.guests(check_in_time desc);
+create index if not exists guests_badge_code_idx on public.guests(badge_code);
+create index if not exists guests_badge_clean_idx on public.guests(upper(replace(badge_code, '-', '')));
+create index if not exists guests_employee_id_idx on public.guests(employee_id);
+create index if not exists guests_visit_purpose_id_idx on public.guests(visit_purpose_id);
+create index if not exists guests_scheduled_reminders_idx on public.guests(scheduled_at) where is_important = true and scheduled_at is not null;
+create index if not exists guests_name_lower_idx on public.guests(lower(name));
+
+create index if not exists guest_feedback_created_at_idx on public.guest_feedback(created_at desc);
+create index if not exists guest_feedback_rating_idx on public.guest_feedback(rating);
+
+create index if not exists employees_is_active_name_idx on public.employees(is_active, name);
+create index if not exists visit_purposes_is_active_name_idx on public.visit_purposes(is_active, name);
+
+create index if not exists guest_drafts_expires_at_idx on public.guest_drafts(expires_at);
+
 
 
 

@@ -16,7 +16,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import { employeeSchema, purposeSchema, fieldErrors } from "@/lib/validation";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { useAdminRole } from "@/routes/admin";
+import { useAdminRole } from "@/hooks/useAdminRole";
 import {
   Dialog,
   DialogContent,

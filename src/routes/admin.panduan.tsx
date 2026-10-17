@@ -13,7 +13,10 @@ import {
   Terminal,
   CheckCircle2,
   AlertTriangle,
+  Copy,
+  Check,
 } from "lucide-react";
+import { toast } from "sonner";
 import { supabase, supabaseUrl } from "@/lib/supabase";
 
 export const Route = createFileRoute("/admin/panduan")({
@@ -35,6 +38,18 @@ type Check = { label: string; ok: boolean | null; note: string };
 function AdminTechnicalGuide() {
   const [checks, setChecks] = useState<Check[]>([]);
   const [running, setRunning] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const copySql = async () => {
+    try {
+      await navigator.clipboard.writeText(SQL_OPTIMIZATION_SNIPPET);
+      setCopied(true);
+      toast.success("Skrip SQL berhasil disalin ke clipboard!");
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      toast.error("Gagal menyalin otomatis, silakan salin manual.");
+    }
+  };
 
   const runDiagnostics = async () => {
     setRunning(true);
@@ -340,6 +355,52 @@ function AdminTechnicalGuide() {
           </Link>
         </div>
       </section>
+
+      {/* 5. SQL Skrip Optimasi & Indeks Performa */}
+      <section className={cardStyle}>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-border pb-3">
+          <div className="flex items-center gap-3">
+            <Database className="h-5 w-5 text-primary" />
+            <h2 className="font-display text-base font-bold text-foreground">
+              5. SQL Indeks Performa & Optimasi Database
+            </h2>
+          </div>
+          <button
+            onClick={copySql}
+            className="inline-flex items-center gap-1.5 self-start sm:self-auto rounded-xl bg-brand-soft px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary hover:text-primary-foreground transition-all active:scale-95"
+          >
+            {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+            <span>{copied ? "Tersalin ke Clipboard" : "Salin SQL"}</span>
+          </button>
+        </div>
+        <p className="mt-3 text-xs text-muted-foreground">
+          Jalankan perintah SQL ini di{" "}
+          <b>Supabase Dashboard &rarr; SQL Editor &rarr; New Query &rarr; Run</b> untuk mempercepat
+          query tabel tamu, pemindai barcode QR, dan filter laporan:
+        </p>
+        <pre className="mt-3 max-h-72 overflow-x-auto rounded-xl bg-muted/80 p-3.5 font-mono text-[11px] leading-relaxed text-foreground border border-border/60">
+          {SQL_OPTIMIZATION_SNIPPET}
+        </pre>
+      </section>
     </div>
   );
 }
+
+const SQL_OPTIMIZATION_SNIPPET = `-- Jalankan di Supabase: SQL Editor -> New Query -> Run
+-- 1. Indeks Utama Tabel Tamu (Mempercepat Dashboard & Buku Tamu)
+create index if not exists guests_check_in_time_idx on public.guests(check_in_time desc);
+create index if not exists guests_badge_code_idx on public.guests(badge_code);
+create index if not exists guests_badge_clean_idx on public.guests(upper(replace(badge_code, '-', '')));
+create index if not exists guests_employee_id_idx on public.guests(employee_id);
+create index if not exists guests_visit_purpose_id_idx on public.guests(visit_purpose_id);
+create index if not exists guests_scheduled_reminders_idx on public.guests(scheduled_at) where is_important = true and scheduled_at is not null;
+create index if not exists guests_name_lower_idx on public.guests(lower(name));
+
+-- 2. Indeks Feedback Tamu
+create index if not exists guest_feedback_created_at_idx on public.guest_feedback(created_at desc);
+create index if not exists guest_feedback_rating_idx on public.guest_feedback(rating);
+
+-- 3. Indeks Master Data untuk Form Registrasi Cepat
+create index if not exists employees_is_active_name_idx on public.employees(is_active, name);
+create index if not exists visit_purposes_is_active_name_idx on public.visit_purposes(is_active, name);
+create index if not exists guest_drafts_expires_at_idx on public.guest_drafts(expires_at);`;
