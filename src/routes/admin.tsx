@@ -47,6 +47,8 @@ function AdminLayout() {
       if (!data.user) { setState("out"); if (!window.location.pathname.startsWith("/admin")) return; nav({ to: "/admin/login" }); return; }
       const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", data.user.id);
       setState(roles?.some((r) => r.role === "admin") ? "ok" : "noadmin");
+      const { data: prof } = await supabase.from("profiles").select("full_name").eq("id", data.user.id).maybeSingle();
+      setName(prof?.full_name || data.user.email?.split("@")[0] || "Admin");
     });
   }, [isLogin, loc.pathname, nav]);
 
@@ -81,7 +83,15 @@ function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-background">
-      <SiteNav items={[...links]} right={<button className="min-h-11 w-full rounded-full px-4 text-left text-sm font-medium text-muted-foreground hover:bg-brand-soft hover:text-primary md:w-auto" onClick={() => setAskLogout(true)}>Keluar</button>} />
+      <SiteNav items={[...links]} right={
+        <div className="flex w-full items-center gap-2 md:w-auto">
+          <span className="flex min-w-0 items-center gap-2 rounded-full bg-brand-soft py-1 pl-1 pr-3">
+            <Avatar name={name || "Admin"} size="sm" />
+            <span className="max-w-32 truncate text-sm font-semibold text-primary">{name || "Admin"}</span>
+          </span>
+          <button className="min-h-11 rounded-full px-4 text-sm font-medium text-muted-foreground hover:bg-brand-soft hover:text-primary" onClick={() => setAskLogout(true)}>Keluar</button>
+        </div>
+      } />
       <ConfirmDialog open={askLogout} onOpenChange={setAskLogout} title="Keluar dari dashboard?" description="Sesi admin di perangkat ini akan diakhiri. Anda perlu masuk lagi untuk melanjutkan." confirmLabel="Keluar" destructive={false} onConfirm={logout} />
       <div key={loc.pathname} className="fade-up mx-auto max-w-6xl p-4 md:p-6"><Outlet /></div>
     </div>
