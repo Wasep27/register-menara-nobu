@@ -89,7 +89,10 @@ function AdminLayout() {
             <Avatar name={name || "Admin"} size="sm" />
             <span className="max-w-32 truncate text-sm font-semibold text-primary">{name || "Admin"}</span>
           </span>
-          <button className="min-h-11 rounded-full px-4 text-sm font-medium text-muted-foreground hover:bg-brand-soft hover:text-primary" onClick={() => setAskLogout(true)}>Keluar</button>
+          <button className="inline-flex min-h-11 items-center gap-2 rounded-full border border-destructive/30 px-4 text-sm font-semibold text-destructive transition-all hover:bg-destructive hover:text-destructive-foreground active:scale-95" onClick={() => setAskLogout(true)}>
+            <svg aria-hidden viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
+            Keluar
+          </button>
         </div>
       } />
       <ConfirmDialog open={askLogout} onOpenChange={setAskLogout} title="Keluar dari dashboard?" description="Sesi admin di perangkat ini akan diakhiri. Anda perlu masuk lagi untuk melanjutkan." confirmLabel="Keluar" destructive={false} onConfirm={logout} />

@@ -24,6 +24,7 @@ function greeting() {
 function Dashboard() {
   const [days, setDays] = useState(7);
   const [name, setName] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -36,12 +37,15 @@ function Dashboard() {
   const [prevCount, setPrevCount] = useState(0);
 
   useEffect(() => {
+    setLoading(true);
     const start = new Date(); start.setHours(0, 0, 0, 0); start.setDate(start.getDate() - (days - 1));
     const prevStart = new Date(start); prevStart.setDate(prevStart.getDate() - days);
-    supabase.from("guests").select("*, employees(name), visit_purposes(name)").gte("check_in_time", start.toISOString()).order("check_in_time").limit(5000)
-      .then(({ data }) => setRows((data as Guest[]) ?? []));
-    supabase.from("guests").select("id", { count: "exact", head: true }).gte("check_in_time", prevStart.toISOString()).lt("check_in_time", start.toISOString())
-      .then(({ count }) => setPrevCount(count ?? 0));
+    Promise.all([
+      supabase.from("guests").select("*, employees(name), visit_purposes(name)").gte("check_in_time", start.toISOString()).order("check_in_time").limit(5000)
+        .then(({ data }) => setRows((data as Guest[]) ?? [])),
+      supabase.from("guests").select("id", { count: "exact", head: true }).gte("check_in_time", prevStart.toISOString()).lt("check_in_time", start.toISOString())
+        .then(({ count }) => setPrevCount(count ?? 0)),
+    ]).finally(() => setLoading(false));
   }, [days]);
 
   const stats = useMemo(() => {
@@ -93,6 +97,14 @@ function Dashboard() {
         </div>
       </div>
 
+      {loading ? (
+        <>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{[0, 1, 2, 3].map((k) => <Skel key={k} h="h-24" />)}</div>
+          <Skel h="h-72" />
+          <div className="grid gap-6 lg:grid-cols-2"><Skel h="h-64" /><Skel h="h-64" /></div>
+        </>
+      ) : (
+      <>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Card t="Tamu hari ini" v={stats.todayCount} />
         <Card t={`Total ${days} hari`} v={rows.length} sub={diff != null ? `${diff >= 0 ? "▲" : "▼"} ${Math.abs(diff)}% vs periode lalu` : "Belum ada pembanding"} />
@@ -117,8 +129,14 @@ function Dashboard() {
         <Panel title="Berdasarkan tujuan"><HBar data={stats.purpose} color={PRIMARY} /></Panel>
         <Panel title="Karyawan paling banyak dikunjungi"><HBar data={stats.emp} color={BRAND} /></Panel>
       </div>
+      </>
+      )}
     </div>
   );
+}
+
+function Skel({ h }: { h: string }) {
+  return <div aria-hidden className={`${h} animate-pulse rounded-2xl bg-card shadow-soft`} />;
 }
 
 function HBar({ data, color }: { data: { name: string; value: number }[]; color: string }) {
