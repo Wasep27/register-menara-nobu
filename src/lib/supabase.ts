@@ -94,3 +94,15 @@ export async function submitGuestFeedback(payload: {
     return { success: false, error: err };
   }
 }
+
+export type ActivityLog = {
+  id: string;
+  category: "registration" | "master_data" | "security" | "feedback" | "system";
+  action: string;
+  title: string;
+  details: Record<string, unknown>;
+  actor_type: "guest" | "admin" | "system";
+  actor_id: string | null;
+  actor_email: string | null;
+  created_at: string;
+};

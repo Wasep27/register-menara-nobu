@@ -30,6 +30,7 @@ const links = [
   { to: "/admin/tujuan", label: "Tujuan" },
   { to: "/admin/laporan", label: "Laporan" },
   { to: "/admin/feedback", label: "Feedback" },
+  { to: "/admin/aktivitas", label: "Log Aktivitas" },
   { to: "/admin/email-admin", label: "Email Admin" },
   { to: "/admin/pengguna", label: "Pengguna" },
   { to: "/admin/panduan", label: "Panduan Teknis" },

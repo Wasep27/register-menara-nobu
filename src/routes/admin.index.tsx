@@ -11,7 +11,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { BarChart3, Calendar, Clock, UserPlus, Users, TrendingUp } from "lucide-react";
+import { Activity, BarChart3, Calendar, Clock, UserPlus, Users, TrendingUp } from "lucide-react";
 import { supabase, type Guest } from "@/lib/supabase";
 
 export const Route = createFileRoute("/admin/")({ component: Dashboard });
@@ -300,6 +300,78 @@ function Dashboard() {
                 actionLabel="Lihat 30 hari"
               />
             </Panel>
+          </div>
+
+          {/* Aktivitas Terkini (Live Feed Preview) */}
+          <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-soft">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-border pb-3">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-soft text-primary shadow-sm">
+                  <Activity className="h-4 w-4" />
+                </span>
+                <div>
+                  <h2 className="font-display text-sm font-bold text-foreground sm:text-base">
+                    Aktivitas & Registrasi Terkini (Real-Time)
+                  </h2>
+                  <p className="text-xs text-muted-foreground">
+                    Kejadian dan kedatangan tamu terbaru di lobi Menara Nobu
+                  </p>
+                </div>
+              </div>
+              <Link
+                to="/admin/aktivitas"
+                className="inline-flex items-center gap-1 self-start sm:self-auto rounded-lg bg-brand-soft px-3 py-1.5 text-xs font-bold text-primary transition-all hover:bg-primary hover:text-primary-foreground active:scale-95"
+              >
+                Buka Log Aktivitas Lengkap
+                <span aria-hidden>→</span>
+              </Link>
+            </div>
+
+            <div className="mt-3.5 space-y-2.5">
+              {rows.slice(0, 4).map((r) => (
+                <div
+                  key={r.id}
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 rounded-xl border border-border/60 bg-background/60 p-3 text-xs transition-colors hover:border-brand/40"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-soft text-xs font-bold text-primary">
+                      ✓
+                    </span>
+                    <div>
+                      <p className="font-bold text-foreground">
+                        {r.name}
+                        <span className="ml-1.5 font-normal text-muted-foreground">
+                          ({r.institution})
+                        </span>
+                      </p>
+                      <p className="text-muted-foreground">
+                        Menemui:{" "}
+                        <span className="font-semibold text-primary">
+                          {r.employees?.name ?? "-"}
+                        </span>{" "}
+                        · Keperluan: {r.visit_purposes?.name ?? "-"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <span className="text-muted-foreground self-start sm:self-auto whitespace-nowrap text-[11px]">
+                    {new Date(r.check_in_time).toLocaleString("id-ID", {
+                      day: "numeric",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}{" "}
+                    WIB
+                  </span>
+                </div>
+              ))}
+
+              {rows.length === 0 && (
+                <p className="py-4 text-center text-xs text-muted-foreground">
+                  Belum ada catatan aktivitas tamu pada periode ini.
+                </p>
+              )}
+            </div>
           </div>
         </>
       )}

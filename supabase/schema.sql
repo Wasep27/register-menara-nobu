@@ -465,3 +465,227 @@ end $$;
 
 grant execute on function public.submit_guest_feedback(jsonb) to anon, authenticated;
 
+-- ============================================================
+-- MODUL LOG AKTIVITAS (ACTIVITY LOGS) REAL-TIME
+-- Mencatat seluruh registrasi tamu, mutasi master data, ulasan,
+-- dan aksi administratif dalam gedung Menara Nobu
+-- ============================================================
+create table if not exists public.activity_logs (
+  id uuid primary key default gen_random_uuid(),
+  category text not null check (category in ('registration', 'master_data', 'security', 'feedback', 'system')),
+  action text not null,
+  title text not null,
+  details jsonb not null default '{}'::jsonb,
+  actor_type text not null default 'guest' check (actor_type in ('guest', 'admin', 'system')),
+  actor_id uuid references auth.users(id) on delete set null,
+  actor_email text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists activity_logs_time_idx on public.activity_logs(created_at desc);
+create index if not exists activity_logs_cat_idx on public.activity_logs(category, created_at desc);
+
+alter table public.activity_logs enable row level security;
+grant all on public.activity_logs to service_role;
+
+-- Kebijakan RLS: Hanya admin yang dapat melihat dan membersihkan log
+drop policy if exists "admin_manage_activity_logs" on public.activity_logs;
+create policy "admin_manage_activity_logs" on public.activity_logs
+for all to authenticated
+using (public.has_role(auth.uid(), 'admin'))
+with check (public.has_role(auth.uid(), 'admin'));
+
+-- Publikasi Realtime untuk activity_logs
+do $$ begin
+  alter publication supabase_realtime add table public.activity_logs;
+exception when others then null; end $$;
+
+-- 1. Trigger otomatis saat ada tamu baru / update / delete
+create or replace function public.log_guest_activity()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  emp_name text;
+  purp_name text;
+begin
+  if tg_op = 'INSERT' then
+    select name into emp_name from public.employees where id = new.employee_id;
+    select name into purp_name from public.visit_purposes where id = new.visit_purpose_id;
+    
+    insert into public.activity_logs (category, action, title, details, actor_type, actor_email)
+    values (
+      'registration',
+      'GUEST_REGISTERED',
+      'Registrasi Tamu Baru: ' || new.name,
+      jsonb_build_object(
+        'guest_id', new.id,
+        'guest_name', new.name,
+        'institution', new.institution,
+        'phone', new.phone,
+        'employee_name', coalesce(emp_name, '-'),
+        'purpose_name', coalesce(purp_name, '-'),
+        'is_important', new.is_important,
+        'scheduled_at', new.scheduled_at,
+        'fill_duration_seconds', new.fill_duration_seconds
+      ),
+      'guest',
+      'Pengunjung Lobi'
+    );
+    return new;
+  elsif tg_op = 'UPDATE' then
+    insert into public.activity_logs (category, action, title, details, actor_type, actor_id, actor_email)
+    values (
+      'registration',
+      'GUEST_UPDATED',
+      'Pembaruan Data Tamu: ' || new.name,
+      jsonb_build_object(
+        'guest_id', new.id,
+        'guest_name', new.name,
+        'institution', new.institution,
+        'old_name', old.name
+      ),
+      'admin',
+      auth.uid(),
+      coalesce((select email from auth.users where id = auth.uid()), 'Admin')
+    );
+    return new;
+  elsif tg_op = 'DELETE' then
+    insert into public.activity_logs (category, action, title, details, actor_type, actor_id, actor_email)
+    values (
+      'registration',
+      'GUEST_DELETED',
+      'Penghapusan Catatan Tamu: ' || old.name,
+      jsonb_build_object(
+        'guest_id', old.id,
+        'guest_name', old.name,
+        'institution', old.institution
+      ),
+      'admin',
+      auth.uid(),
+      coalesce((select email from auth.users where id = auth.uid()), 'Admin')
+    );
+    return old;
+  end if;
+  return null;
+end $$;
+
+drop trigger if exists guests_activity_logger on public.guests;
+create trigger guests_activity_logger
+after insert or update or delete on public.guests
+for each row execute function public.log_guest_activity();
+
+-- 2. Trigger otomatis saat data Master Karyawan dimutasi
+create or replace function public.log_employee_activity()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if tg_op = 'INSERT' then
+    insert into public.activity_logs (category, action, title, details, actor_type, actor_id, actor_email)
+    values (
+      'master_data',
+      'EMPLOYEE_CREATED',
+      'Karyawan Ditambahkan: ' || new.name,
+      jsonb_build_object('employee_id', new.id, 'name', new.name, 'department', new.department, 'email', new.email),
+      'admin', auth.uid(), coalesce((select email from auth.users where id = auth.uid()), 'Admin')
+    );
+    return new;
+  elsif tg_op = 'UPDATE' then
+    insert into public.activity_logs (category, action, title, details, actor_type, actor_id, actor_email)
+    values (
+      'master_data',
+      case when new.is_active <> old.is_active then 'EMPLOYEE_STATUS_CHANGED' else 'EMPLOYEE_UPDATED' end,
+      'Data Karyawan Diubah: ' || new.name || (case when new.is_active <> old.is_active then (case when new.is_active then ' (Diaktifkan)' else ' (Dinonaktifkan)' end) else '' end),
+      jsonb_build_object('employee_id', new.id, 'name', new.name, 'is_active', new.is_active, 'department', new.department),
+      'admin', auth.uid(), coalesce((select email from auth.users where id = auth.uid()), 'Admin')
+    );
+    return new;
+  elsif tg_op = 'DELETE' then
+    insert into public.activity_logs (category, action, title, details, actor_type, actor_id, actor_email)
+    values (
+      'master_data',
+      'EMPLOYEE_DELETED',
+      'Karyawan Dihapus: ' || old.name,
+      jsonb_build_object('employee_id', old.id, 'name', old.name),
+      'admin', auth.uid(), coalesce((select email from auth.users where id = auth.uid()), 'Admin')
+    );
+    return old;
+  end if;
+  return null;
+end $$;
+
+drop trigger if exists employees_activity_logger on public.employees;
+create trigger employees_activity_logger
+after insert or update or delete on public.employees
+for each row execute function public.log_employee_activity();
+
+-- 3. Trigger otomatis saat Tujuan Kunjungan dimutasi
+create or replace function public.log_purpose_activity()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if tg_op = 'INSERT' then
+    insert into public.activity_logs (category, action, title, details, actor_type, actor_id, actor_email)
+    values (
+      'master_data',
+      'PURPOSE_CREATED',
+      'Tujuan Kunjungan Ditambahkan: ' || new.name,
+      jsonb_build_object('purpose_id', new.id, 'name', new.name),
+      'admin', auth.uid(), coalesce((select email from auth.users where id = auth.uid()), 'Admin')
+    );
+    return new;
+  elsif tg_op = 'UPDATE' then
+    insert into public.activity_logs (category, action, title, details, actor_type, actor_id, actor_email)
+    values (
+      'master_data',
+      case when new.is_active <> old.is_active then 'PURPOSE_STATUS_CHANGED' else 'PURPOSE_UPDATED' end,
+      'Tujuan Kunjungan Diubah: ' || new.name,
+      jsonb_build_object('purpose_id', new.id, 'name', new.name, 'is_active', new.is_active),
+      'admin', auth.uid(), coalesce((select email from auth.users where id = auth.uid()), 'Admin')
+    );
+    return new;
+  elsif tg_op = 'DELETE' then
+    insert into public.activity_logs (category, action, title, details, actor_type, actor_id, actor_email)
+    values (
+      'master_data',
+      'PURPOSE_DELETED',
+      'Tujuan Kunjungan Dihapus: ' || old.name,
+      jsonb_build_object('purpose_id', old.id, 'name', old.name),
+      'admin', auth.uid(), coalesce((select email from auth.users where id = auth.uid()), 'Admin')
+    );
+    return old;
+  end if;
+  return null;
+end $$;
+
+drop trigger if exists purposes_activity_logger on public.visit_purposes;
+create trigger purposes_activity_logger
+after insert or update or delete on public.visit_purposes
+for each row execute function public.log_purpose_activity();
+
+-- 4. Trigger otomatis saat Feedback Tamu dikirim
+create or replace function public.log_feedback_activity()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.activity_logs (category, action, title, details, actor_type, actor_email)
+  values (
+    'feedback',
+    'FEEDBACK_RECEIVED',
+    'Ulasan Tamu Masuk: ' || new.rating || ' ⭐ dari ' || coalesce(new.guest_name, 'Pengunjung'),
+    jsonb_build_object(
+      'feedback_id', new.id,
+      'guest_name', coalesce(new.guest_name, 'Anonim'),
+      'institution', new.institution,
+      'rating', new.rating,
+      'tags', new.tags,
+      'comment', new.comment,
+      'fill_duration_seconds', new.fill_duration_seconds
+    ),
+    'guest',
+    coalesce(new.guest_name, 'Pengunjung Lobi')
+  );
+  return new;
+end $$;
+
+drop trigger if exists feedback_activity_logger on public.guest_feedback;
+create trigger feedback_activity_logger
+after insert on public.guest_feedback
+for each row execute function public.log_feedback_activity();
+
+
