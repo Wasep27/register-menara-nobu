@@ -24,6 +24,7 @@ function greeting() {
 function Dashboard() {
   const [days, setDays] = useState(7);
   const [name, setName] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -36,12 +37,15 @@ function Dashboard() {
   const [prevCount, setPrevCount] = useState(0);
 
   useEffect(() => {
+    setLoading(true);
     const start = new Date(); start.setHours(0, 0, 0, 0); start.setDate(start.getDate() - (days - 1));
     const prevStart = new Date(start); prevStart.setDate(prevStart.getDate() - days);
-    supabase.from("guests").select("*, employees(name), visit_purposes(name)").gte("check_in_time", start.toISOString()).order("check_in_time").limit(5000)
-      .then(({ data }) => setRows((data as Guest[]) ?? []));
-    supabase.from("guests").select("id", { count: "exact", head: true }).gte("check_in_time", prevStart.toISOString()).lt("check_in_time", start.toISOString())
-      .then(({ count }) => setPrevCount(count ?? 0));
+    Promise.all([
+      supabase.from("guests").select("*, employees(name), visit_purposes(name)").gte("check_in_time", start.toISOString()).order("check_in_time").limit(5000)
+        .then(({ data }) => setRows((data as Guest[]) ?? [])),
+      supabase.from("guests").select("id", { count: "exact", head: true }).gte("check_in_time", prevStart.toISOString()).lt("check_in_time", start.toISOString())
+        .then(({ count }) => setPrevCount(count ?? 0)),
+    ]).finally(() => setLoading(false));
   }, [days]);
 
   const stats = useMemo(() => {
