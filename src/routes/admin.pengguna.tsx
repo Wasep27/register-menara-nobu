@@ -159,7 +159,9 @@ function UsersPage() {
       if (error) {
         toast.error(`Gagal membuat akun: ${error.message}`);
       } else {
-        toast.success(`Akun baru (${createEmail}) berhasil dibuat dengan peran ${createRole.toUpperCase()}!`);
+        toast.success(
+          `Akun baru (${createEmail}) berhasil dibuat dengan peran ${createRole.toUpperCase()}!`,
+        );
         setCreateOpen(false);
         setCreateName("");
         setCreateEmail("");
@@ -242,8 +244,9 @@ function UsersPage() {
             Pengguna & Hak Akses (RBAC)
           </h1>
           <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
-            Kelola akun petugas secara mandiri: buat akun baru, reset password, dan tentukan hak akses peran{" "}
-            <strong>Admin</strong>, <strong>Security</strong>, atau <strong>Staff</strong>.
+            Kelola akun petugas secara mandiri: buat akun baru, reset password, dan tentukan hak
+            akses peran <strong>Admin</strong>, <strong>Security</strong>, atau{" "}
+            <strong>Staff</strong>.
           </p>
         </div>
 
@@ -454,7 +457,11 @@ function UsersPage() {
                           type="button"
                           disabled={isSelf}
                           onClick={() => setDeleteTarget(r)}
-                          title={isSelf ? "Tidak dapat menghapus akun Anda sendiri" : "Hapus Akun Pengguna"}
+                          title={
+                            isSelf
+                              ? "Tidak dapat menghapus akun Anda sendiri"
+                              : "Hapus Akun Pengguna"
+                          }
                           className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-destructive/20 bg-card text-destructive hover:bg-destructive/10 transition-colors active:scale-90 disabled:opacity-30 disabled:pointer-events-none"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -582,7 +589,10 @@ function UsersPage() {
       </Dialog>
 
       {/* Dialog Reset Password */}
-      <Dialog open={!!resetTarget} onOpenChange={(o) => !resetLoading && !o && setResetTarget(null)}>
+      <Dialog
+        open={!!resetTarget}
+        onOpenChange={(o) => !resetLoading && !o && setResetTarget(null)}
+      >
         <DialogContent className="rounded-2xl max-w-sm">
           <form onSubmit={handleResetPassword} className="space-y-4">
             <DialogHeader>

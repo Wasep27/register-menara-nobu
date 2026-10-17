@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { FolderKanban, Plus, Search, ShieldCheck, UserCheck, Lock } from "lucide-react";
+import {
+  FolderKanban,
+  Plus,
+  Search,
+  ShieldCheck,
+  UserCheck,
+  Lock,
+  KeyRound,
+  Loader2,
+} from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { employeeSchema, purposeSchema, fieldErrors } from "@/lib/validation";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -19,6 +28,7 @@ type Row = {
   name: string;
   department?: string | null;
   email?: string | null;
+  user_id?: string | null;
   is_active: boolean;
 };
 
@@ -43,6 +53,16 @@ export function MasterCrud({
   const [saving, setSaving] = useState(false);
   const [errs, setErrs] = useState<Partial<Record<"name" | "department" | "email", string>>>({});
   const [toDelete, setToDelete] = useState<Row | null>(null);
+
+  // State untuk pembuatan akun portal login bersamaan dengan data karyawan
+  const [createLoginAccount, setCreateLoginAccount] = useState(false);
+  const [loginPassword, setLoginPassword] = useState("");
+
+  // State untuk quick modal Buat Akun / Reset Password Karyawan
+  const [accountTarget, setAccountTarget] = useState<Row | null>(null);
+  const [accountPassword, setAccountPassword] = useState("");
+  const [accountLoading, setAccountLoading] = useState(false);
+
   const label = table === "employees" ? "karyawan" : "tujuan kunjungan";
 
   // Perizinan CRUD otomatis berbasis role:
@@ -71,6 +91,8 @@ export function MasterCrud({
     setName(r?.name ?? "");
     setDept(r?.department ?? "");
     setEmail(r?.email ?? "");
+    setCreateLoginAccount(false);
+    setLoginPassword("");
     setErrs({});
     setFormOpen(true);
   };
@@ -85,6 +107,19 @@ export function MasterCrud({
       toast.error("Periksa kembali isian yang ditandai merah");
       return;
     }
+
+    if (withDept && createLoginAccount) {
+      if (!email.trim()) {
+        setErrs((x) => ({ ...x, email: "Email wajib diisi untuk membuat akun login" }));
+        toast.error("Email wajib diisi jika membuat akun login portal");
+        return;
+      }
+      if (loginPassword.length < 6) {
+        toast.error("Password akun portal minimal 6 karakter");
+        return;
+      }
+    }
+
     setErrs({});
     const dup = rows.find(
       (x) => x.id !== editId && x.name.trim().toLowerCase() === name.trim().toLowerCase(),
@@ -115,9 +150,79 @@ export function MasterCrud({
       );
       return;
     }
-    toast.success(editId ? `Data ${label} diperbarui` : `Data ${label} ditambahkan`);
+
+    // Buat akun login jika opsi dicentang
+    if (withDept && createLoginAccount && email.trim() && loginPassword) {
+      const { error: userErr } = await supabase.rpc("admin_create_user", {
+        _email: email.trim().toLowerCase(),
+        _password: loginPassword,
+        _full_name: name.trim(),
+        _role: "staff",
+      });
+      if (userErr) {
+        toast.warning(
+          `Data karyawan tersimpan, tetapi gagal membuat akun login: ${userErr.message}`,
+        );
+      } else {
+        toast.success(
+          `Akun Portal Karyawan (${email}) berhasil dibuat! Karyawan dapat masuk di /karyawan.`,
+        );
+      }
+    } else {
+      toast.success(editId ? `Data ${label} diperbarui` : `Data ${label} ditambahkan`);
+    }
+
     setFormOpen(false);
     load();
+  };
+
+  const handleQuickAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!accountTarget || !accountTarget.email) return;
+    if (accountPassword.length < 6) {
+      toast.error("Password minimal 6 karakter");
+      return;
+    }
+
+    setAccountLoading(true);
+    try {
+      if (accountTarget.user_id) {
+        // Reset password
+        const { error } = await supabase.rpc("admin_reset_user_password", {
+          _target_user_id: accountTarget.user_id,
+          _new_password: accountPassword,
+        });
+        if (error) {
+          toast.error(`Gagal mereset password: ${error.message}`);
+        } else {
+          toast.success(`Password portal untuk ${accountTarget.name} berhasil diubah!`);
+          setAccountTarget(null);
+          setAccountPassword("");
+        }
+      } else {
+        // Buat user baru di auth.users (otomatis terhubung via trigger)
+        const { error } = await supabase.rpc("admin_create_user", {
+          _email: accountTarget.email.trim().toLowerCase(),
+          _password: accountPassword,
+          _full_name: accountTarget.name,
+          _role: "staff",
+        });
+        if (error) {
+          toast.error(`Gagal membuat akun: ${error.message}`);
+        } else {
+          toast.success(
+            `Akun portal untuk ${accountTarget.name} aktif! Karyawan dapat masuk di /karyawan.`,
+          );
+          setAccountTarget(null);
+          setAccountPassword("");
+          load();
+        }
+      }
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setAccountLoading(false);
+    }
   };
 
   const toggle = async (r: Row) => {
@@ -293,13 +398,28 @@ export function MasterCrud({
               className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 p-3 sm:p-3.5 text-sm last:border-0 hover:bg-muted/30 transition-colors"
             >
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="font-semibold text-foreground">{r.name}</span>
                   {r.department && (
                     <span className="rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground font-medium">
                       {r.department}
                     </span>
                   )}
+                  {withDept &&
+                    (r.user_id ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">
+                        <UserCheck className="h-3 w-3" />
+                        Portal Aktif
+                      </span>
+                    ) : r.email ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
+                        Belum Punya Akun Login
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                        Email Belum Diisi
+                      </span>
+                    ))}
                 </div>
                 {r.email && (
                   <span className="block text-xs text-muted-foreground/80 mt-0.5 truncate">
@@ -308,7 +428,31 @@ export function MasterCrud({
                 )}
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                {/* Tombol Cepat Buat / Reset Akun Portal Karyawan */}
+                {withDept && canAdd && r.email && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAccountTarget(r);
+                      setAccountPassword("");
+                    }}
+                    title={
+                      r.user_id
+                        ? "Reset kata sandi portal karyawan"
+                        : "Buatkan akun login portal karyawan"
+                    }
+                    className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all active:scale-95 ${
+                      r.user_id
+                        ? "border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
+                        : "border border-primary/20 bg-brand-soft text-primary hover:bg-primary hover:text-primary-foreground shadow-2xs"
+                    }`}
+                  >
+                    <KeyRound className="h-3 w-3" />
+                    <span>{r.user_id ? "Reset Sandi" : "+ Akun Portal"}</span>
+                  </button>
+                )}
+
                 {/* Active status button (or badge if read-only) */}
                 {canToggle ? (
                   <button
@@ -363,13 +507,17 @@ export function MasterCrud({
       </div>
 
       <Dialog open={formOpen} onOpenChange={(o) => !saving && setFormOpen(o)}>
-        <DialogContent className="rounded-2xl">
+        <DialogContent className="rounded-2xl max-w-md">
           <form onSubmit={save} noValidate className="space-y-3">
             <DialogHeader>
               <DialogTitle>{editId ? `Edit ${label}` : `Tambah ${label}`}</DialogTitle>
-              <DialogDescription>Isi data lalu tekan Simpan.</DialogDescription>
+              <DialogDescription>
+                {withDept
+                  ? "Kelola data karyawan dan akses login Portal Karyawan."
+                  : "Isi data lalu tekan Simpan."}
+              </DialogDescription>
             </DialogHeader>
-            <Field label="Nama" required err={errs.name}>
+            <Field label="Nama Lengkap" required err={errs.name}>
               <input
                 autoFocus
                 className={ic("name")}
@@ -384,19 +532,19 @@ export function MasterCrud({
               />
             </Field>
             {withDept && (
-              <Field label="Departemen (opsional)" err={errs.department}>
+              <Field label="Departemen / Divisi (opsional)" err={errs.department}>
                 <input
                   className={ic("department")}
                   aria-invalid={!!errs.department}
                   maxLength={100}
-                  placeholder="Contoh: Keuangan"
+                  placeholder="Contoh: Keuangan / HRD / IT"
                   value={dept}
                   onChange={(e) => setDept(e.target.value)}
                 />
               </Field>
             )}
             {withDept && (
-              <Field label="Email login (opsional, untuk notifikasi)" err={errs.email}>
+              <Field label="Email Resmi Karyawan (untuk notifikasi & login)" err={errs.email}>
                 <input
                   className={ic("email")}
                   aria-invalid={!!errs.email}
@@ -411,20 +559,123 @@ export function MasterCrud({
                 />
               </Field>
             )}
-            <DialogFooter className="gap-2">
+
+            {/* Opsi Buat Akun Portal Karyawan Sekaligus */}
+            {withDept && !editId && (
+              <div className="rounded-xl border border-border bg-muted/30 p-3 space-y-2 mt-2">
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-foreground">
+                  <input
+                    type="checkbox"
+                    checked={createLoginAccount}
+                    onChange={(e) => setCreateLoginAccount(e.target.checked)}
+                    className="rounded border-input text-primary focus:ring-primary"
+                  />
+                  <span>Buatkan Akun Login Portal Karyawan Sekaligus</span>
+                </label>
+                {createLoginAccount && (
+                  <div className="pt-1 space-y-1.5">
+                    <label className="text-[11px] text-muted-foreground block font-medium">
+                      Kata Sandi Awal Login (min. 6 karakter){" "}
+                      <span className="text-destructive">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      placeholder="Masukkan kata sandi..."
+                      className="w-full rounded-lg border border-input bg-card px-3 py-1.5 text-xs focus:ring-2 focus:ring-primary/20"
+                    />
+                    <p className="text-[10px] text-muted-foreground leading-relaxed">
+                      Karyawan dapat langsung masuk ke <strong>/karyawan</strong> untuk memantau
+                      tamu dan menerima notifikasi kedatangan tamu.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <DialogFooter className="gap-2 pt-2">
               <button
                 type="button"
-                className="min-h-11 rounded-lg border border-input px-4 text-sm"
+                className="min-h-10 rounded-lg border border-input px-4 text-xs font-medium"
                 onClick={() => setFormOpen(false)}
                 disabled={saving}
               >
                 Batal
               </button>
               <button
-                className="min-h-11 rounded-lg bg-primary px-4 text-sm text-primary-foreground"
+                className="min-h-10 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground hover:brightness-110 active:scale-95"
                 disabled={saving}
               >
-                {saving ? "Menyimpan…" : "Simpan"}
+                {saving ? "Menyimpan…" : "Simpan Data"}
+              </button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Cepat Buat / Reset Akun Portal Karyawan */}
+      <Dialog
+        open={!!accountTarget}
+        onOpenChange={(o) => !accountLoading && !o && setAccountTarget(null)}
+      >
+        <DialogContent className="rounded-2xl max-w-sm">
+          <form onSubmit={handleQuickAccount} className="space-y-4">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-base">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-soft text-primary">
+                  <KeyRound className="h-4 w-4" />
+                </span>
+                {accountTarget?.user_id ? "Reset Password Portal" : "Buatkan Akun Portal"}
+              </DialogTitle>
+              <DialogDescription className="text-xs">
+                {accountTarget?.user_id
+                  ? `Ubah kata sandi login untuk ${accountTarget?.name} (${accountTarget?.email}).`
+                  : `Aktifkan akses login portal untuk ${accountTarget?.name} (${accountTarget?.email}).`}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-foreground block">
+                {accountTarget?.user_id ? "Kata Sandi Baru" : "Kata Sandi Akun"}{" "}
+                <span className="text-destructive">*</span>
+              </label>
+              <input
+                type="password"
+                required
+                value={accountPassword}
+                onChange={(e) => setAccountPassword(e.target.value)}
+                placeholder="Minimal 6 karakter..."
+                className="w-full rounded-xl border border-input bg-card px-3.5 py-2 text-xs focus:ring-2 focus:ring-primary/20"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Karyawan masuk melalui menu <strong>/karyawan</strong> menggunakan email{" "}
+                <strong>{accountTarget?.email}</strong>.
+              </p>
+            </div>
+
+            <DialogFooter className="gap-2">
+              <button
+                type="button"
+                disabled={accountLoading}
+                onClick={() => setAccountTarget(null)}
+                className="min-h-9 rounded-lg border border-input px-3.5 text-xs font-medium"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                disabled={accountLoading}
+                className="min-h-9 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground hover:brightness-110 active:scale-95 inline-flex items-center gap-1.5"
+              >
+                {accountLoading && <Loader2 className="h-3 w-3 animate-spin" />}
+                <span>
+                  {accountLoading
+                    ? "Memproses…"
+                    : accountTarget?.user_id
+                      ? "Simpan Password Baru"
+                      : "Aktifkan Akun Portal"}
+                </span>
               </button>
             </DialogFooter>
           </form>
