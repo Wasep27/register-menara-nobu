@@ -2,6 +2,7 @@ import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { RefreshCw, RotateCcw, SearchX, UserPlus, Users, IdCard, QrCode } from "lucide-react";
 import { supabase, type Employee, type Guest, type Purpose } from "@/lib/supabase";
 import { VisitorBadgeModal, type VisitorBadgeData } from "@/components/VisitorBadgeModal";
@@ -462,21 +463,23 @@ function Guests() {
         </button>
       </div>
 
-      {edit && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="modal-edit-tamu-title"
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain"
-        >
+      {edit &&
+        typeof document !== "undefined" &&
+        createPortal(
           <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
-            onClick={() => setEdit(null)}
-          />
-          <div
-            className="relative w-full max-w-md space-y-3.5 rounded-2xl bg-card p-5 sm:p-6 shadow-2xl border border-border/80 z-10 max-h-[92dvh] overflow-y-auto my-auto"
-            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-edit-tamu-title"
+            className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain animate-in fade-in duration-200"
           >
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+              onClick={() => setEdit(null)}
+            />
+            <div
+              className="relative w-full max-w-md space-y-3.5 rounded-2xl bg-card p-5 sm:p-6 shadow-2xl border border-border/80 z-10 max-h-[92dvh] overflow-y-auto my-auto animate-in zoom-in-95 duration-200"
+              onClick={(e) => e.stopPropagation()}
+            >
             <h2
               id="modal-edit-tamu-title"
               className="font-display text-lg font-bold text-foreground"
@@ -575,7 +578,8 @@ function Guests() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
       <ConfirmDialog
         open={!!toDelete}

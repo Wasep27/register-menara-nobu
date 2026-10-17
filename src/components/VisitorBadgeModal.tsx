@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import {
   Printer,
   Download,
@@ -36,11 +37,24 @@ interface VisitorBadgeModalProps {
 }
 
 export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProps) {
+  const [mounted, setMounted] = useState(false);
   const [format, setFormat] = useState<"lanyard" | "compact">("lanyard");
   const [showQr, setShowQr] = useState<boolean>(true);
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const badgeCardRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Reset scroll to top when modal opens
+  useEffect(() => {
+    if (open && scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
+  }, [open]);
 
   // Generate deterministic pass code
   const badgeCode = useMemo(() => {
@@ -141,14 +155,14 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
     }
   };
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-badge-title"
-      className="fixed inset-0 z-[100] flex sm:items-center sm:justify-center overflow-hidden bg-black/80 backdrop-blur-sm sm:p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 z-[99999] flex sm:items-center sm:justify-center overflow-hidden bg-black/80 backdrop-blur-sm sm:p-4 animate-in fade-in duration-200"
     >
       {/* Print-specific style override: hide all ambient UI during print */}
       <style>{`
@@ -276,7 +290,10 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
         </div>
 
         {/* Scrollable Preview Area */}
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-4 sm:px-6 sm:py-6 flex justify-center items-start">
+        <div
+          ref={scrollContainerRef}
+          className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 py-4 sm:px-6 sm:py-6 flex justify-center items-start"
+        >
           <div
             id="printable-visitor-badge"
             ref={badgeCardRef}
@@ -469,6 +486,7 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
