@@ -36,7 +36,11 @@ interface VisitorBadgeModalProps {
   data: VisitorBadgeData;
 }
 
-export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProps) {
+export const VisitorBadgeModal = React.memo(function VisitorBadgeModal({
+  open,
+  onClose,
+  data,
+}: VisitorBadgeModalProps) {
   const [mounted, setMounted] = useState(false);
   const [format, setFormat] = useState<"lanyard" | "compact">("lanyard");
   const [showQr, setShowQr] = useState<boolean>(true);
@@ -56,21 +60,24 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
     }
   }, [open]);
 
-  // Generate deterministic pass code
+  // Generate deterministic pass code only when modal is open
   const badgeCode = useMemo(() => {
+    if (!open) return "";
     if (data.badgeNumber) return data.badgeNumber;
     return formatBadgeCode(data.id, new Date().toISOString());
-  }, [data.badgeNumber, data.id]);
+  }, [open, data.badgeNumber, data.id]);
 
-  // Generate barcode elements
+  // Generate barcode elements only when modal is open
   const { elements: barcodeElements, totalWidth: barcodeWidth } = useMemo(() => {
+    if (!open || !badgeCode) return { elements: [], totalWidth: 0 };
     return encodeCode39(badgeCode, 2, 5);
-  }, [badgeCode]);
+  }, [open, badgeCode]);
 
-  // Generate QR matrix
+  // Generate QR matrix only when modal is open
   const qrMatrix = useMemo(() => {
+    if (!open || !badgeCode) return [];
     return generateQrMatrix(`MENARA-NOBU:${badgeCode}:${data.name}:${data.institution}`);
-  }, [badgeCode, data.name, data.institution]);
+  }, [open, badgeCode, data.name, data.institution]);
 
   const displayTime =
     data.checkInTime ||
