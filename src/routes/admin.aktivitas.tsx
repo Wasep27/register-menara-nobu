@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { ActivitySummaryDashboard } from "@/components/ActivitySummaryDashboard";
 import { supabase, type ActivityLog, type Guest, type Employee } from "@/lib/supabase";
 
 export const Route = createFileRoute("/admin/aktivitas")({
@@ -45,6 +46,8 @@ export const Route = createFileRoute("/admin/aktivitas")({
 export function AdminActivityLogPage() {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [todayGuestRegistrations, setTodayGuestRegistrations] = useState<number>(0);
+  const [totalGuestRegistrations, setTotalGuestRegistrations] = useState<number>(0);
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -59,15 +62,32 @@ export function AdminActivityLogPage() {
   const loadActivities = useCallback(async () => {
     setLoading(true);
     try {
-      // 1. Coba baca dari tabel activity_logs
-      const { data, error } = await supabase
-        .from("activity_logs")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(300);
+      // Ambil data agregasi jumlah registrasi tamu hari ini & total keseluruhan
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
 
-      if (!error && data && data.length > 0) {
-        setLogs(data as ActivityLog[]);
+      const [todayGuestsRes, totalGuestsRes, logsRes] = await Promise.all([
+        supabase
+          .from("guests")
+          .select("id", { count: "exact", head: true })
+          .gte("check_in_time", startOfToday.toISOString()),
+        supabase.from("guests").select("id", { count: "exact", head: true }),
+        supabase
+          .from("activity_logs")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(300),
+      ]);
+
+      if (typeof todayGuestsRes.count === "number") {
+        setTodayGuestRegistrations(todayGuestsRes.count);
+      }
+      if (typeof totalGuestsRes.count === "number") {
+        setTotalGuestRegistrations(totalGuestsRes.count);
+      }
+
+      if (!logsRes.error && logsRes.data && logsRes.data.length > 0) {
+        setLogs(logsRes.data as ActivityLog[]);
         setLoading(false);
         return;
       }
@@ -204,6 +224,8 @@ export function AdminActivityLogPage() {
           created_at: newGuest.check_in_time || new Date().toISOString(),
         };
 
+        setTodayGuestRegistrations((prev) => prev + 1);
+        setTotalGuestRegistrations((prev) => prev + 1);
         setLogs((prev) => {
           if (prev.some((x) => x.id === syntheticEntry.id)) return prev;
           return [syntheticEntry, ...prev];
@@ -319,13 +341,16 @@ export function AdminActivityLogPage() {
   const stats = useMemo(() => {
     const todayStr = new Date().toDateString();
     let todayCount = 0;
+    let todayRegistrations = 0;
     let registrations = 0;
     let masterDataMutations = 0;
     let feedbackCount = 0;
 
     logs.forEach((l) => {
-      if (new Date(l.created_at).toDateString() === todayStr) {
+      const isToday = new Date(l.created_at).toDateString() === todayStr;
+      if (isToday) {
         todayCount++;
+        if (l.category === "registration") todayRegistrations++;
       }
       if (l.category === "registration") registrations++;
       if (l.category === "master_data") masterDataMutations++;
@@ -335,6 +360,7 @@ export function AdminActivityLogPage() {
     return {
       total: logs.length,
       todayCount,
+      todayRegistrations,
       registrations,
       masterDataMutations,
       feedbackCount,
@@ -430,6 +456,107 @@ export function AdminActivityLogPage() {
     }
   };
 
+  const getActivityStatusBadge = (log: ActivityLog) => {
+    const actionUpper = (log.action || "").toUpperCase();
+    const titleLower = (log.title || "").toLowerCase();
+    const statusInDetails = String(log.details?.["status"] || "").toUpperCase();
+
+    // Check-out
+    if (
+      actionUpper.includes("CHECK_OUT") ||
+      actionUpper.includes("CHECKOUT") ||
+      titleLower.includes("check-out") ||
+      titleLower.includes("checkout") ||
+      titleLower.includes("keluar") ||
+      statusInDetails === "CHECKED_OUT" ||
+      statusInDetails === "CHECK-OUT" ||
+      statusInDetails === "CHECKOUT"
+    ) {
+      return {
+        label: "Check-out",
+        bg: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800",
+        dot: "bg-blue-500",
+      };
+    }
+
+    // Pre-registered
+    if (
+      actionUpper.includes("PRE_REG") ||
+      actionUpper.includes("PREREG") ||
+      actionUpper.includes("RESERV") ||
+      actionUpper.includes("INVIT") ||
+      titleLower.includes("pre-registered") ||
+      titleLower.includes("pra-registrasi") ||
+      titleLower.includes("reservasi") ||
+      titleLower.includes("undangan") ||
+      statusInDetails === "PRE_REGISTERED" ||
+      statusInDetails === "PREREGISTERED" ||
+      statusInDetails === "RESERVED"
+    ) {
+      return {
+        label: "Pre-registered",
+        bg: "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800",
+        dot: "bg-purple-500",
+      };
+    }
+
+    // Check-in (Registrasi Tamu)
+    if (
+      log.category === "registration" ||
+      actionUpper.includes("GUEST_REGISTERED") ||
+      actionUpper.includes("CHECK_IN") ||
+      actionUpper.includes("CHECKIN") ||
+      titleLower.includes("registrasi tamu") ||
+      titleLower.includes("tamu baru") ||
+      titleLower.includes("check-in") ||
+      statusInDetails === "CHECKED_IN" ||
+      statusInDetails === "CHECK-IN"
+    ) {
+      return {
+        label: "Check-in",
+        bg: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800",
+        dot: "bg-emerald-500",
+      };
+    }
+
+    // Feedback
+    if (log.category === "feedback" || actionUpper.includes("FEEDBACK")) {
+      return {
+        label: "Feedback",
+        bg: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800",
+        dot: "bg-amber-500",
+      };
+    }
+
+    // Master Data
+    if (log.category === "master_data" || actionUpper.includes("RECORD")) {
+      return {
+        label: "Master Data",
+        bg: "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800",
+        dot: "bg-sky-500",
+      };
+    }
+
+    // Security
+    if (
+      log.category === "security" ||
+      actionUpper.includes("AUTH") ||
+      actionUpper.includes("LOGIN")
+    ) {
+      return {
+        label: "Keamanan",
+        bg: "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800",
+        dot: "bg-violet-500",
+      };
+    }
+
+    return {
+      label: "Sistem",
+      bg: "bg-muted text-foreground border-border",
+      dot: "bg-muted-foreground",
+    };
+  };
+
   return (
     <div className="space-y-6">
       {/* Header & Real-time Indicator */}
@@ -484,92 +611,18 @@ export function AdminActivityLogPage() {
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {/* Card 1: Hari Ini */}
-        <div className="rounded-2xl border border-border/80 bg-card p-4 shadow-soft">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted-foreground">Aktivitas Hari Ini</span>
-            <Sparkles className="h-4 w-4 text-primary" />
-          </div>
-          {loading ? (
-            <div className="mt-2 space-y-2">
-              <div className="h-8 w-16 rounded-lg skeleton-shimmer" />
-              <div className="h-3 w-28 rounded-md skeleton-shimmer" />
-            </div>
-          ) : (
-            <>
-              <p className="mt-1 font-display text-2xl font-black text-primary sm:text-3xl">
-                {stats.todayCount}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">Kejadian tercatat hari ini</p>
-            </>
-          )}
-        </div>
-
-        {/* Card 2: Registrasi Tamu */}
-        <div className="rounded-2xl border border-border/80 bg-card p-4 shadow-soft">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted-foreground">Registrasi Tamu</span>
-            <UserCheck className="h-4 w-4 text-brand" />
-          </div>
-          {loading ? (
-            <div className="mt-2 space-y-2">
-              <div className="h-8 w-16 rounded-lg skeleton-shimmer" />
-              <div className="h-3 w-28 rounded-md skeleton-shimmer" />
-            </div>
-          ) : (
-            <>
-              <p className="mt-1 font-display text-2xl font-black text-foreground sm:text-3xl">
-                {stats.registrations}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">Kunjungan lobi tercatat</p>
-            </>
-          )}
-        </div>
-
-        {/* Card 3: Master Data */}
-        <div className="rounded-2xl border border-border/80 bg-card p-4 shadow-soft">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted-foreground">Perubahan Data</span>
-            <Layers className="h-4 w-4 text-sky-500" />
-          </div>
-          {loading ? (
-            <div className="mt-2 space-y-2">
-              <div className="h-8 w-16 rounded-lg skeleton-shimmer" />
-              <div className="h-3 w-28 rounded-md skeleton-shimmer" />
-            </div>
-          ) : (
-            <>
-              <p className="mt-1 font-display text-2xl font-black text-foreground sm:text-3xl">
-                {stats.masterDataMutations}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">Karyawan & tujuan diperbarui</p>
-            </>
-          )}
-        </div>
-
-        {/* Card 4: Feedback */}
-        <div className="rounded-2xl border border-border/80 bg-card p-4 shadow-soft">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted-foreground">Ulasan Masuk</span>
-            <Star className="h-4 w-4 text-amber-500" />
-          </div>
-          {loading ? (
-            <div className="mt-2 space-y-2">
-              <div className="h-8 w-16 rounded-lg skeleton-shimmer" />
-              <div className="h-3 w-28 rounded-md skeleton-shimmer" />
-            </div>
-          ) : (
-            <>
-              <p className="mt-1 font-display text-2xl font-black text-foreground sm:text-3xl">
-                {stats.feedbackCount}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">Tanggapan & rating kepuasan</p>
-            </>
-          )}
-        </div>
-      </div>
+      {/* Summary Dashboard Component above the activity log */}
+      <ActivitySummaryDashboard
+        todayGuestCount={
+          todayGuestRegistrations > 0 ? todayGuestRegistrations : stats.todayRegistrations
+        }
+        totalGuestCount={
+          totalGuestRegistrations > 0 ? totalGuestRegistrations : stats.registrations
+        }
+        todayActivityCount={stats.todayCount}
+        totalActivityCount={stats.total}
+        loading={loading}
+      />
 
       {/* Filter Toolbar */}
       <div className="flex flex-col gap-3 rounded-2xl border border-border/80 bg-card p-4 shadow-soft sm:p-5">
@@ -802,6 +855,7 @@ export function AdminActivityLogPage() {
             <div className="space-y-4 sm:space-y-6">
               {filteredLogs.map((log) => {
                 const badge = getCategoryBadge(log.category);
+                const statusBadge = getActivityStatusBadge(log);
                 const IconComponent = badge.icon;
                 const isExpanded = expandedLogId === log.id;
 
@@ -816,13 +870,23 @@ export function AdminActivityLogPage() {
 
                     {/* Content Box */}
                     <div className="min-w-0 max-w-full overflow-hidden rounded-xl border border-border/80 bg-background/80 p-3 transition-all hover:border-brand/40 hover:shadow-sm sm:rounded-2xl sm:p-4">
-                      <div className="flex min-w-0 flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex min-w-0 flex-wrap items-center gap-2">
+                          {/* Visual Status Badge (Check-in, Check-out, Pre-registered, etc.) */}
                           <span
-                            className={`inline-block shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${badge.bg}`}
+                            className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${statusBadge.bg}`}
+                          >
+                            <span className={`h-1.5 w-1.5 rounded-full ${statusBadge.dot}`} />
+                            {statusBadge.label}
+                          </span>
+
+                          {/* Category Badge */}
+                          <span
+                            className={`inline-block shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${badge.bg}`}
                           >
                             {badge.label}
                           </span>
+
                           <span className="min-w-0 break-words font-display text-sm font-bold text-foreground">
                             {log.title}
                           </span>
@@ -840,15 +904,19 @@ export function AdminActivityLogPage() {
                         </span>
                       </div>
 
-                      {/* Actor & Action Description */}
+                      {/* Actor & Action Description - Responsive Mobile Layout */}
                       <div className="mt-2.5 flex min-w-0 max-w-full flex-col gap-2 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex min-w-0 max-w-full flex-wrap items-center gap-1.5">
-                          <span className="shrink-0 font-semibold text-foreground">Pelaku:</span>
-                          <span className="max-w-full break-words rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-foreground">
-                            {log.actor_email || log.actor_type}
+                        <div className="flex min-w-0 max-w-full flex-wrap items-center gap-x-2 gap-y-1.5">
+                          <div className="inline-flex min-w-0 max-w-full items-center gap-1">
+                            <span className="shrink-0 font-semibold text-foreground">Pelaku:</span>
+                            <span className="max-w-[200px] truncate rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-foreground sm:max-w-none">
+                              {log.actor_email || log.actor_type}
+                            </span>
+                          </div>
+                          <span className="hidden shrink-0 text-muted-foreground/40 sm:inline-block">
+                            •
                           </span>
-                          <span className="shrink-0 text-muted-foreground/40">•</span>
-                          <span className="break-all rounded border border-border/70 bg-card/70 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground sm:text-[11px]">
+                          <span className="max-w-full break-all rounded border border-border/70 bg-card/70 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground sm:text-[11px]">
                             {log.action}
                           </span>
                         </div>
@@ -906,6 +974,7 @@ export function AdminActivityLogPage() {
             <thead className="border-b border-border bg-muted/50 text-xs font-bold uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th className="p-3.5">Waktu</th>
+                <th className="p-3.5">Status</th>
                 <th className="p-3.5">Kategori</th>
                 <th className="p-3.5">Judul Aktivitas</th>
                 <th className="p-3.5">Aksi</th>
@@ -916,6 +985,7 @@ export function AdminActivityLogPage() {
             <tbody>
               {filteredLogs.map((log) => {
                 const badge = getCategoryBadge(log.category);
+                const statusBadge = getActivityStatusBadge(log);
                 return (
                   <tr key={log.id} className="border-b border-border/60 hover:bg-muted/20">
                     <td className="whitespace-nowrap p-3.5 text-xs text-muted-foreground">
@@ -925,6 +995,14 @@ export function AdminActivityLogPage() {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
+                    </td>
+                    <td className="whitespace-nowrap p-3.5">
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-bold ${statusBadge.bg}`}
+                      >
+                        <span className={`h-1.5 w-1.5 rounded-full ${statusBadge.dot}`} />
+                        {statusBadge.label}
+                      </span>
                     </td>
                     <td className="p-3.5">
                       <span
