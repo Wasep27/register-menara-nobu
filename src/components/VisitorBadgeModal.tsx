@@ -1,18 +1,16 @@
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import {
   Printer,
   Download,
   X,
-  Building2,
-  Calendar,
   Clock,
-  User,
   ShieldCheck,
-  Sparkles,
   QrCode,
-  Barcode,
   Check,
   Copy,
+  Calendar,
+  Building2,
+  User,
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { encodeCode39, formatBadgeCode, generateQrMatrix } from "@/lib/barcode";
@@ -71,22 +69,54 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
       year: "numeric",
     });
 
+  // Handle ESC key to close modal
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open, onClose]);
+
+  // Lock body scroll when modal is open to prevent background scrolling on mobile
+  useEffect(() => {
+    if (!open) return;
+    const originalOverflow = document.body.style.overflow;
+    const originalPaddingRight = document.body.style.paddingRight;
+
+    // Check if scrollbar exists to prevent layout shift
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.paddingRight = originalPaddingRight;
+    };
+  }, [open]);
+
   // Handle Copy Badge Code
   const handleCopyCode = async () => {
     try {
       await navigator.clipboard.writeText(badgeCode);
       setCopied(true);
-      toast.success("Kode pass berhasil disalin!");
+      toast.success("Nomor pass berhasil disalin ke clipboard!");
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error("Gagal menyalin kode");
+      toast.error("Gagal menyalin nomor pass");
     }
   };
 
-  // Handle Direct Print
-  const handlePrint = () => {
+  // Handle Direct Print with clean page setup
+  const handlePrint = useCallback(() => {
     window.print();
-  };
+  }, []);
 
   // Handle Download as PNG Image via canvas
   const handleDownloadImage = async () => {
@@ -102,7 +132,7 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
         employeeName: data.employeeName,
         format,
       });
-      toast.success("Badge tamu berhasil diunduh dalam format PNG!");
+      toast.success("Visitor pass berhasil diunduh sebagai gambar PNG!");
     } catch (err) {
       console.error(err);
       toast.error("Gagal mengunduh gambar badge");
@@ -118,49 +148,84 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-badge-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 overflow-y-auto overscroll-contain animate-in fade-in duration-200"
     >
-      {/* Backdrop */}
+      {/* Print-specific style override: hide all ambient UI during print */}
+      <style>{`
+        @media print {
+          body * {
+            visibility: hidden !important;
+          }
+          #printable-visitor-badge,
+          #printable-visitor-badge * {
+            visibility: visible !important;
+          }
+          #printable-visitor-badge {
+            position: fixed !important;
+            left: 50% !important;
+            top: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            width: 320px !important;
+            max-width: 100% !important;
+            box-shadow: none !important;
+            border: 2px solid #000 !important;
+            border-radius: 12px !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+          }
+        }
+      `}</style>
+
+      {/* Accessible Backdrop with click to dismiss */}
       <div
         className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+        aria-hidden="true"
         onClick={onClose}
       />
 
-      {/* Modal Dialog Card */}
-      <div className="relative w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden rounded-3xl border border-border/80 bg-card p-4 sm:p-6 shadow-2xl z-10 my-auto">
-        {/* Modal Top Bar */}
-        <div className="flex items-center justify-between border-b border-border/60 pb-3 shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-soft text-primary font-bold">
-              <ShieldCheck className="h-4 w-4" />
+      {/* Responsive Modal Dialog Card */}
+      <div
+        className="relative w-full max-w-lg md:max-w-xl max-h-[92dvh] flex flex-col rounded-3xl border border-border/80 bg-card shadow-2xl z-10 overflow-hidden my-auto animate-in zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Modal Top Header Bar */}
+        <div className="flex items-center justify-between border-b border-border/60 px-4 py-3 sm:px-6 sm:py-4 shrink-0 bg-card">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-primary font-bold shadow-xs">
+              <ShieldCheck className="h-5 w-5" />
             </span>
-            <div>
-              <h2 id="modal-badge-title" className="text-base font-bold text-foreground sm:text-lg">
-                Layout Badge & ID Pass Tamu
+            <div className="min-w-0">
+              <h2
+                id="modal-badge-title"
+                className="font-display text-base font-bold text-foreground sm:text-lg leading-tight truncate"
+              >
+                Kartu Akses & Badge Tamu
               </h2>
-              <p className="text-xs text-muted-foreground">
-                Siap cetak atau unduh untuk tanda pengenal pengunjung
+              <p className="text-xs text-muted-foreground truncate">
+                Tanda pengenal resmi pengunjung Menara Nobu
               </p>
             </div>
           </div>
+
           <button
             onClick={onClose}
-            aria-label="Tutup modal"
-            className="rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            type="button"
+            aria-label="Tutup jendela badge"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-muted/60 text-muted-foreground transition-all hover:bg-muted hover:text-foreground active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary shrink-0"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Controls: Format switch & options */}
-        <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2.5 rounded-2xl bg-muted/40 p-2.5 text-xs shrink-0">
+        {/* Toolbar / Options: Layout format selector & copy pass button */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-border/50 bg-muted/30 px-4 py-2.5 sm:px-6 text-xs shrink-0">
           <div className="flex items-center gap-1.5">
-            <span className="font-semibold text-muted-foreground">Ukuran:</span>
-            <div className="inline-flex rounded-xl bg-card p-1 border border-border shadow-xs">
+            <span className="font-semibold text-muted-foreground">Format:</span>
+            <div className="inline-flex rounded-xl border border-border/80 bg-card p-0.5 shadow-2xs">
               <button
                 type="button"
                 onClick={() => setFormat("lanyard")}
-                className={`rounded-lg px-2.5 py-1 font-semibold transition-all ${
+                className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
                   format === "lanyard"
                     ? "bg-primary text-primary-foreground shadow-xs"
                     : "text-muted-foreground hover:text-foreground"
@@ -171,110 +236,111 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
               <button
                 type="button"
                 onClick={() => setFormat("compact")}
-                className={`rounded-lg px-2.5 py-1 font-semibold transition-all ${
+                className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
                   format === "compact"
                     ? "bg-primary text-primary-foreground shadow-xs"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                Stiker / Horizontal
+                Stiker (Horizontal)
               </button>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 ml-auto">
             <button
               type="button"
               onClick={() => setShowQr(!showQr)}
-              className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1 font-medium text-foreground hover:bg-brand-soft hover:text-primary transition-colors"
+              className="inline-flex items-center gap-1 rounded-xl border border-border/80 bg-card px-2.5 py-1 font-medium text-foreground hover:bg-brand-soft hover:text-primary transition-colors active:scale-95 shadow-2xs"
             >
               <QrCode className="h-3.5 w-3.5" />
-              {showQr ? "Sembunyikan QR" : "Tampilkan QR"}
+              <span className="hidden xs:inline">{showQr ? "Sembunyikan QR" : "Tampilkan QR"}</span>
             </button>
+
             <button
               type="button"
               onClick={handleCopyCode}
-              className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2.5 py-1 font-medium text-foreground hover:bg-brand-soft hover:text-primary transition-colors"
-              title="Salin nomor pass"
+              title="Salin nomor pass pengunjung"
+              className="inline-flex items-center gap-1 rounded-xl border border-border/80 bg-card px-2.5 py-1 font-mono font-bold text-foreground hover:bg-brand-soft hover:text-primary transition-colors active:scale-95 shadow-2xs"
             >
               {copied ? (
                 <Check className="h-3.5 w-3.5 text-primary" />
               ) : (
-                <Copy className="h-3.5 w-3.5" />
+                <Copy className="h-3.5 w-3.5 text-muted-foreground" />
               )}
-              {badgeCode}
+              <span>{badgeCode}</span>
             </button>
           </div>
         </div>
 
-        {/* Preview Container: Printable Badge Card */}
-        <div className="mt-3 flex-1 overflow-y-auto overflow-x-hidden flex justify-center py-2 pr-1">
+        {/* Scrollable Preview Area */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 py-5 sm:px-6 flex justify-center items-start">
           <div
             id="printable-visitor-badge"
             ref={badgeCardRef}
-            className={`relative overflow-hidden rounded-2xl border-2 border-primary/30 bg-card text-foreground shadow-lg transition-all duration-300 print:m-0 print:border-2 print:border-black print:shadow-none ${
+            className={`relative overflow-hidden rounded-2xl border-2 border-primary/40 bg-card text-foreground shadow-lg transition-all duration-200 select-none ${
               format === "lanyard"
-                ? "w-full max-w-[290px] sm:max-w-[330px] min-h-[460px]"
-                : "w-full max-w-[310px] sm:max-w-[420px] min-h-[260px]"
+                ? "w-full max-w-[280px] xs:max-w-[310px] sm:max-w-[330px]"
+                : "w-full max-w-[320px] xs:max-w-[360px] sm:max-w-[420px]"
             }`}
           >
-            {/* Lanyard Clip Slot Punch Hole (Visual indicator for lanyard pass) */}
+            {/* Lanyard punch hole indicator */}
             {format === "lanyard" && (
-              <div className="absolute top-2.5 left-1/2 -translate-x-1/2 z-20">
-                <div className="h-2.5 w-12 rounded-full border border-white/60 bg-white/90 shadow-inner" />
+              <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20">
+                <div className="h-2 w-10 rounded-full border border-white/60 bg-white/90 shadow-inner" />
               </div>
             )}
 
             {/* Header Brand Banner */}
             <div
               className={`bg-gradient-to-r from-primary to-brand px-4 text-center text-white relative ${
-                format === "lanyard" ? "pt-7 pb-3" : "py-3"
+                format === "lanyard" ? "pt-6 pb-3" : "py-3"
               }`}
             >
               <div className="flex items-center justify-center gap-2">
                 <img
                   src={logo}
                   alt="Nobu Logo"
-                  className="h-6 w-auto brightness-0 invert drop-shadow-sm"
+                  className="h-5 w-auto brightness-0 invert drop-shadow-xs"
                 />
                 <span className="font-display text-sm font-black tracking-wide uppercase">
                   Menara Nobu
                 </span>
               </div>
-              <p className="mt-0.5 text-[10px] font-bold tracking-widest uppercase text-white/90">
+              <p className="mt-0.5 text-[9px] font-bold tracking-widest uppercase text-white/95">
                 Kartu Akses Pengunjung · Visitor Pass
               </p>
             </div>
 
             {/* Card Body */}
-            <div className="p-4 flex flex-col justify-between">
+            <div className="p-3.5 sm:p-4 flex flex-col justify-between">
               {/* Check-in timestamp badge */}
-              <div className="flex items-center justify-between border-b border-border/70 pb-2.5">
-                <span className="inline-flex items-center gap-1 rounded-full bg-brand-soft px-2.5 py-0.5 text-[10px] font-bold text-primary">
+              <div className="flex items-center justify-between border-b border-border/70 pb-2">
+                <span className="inline-flex items-center gap-1 rounded-full bg-brand-soft px-2 py-0.5 text-[10px] font-bold text-primary">
                   <Clock className="h-3 w-3" />
                   {displayTime} WIB · {displayDate}
                 </span>
                 <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
-                  AKTIF / HARI INI
+                  AKTIF HARI INI
                 </span>
               </div>
 
               {/* Guest Primary Details */}
               <div className="text-center my-3">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground block">
                   Nama Pengunjung
                 </span>
-                <h3 className="font-display text-xl sm:text-2xl font-black text-foreground mt-0.5 leading-tight">
+                <h3 className="font-display text-lg sm:text-xl font-black text-foreground mt-0.5 leading-tight break-words">
                   {data.name}
                 </h3>
-                <p className="text-xs sm:text-sm font-semibold text-primary mt-1">
+                <p className="text-xs sm:text-sm font-semibold text-primary mt-1 break-words">
                   {data.institution}
                 </p>
               </div>
 
               {/* Host & Purpose details */}
-              <div className="grid grid-cols-2 gap-2 rounded-xl bg-muted/40 p-2.5 text-[11px] mb-3">
-                <div>
+              <div className="grid grid-cols-2 gap-2 rounded-xl bg-muted/40 p-2.5 text-[11px] mb-3 border border-border/60">
+                <div className="min-w-0">
                   <span className="text-muted-foreground text-[10px] block font-medium">
                     Keperluan:
                   </span>
@@ -282,9 +348,9 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
                     {data.purposeName || "Kunjungan Resmi"}
                   </span>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <span className="text-muted-foreground text-[10px] block font-medium">
-                    Karyawan Dituju:
+                    Staf Dituju:
                   </span>
                   <span className="font-bold text-primary truncate block">
                     {data.employeeName || "Resepsionis Lobi"}
@@ -293,13 +359,13 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
               </div>
 
               {/* BARCODE SECTION: Code 39 Barcode + Optional QR Code */}
-              <div className="flex items-center justify-between gap-3 rounded-xl border border-border/80 bg-white p-2.5 text-center">
+              <div className="flex items-center justify-between gap-2.5 rounded-xl border border-border/80 bg-white p-2 text-center">
                 {/* SVG 1D Barcode */}
-                <div className="flex-1 overflow-hidden">
+                <div className="flex-1 overflow-hidden min-w-0">
                   <div className="flex justify-center items-center py-1">
                     <svg
-                      viewBox={`0 0 ${barcodeWidth} 48`}
-                      className="w-full h-11 max-h-12"
+                      viewBox={`0 0 ${barcodeWidth} 44`}
+                      className="w-full h-10 max-h-11"
                       preserveAspectRatio="none"
                     >
                       {
@@ -312,7 +378,7 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
                                   x={acc.x}
                                   y={0}
                                   width={el.width}
-                                  height={48}
+                                  height={44}
                                   fill="#10241E"
                                 />,
                               );
@@ -325,8 +391,7 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
                       }
                     </svg>
                   </div>
-                  {/* Human-readable Barcode Text */}
-                  <p className="font-mono text-[11px] font-bold tracking-wider text-neutral-900 mt-0.5">
+                  <p className="font-mono text-[10px] sm:text-[11px] font-bold tracking-wider text-neutral-900 mt-0.5 truncate">
                     *{badgeCode}*
                   </p>
                 </div>
@@ -334,7 +399,7 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
                 {/* QR Code Matrix */}
                 {showQr && (
                   <div className="shrink-0 pl-2 border-l border-neutral-200">
-                    <svg viewBox="0 0 25 25" className="h-14 w-14">
+                    <svg viewBox="0 0 25 25" className="h-12 w-12 sm:h-14 sm:w-14">
                       {qrMatrix.map((row, r) =>
                         row.map((val, c) =>
                           val ? (
@@ -351,27 +416,27 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
                       )}
                     </svg>
                     <span className="block text-[8px] font-bold text-neutral-500 uppercase tracking-tighter mt-0.5">
-                      SCAN VERIFIKASI
+                      SCAN PASS
                     </span>
                   </div>
                 )}
               </div>
 
-              {/* Card Footer Notes */}
+              {/* Card Security Rules Footer */}
               <div className="mt-3 pt-2 border-t border-border/60 text-center text-[9px] text-muted-foreground leading-snug">
                 <p className="font-semibold text-foreground/80">
-                  Wajib disematkan selama berada di dalam Gedung Menara Nobu
+                  Wajib dikenakan selama berada di area perkantoran Menara Nobu
                 </p>
                 <p className="mt-0.5 text-muted-foreground">
-                  Kembalikan ke resepsionis lobi saat check-out · Keamanan: Ext. 101
+                  Kembalikan ke resepsionis lobi saat check-out · Keamanan Gedung Ext. 101
                 </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Modal Actions */}
-        <div className="mt-4 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2.5 border-t border-border/60 pt-3.5 shrink-0">
+        {/* Modal Bottom Action Controls */}
+        <div className="border-t border-border/60 bg-card px-4 py-3 sm:px-6 sm:py-4 flex flex-col-reverse sm:flex-row items-stretch sm:items-center sm:justify-between gap-2.5 shrink-0">
           <button
             type="button"
             onClick={onClose}
@@ -397,7 +462,7 @@ export function VisitorBadgeModal({ open, onClose, data }: VisitorBadgeModalProp
               className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95"
             >
               <Printer className="h-4 w-4" />
-              <span>Cetak Badge (Print / PDF)</span>
+              <span>Cetak Kartu (Print / PDF)</span>
             </button>
           </div>
         </div>

@@ -293,6 +293,48 @@ function Guide() {
             </div>
           </div>
         </section>
+
+        {/* 5. Prosedur Pemindai Barcode / QR Code & Akses Keamanan */}
+        <section className={cardStyle}>
+          <div className="flex items-center gap-3 border-b border-border pb-4">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-soft text-primary">
+              <QrCode className="h-6 w-6" />
+            </div>
+            <div>
+              <h2 className="font-display text-lg font-bold text-foreground sm:text-xl">
+                5. Prosedur Pemindai Barcode / QR Code
+              </h2>
+              <p className="text-xs text-muted-foreground sm:text-sm">
+                Fungsi ganda untuk check-in mandiri tamu dan verifikasi keamanan petugas lobi
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 text-xs sm:text-sm">
+            <div className="rounded-xl border border-border/80 bg-background p-4 space-y-2">
+              <p className="font-bold text-primary flex items-center gap-1.5">
+                <span>📱</span> Untuk Tamu Publik (Self Check-In)
+              </p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Pengunjung yang telah memiliki QR code undangan digital dapat memindai langsung
+                melalui menu <b>Pindai QR</b> di ponsel atau di tablet kios lobi untuk verifikasi
+                kehadiran instan tanpa perlu antre di meja resepsionis.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-border/80 bg-background p-4 space-y-2">
+              <p className="font-bold text-primary flex items-center gap-1.5">
+                <span>🛡️</span> Untuk Petugas Lobi & Security
+              </p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Petugas memindai <b>Visitor Badge Pass</b> (lanyard/stiker) saat tamu melewati
+                gerbang akses (turnstile) atau saat check-out untuk memastikan pass berstatus{" "}
+                <b>AKTIF HARI INI</b>, memeriksa staf penanggung jawab, serta menjaga keamanan
+                perimeter gedung.
+              </p>
+            </div>
+          </div>
+        </section>
       </div>
 
       <SiteFooter />

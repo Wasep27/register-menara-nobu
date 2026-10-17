@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { submitGuestFeedback } from "@/lib/supabase";
 import { VisitorBadgeModal } from "@/components/VisitorBadgeModal";
+import { VisitorQrCodePass } from "@/components/VisitorQrCodePass";
 import { encodeCode39, formatBadgeCode } from "@/lib/barcode";
 import { downloadBadgeAsPng } from "@/lib/badge-download";
 import { toast } from "sonner";
@@ -260,144 +261,33 @@ export function RegistrationSuccess({ data, onReset }: RegistrationSuccessProps)
           </p>
         </div>
 
-        {/* KARTU AKSES & BARCODE DIGITAL TAMU (Responsif & Siap Unduh) */}
-        <section
-          aria-label="Kartu Akses & Barcode Tamu"
-          className="mt-6 overflow-hidden rounded-2xl border-2 border-primary/25 bg-gradient-to-b from-brand-soft/40 via-card to-card p-4 sm:p-5 shadow-xs"
-        >
-          {/* Card Top: Branding & Status */}
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/80 pb-3">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
-                <Barcode className="h-4 w-4" />
-              </span>
-              <div className="min-w-0">
-                <p className="font-display text-xs font-bold uppercase tracking-wider text-foreground truncate">
-                  Visitor Pass Digital
-                </p>
-                <p className="text-[10px] text-muted-foreground truncate">Gedung Menara Nobu</p>
-              </div>
-            </div>
+        {/* KARTU AKSES & QR CODE DIGITAL TAMU (Responsif & Siap Pindai) */}
+        <section aria-label="Kartu Akses & QR Pass Tamu" className="mt-6 space-y-3">
+          <VisitorQrCodePass
+            id={data.id}
+            name={data.name}
+            institution={data.institution}
+            badgeCode={badgeCode}
+            checkInTime={displayTime}
+            checkInDate={displayDate}
+            purposeName={data.purposeName}
+            employeeName={data.employeeName}
+          />
 
-            <div className="flex items-center gap-1.5 shrink-0">
-              <span className="inline-flex items-center gap-1 rounded-full bg-card border border-border px-2.5 py-1 text-[11px] font-semibold text-primary shadow-xs">
-                <Clock className="h-3 w-3" />
-                {displayTime} WIB
-              </span>
-            </div>
-          </div>
-
-          {/* Visitor Primary Info */}
-          <div className="mt-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div className="min-w-0 flex-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                Pengunjung
-              </span>
-              <h2 className="font-display text-lg sm:text-xl font-black text-foreground truncate">
-                {data.name}
-              </h2>
-              <p className="text-xs font-semibold text-primary truncate">{data.institution}</p>
-            </div>
-
-            {/* Pass Code Pill with Quick Copy */}
-            <div className="flex sm:flex-col items-center sm:items-end justify-between gap-1 shrink-0 pt-1 sm:pt-0">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
-                Kode Akses
-              </span>
-              <button
-                type="button"
-                onClick={handleCopyPassCode}
-                title="Salin kode pass"
-                className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-2.5 py-1 text-xs font-mono font-bold text-foreground hover:bg-brand-soft hover:text-primary transition-all active:scale-95 shadow-xs"
-              >
-                {copiedCode ? (
-                  <Check className="h-3.5 w-3.5 text-primary" />
-                ) : (
-                  <Copy className="h-3.5 w-3.5 text-muted-foreground" />
-                )}
-                <span>{badgeCode}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Purpose & Host Pill Grid */}
-          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-xl bg-card border border-border/70 p-2.5 text-xs">
-            <div className="min-w-0">
-              <span className="text-[10px] font-medium text-muted-foreground block">
-                Keperluan:
-              </span>
-              <span className="font-bold text-foreground truncate block">
-                {data.purposeName || "Kunjungan Resmi"}
-              </span>
-            </div>
-            <div className="min-w-0">
-              <span className="text-[10px] font-medium text-muted-foreground block">
-                Staf yang Dituju:
-              </span>
-              <span className="font-bold text-primary truncate block">
-                {data.employeeName || "Resepsionis Lobi"}
-              </span>
-            </div>
-          </div>
-
-          {/* Scannable Code 39 Barcode Display */}
-          <div className="mt-3.5 rounded-xl border border-border/80 bg-white p-3 text-center shadow-xs">
-            <div className="flex justify-center items-center overflow-x-hidden py-1">
-              <svg
-                viewBox={`0 0 ${barcodeWidth} 46`}
-                className="w-full max-w-[280px] sm:max-w-[340px] h-10 max-h-12"
-                preserveAspectRatio="none"
-              >
-                {
-                  barcodeElements.reduce<{ x: number; nodes: React.ReactNode[] }>(
-                    (acc, el, idx) => {
-                      if (el.isBar) {
-                        acc.nodes.push(
-                          <rect
-                            key={idx}
-                            x={acc.x}
-                            y={0}
-                            width={el.width}
-                            height={46}
-                            fill="#10241E"
-                          />,
-                        );
-                      }
-                      acc.x += el.width;
-                      return acc;
-                    },
-                    { x: 0, nodes: [] },
-                  ).nodes
-                }
-              </svg>
-            </div>
-            <p className="font-mono text-xs font-bold tracking-widest text-neutral-900 mt-1">
-              *{badgeCode}*
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-1 text-center sm:text-left">
+            <p className="text-[11px] text-muted-foreground">
+              Butuh tanda pengenal fisik untuk dikalungkan di gedung?
             </p>
-          </div>
-
-          {/* Action Buttons for Barcode Pass */}
-          <div className="mt-3.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <button
-              type="button"
-              disabled={isDownloading}
-              onClick={handleDirectDownload}
-              className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95 disabled:opacity-60"
-            >
-              <Download className="h-4 w-4" />
-              <span>{isDownloading ? "Menyiapkan File..." : "Unduh Barcode (PNG)"}</span>
-            </button>
-
             <button
               type="button"
               onClick={() => {
                 setIsPaused(true);
                 setShowBadgeModal(true);
               }}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 text-xs font-semibold text-foreground shadow-xs transition-colors hover:bg-brand-soft hover:text-primary active:scale-95"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-brand-soft hover:text-primary transition-all active:scale-95 shadow-2xs"
             >
-              <ExternalLink className="h-4 w-4" />
-              <span>Format Badge Lengkap / Print</span>
+              <ExternalLink className="h-3.5 w-3.5" />
+              <span>Format Badge Lanyard (Print / PDF)</span>
             </button>
           </div>
         </section>

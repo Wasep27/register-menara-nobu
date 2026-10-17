@@ -37,12 +37,32 @@ git --version
 
 ### Langkah 2.1: Kloning Repository
 
-Buka terminal dan unduh kode sumber:
+Buka terminal dan unduh kode sumber (ganti `<username-anda>` dan `<nama-repo-anda>` sesuai repository GitHub Anda):
 
 ```bash
-git clone https://github.com/Wasep27/register-menara-nobu.git
-cd register-menara-nobu
+# Contoh perintah klon dari repository GitHub milik Anda:
+git clone https://github.com/<username-github-anda>/<nama-repository-anda>.git
+cd <nama-repository-anda>
 ```
+
+> **Catatan jika Anda baru pertama kali membuat repository di GitHub:**  
+> Jika Anda memiliki salinan kode lokal dan ingin mengunggahnya ke akun GitHub pribadi/organisasi Anda:
+>
+> 1. Buat repository baru di [github.com/new](https://github.com/new) (misal: `buku-tamu-nobu`).
+> 2. Di terminal lokal proyek Anda, jalankan:
+>    ```bash
+>    git init
+>    git add .
+>    git commit -m "feat: inisialisasi sistem registrasi tamu digital"
+>    git branch -M main
+>    git remote add origin https://github.com/<username-github-anda>/<nama-repo-anda>.git
+>    git push -u origin main
+>    ```
+> 3. Jika repository sudah ada dan ingin memperbarui remote URL:
+>    ```bash
+>    git remote set-url origin https://github.com/<username-github-anda>/<nama-repo-anda>.git
+>    git push -u origin main
+>    ```
 
 ### Langkah 2.2: Pasang Dependencies
 
@@ -160,13 +180,13 @@ Aplikasi ini telah dikonfigurasi dengan `vercel.json` dan preset Nitro SSR agar 
 
 1. Buka [vercel.com](https://vercel.com) dan login menggunakan akun GitHub Anda.
 2. Klik tombol **Add New...** -> pilih **Project**.
-3. Cari repository **`register-menara-nobu`** dan klik tombol **Import**.
+3. Cari repository Anda (misal: **`<nama-repository-anda>`**) dan klik tombol **Import**.
 
 ### Langkah 4.2: Konfigurasi Proyek & Build
 
 Di halaman konfigurasi Vercel:
 
-- **Project Name**: `register-menara-nobu` (atau nama domain pilihan Anda)
+- **Project Name**: `<nama-proyek-anda>` (misal: `buku-tamu-menara-nobu`)
 - **Framework Preset**: Pilih **Vite** (atau biarkan default terdeteksi)
 - **Root Directory**: `./`
 - **Build Command**: `npm run build`
@@ -186,32 +206,54 @@ Di bagian accordion **Environment Variables**, tambahkan 3 kunci berikut:
 
 1. Klik tombol **Deploy**.
 2. Tunggu proses instalasi paket, kompilasi TypeScript, dan deploy Vercel selesai (~1 menit).
-3. Setelah berhasil, Anda akan mendapatkan URL domain aktif (misal: `https://register-menara-nobu.vercel.app`).
+3. Setelah berhasil, Anda akan mendapatkan URL domain aktif (misal: `https://<nama-proyek-anda>.vercel.app`).
 
 ### Langkah 4.5: Sinkronisasi URL di Supabase Authentication
 
 1. Kembali ke dashboard Supabase Anda -> **Authentication** -> **URL Configuration**.
 2. Pada kolom **Site URL**, masukkan URL produksi Vercel Anda:
    ```
-   https://register-menara-nobu.vercel.app
+   https://<nama-proyek-anda>.vercel.app
    ```
 3. Pada bagian **Redirect URLs**, tambahkan:
-   - `https://register-menara-nobu.vercel.app/**`
+   - `https://<nama-proyek-anda>.vercel.app/**`
    - `http://localhost:3000/**`
 4. Klik **Save**. Ini memastikan tautan email konfirmasi, notifikasi, dan reset password mengarahkan pengunjung kembali ke domain yang tepat.
 
 ---
 
-## 5. Fitur Pemindai Kamera QR Code (`/scan`)
+## 5. Audit & Best Practice: Fitur Pemindai Barcode / QR Code (`/scan`)
 
-- **Akses Kamera (WebRTC)**: Fitur pemindai QR (`/scan`) menggunakan Web API `navigator.mediaDevices.getUserMedia`.
-- **Protokol HTTPS Wajib**: Untuk alasan keamanan browser, kamera hanya dapat diakses melalui domain **`localhost`** (saat pengembangan) atau domain yang dilindungi **HTTPS** (Vercel secara default menyediakan sertifikat SSL/HTTPS gratis).
-- **Format QR Code yang Didukung**:
-  1. `MENARA-NOBU:VTR-YYMMDD-XXXX:Nama:Instansi` (QR Code badge tamu digital resmi).
-  2. Format teks kode pass `VTR-YYMMDD-XXXX`.
-  3. Undangan dan URL jadwal kunjungan.
-  4. Pengunggahan file gambar QR (jika perangkat tidak memiliki kamera atau izin dinonaktifkan).
-  5. Penginputan kode manual dengan pencarian real-time ke Supabase.
+Berdasarkan audit standar industri _Visitor Management System_ (VMS) dan keamanan gedung perkantoran:
+
+### 1. Siapa yang Menggunakan Fitur Scan Barcode / QR?
+
+Fitur ini dirancang memiliki **dua fungsi utama (Dual-Purpose)**:
+
+1. **Untuk Tamu Publik (Self Check-In & Verifikasi Undangan):**
+   - Tamu yang telah mendaftar sebelumnya (_pre-registered_) atau memiliki barcode/QR pass dapat memindai dari ponsel atau di tablet kios lobi.
+   - Mengurangi antrean di resepsionis pada jam-jam sibuk gedung.
+2. **Untuk Petugas Resepsionis & Petugas Keamanan (Security Gate / Turnstile):**
+   - Petugas memindai **Visitor Badge Pass** (lanyard atau stiker) tamu untuk memvalidasi:
+     - Apakah pass tersebut asli dan berstatus **AKTIF HARI INI**.
+     - Siapa staf/karyawan Bank Nobu penanggung jawab kunjungan.
+     - Departemen dan keperluan kunjungan tamu.
+   - Petugas dapat mengakses pemindai langsung dari **Dashboard Admin (`/admin/tamu`)** tanpa harus berpindah ke antarmuka publik.
+
+### 2. Best Practice Keamanan & Privasi Data Tamu (Zero-Trust):
+
+- **Isolasi Data Publik:** Pemanggilan scan publik menggunakan fungsi database tersimpan `check_guest_status(_code text)` yang berjalan di balik _Security Definer_ PostgreSQL dengan output terbatas.
+- **Tidak Membocorkan Database:** Pemindai publik **tidak memiliki akses `SELECT`** langsung ke tabel `guests`. Publik hanya bisa melihat data milik kode pass yang dipindai, sehingga pengunjung lain tidak dapat mengintip daftar nomor telepon atau identitas tamu gedung lainnya.
+- **Akses Kamera (WebRTC):** Fitur pemindai QR menggunakan Web API `navigator.mediaDevices.getUserMedia`.
+- **Protokol HTTPS Wajib:** Browser modern hanya mengizinkan akses kamera pada domain **`localhost`** atau domain yang terenkripsi **`HTTPS`** (Vercel otomatis menyediakan sertifikat SSL).
+
+### 3. Format QR Code yang Didukung:
+
+1. `MENARA-NOBU:VTR-YYMMDD-XXXX:Nama:Instansi` (Format resmi Kartu Akses Badge Tamu Menara Nobu).
+2. Kode teks serial `VTR-YYMMDD-XXXX`.
+3. URL tautan undangan digital kunjungan.
+4. Pengunggahan foto kartu/gambar QR dari galeri (opsi jika perangkat tidak memiliki kamera).
+5. Ketik kode pass manual secara instan dengan pencarian real-time.
 
 ---
 

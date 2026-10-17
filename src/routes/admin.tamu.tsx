@@ -2,7 +2,7 @@ import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { RefreshCw, RotateCcw, SearchX, UserPlus, Users, IdCard } from "lucide-react";
+import { RefreshCw, RotateCcw, SearchX, UserPlus, Users, IdCard, QrCode } from "lucide-react";
 import { supabase, type Employee, type Guest, type Purpose } from "@/lib/supabase";
 import { VisitorBadgeModal, type VisitorBadgeData } from "@/components/VisitorBadgeModal";
 
@@ -242,15 +242,25 @@ function Guests() {
           Reset filter
         </button>
       </div>
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">{count} kunjungan ditemukan</p>
-        <button
-          disabled={exporting || count === 0}
-          onClick={exportCsv}
-          className="min-h-10 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-all active:scale-95 disabled:opacity-50"
-        >
-          {exporting ? "Menyiapkan…" : "Ekspor CSV"}
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            to="/scan"
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-primary/30 bg-brand-soft px-4 text-xs sm:text-sm font-semibold text-primary transition-all hover:bg-primary hover:text-primary-foreground active:scale-95"
+            title="Buka pemindai barcode / QR pass tamu"
+          >
+            <QrCode className="h-4 w-4" />
+            <span>Pindai QR / Badge</span>
+          </Link>
+          <button
+            disabled={exporting || count === 0}
+            onClick={exportCsv}
+            className="min-h-10 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-all active:scale-95 disabled:opacity-50"
+          >
+            {exporting ? "Menyiapkan…" : "Ekspor CSV"}
+          </button>
+        </div>
       </div>
       <div className="overflow-x-auto rounded-xl bg-card">
         <table className="w-full text-sm">
@@ -432,64 +442,112 @@ function Guests() {
         <div
           role="dialog"
           aria-modal="true"
-          aria-label="Edit Tamu"
-          onKeyDown={(e) => e.key === "Escape" && setEdit(null)}
-          onClick={(e) => e.target === e.currentTarget && setEdit(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 p-4 backdrop-blur-sm"
+          aria-labelledby="modal-edit-tamu-title"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain"
         >
-          <div className="w-full max-w-md space-y-3 rounded-xl bg-card p-6">
-            <h2 className="font-semibold">Edit Tamu</h2>
-            <input
-              className={`${i} w-full`}
-              value={edit.name}
-              onChange={(e) => setEdit({ ...edit, name: e.target.value })}
-            />
-            <input
-              className={`${i} w-full`}
-              value={edit.institution}
-              onChange={(e) => setEdit({ ...edit, institution: e.target.value })}
-            />
-            <input
-              className={`${i} w-full`}
-              value={edit.phone}
-              onChange={(e) => setEdit({ ...edit, phone: e.target.value })}
-            />
-            <select
-              className={`${i} w-full`}
-              value={edit.visit_purpose_id ?? ""}
-              onChange={(e) => setEdit({ ...edit, visit_purpose_id: e.target.value })}
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+            onClick={() => setEdit(null)}
+          />
+          <div
+            className="relative w-full max-w-md space-y-3.5 rounded-2xl bg-card p-5 sm:p-6 shadow-2xl border border-border/80 z-10 max-h-[92dvh] overflow-y-auto my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2
+              id="modal-edit-tamu-title"
+              className="font-display text-lg font-bold text-foreground"
             >
-              {purps.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            <select
-              className={`${i} w-full`}
-              value={edit.employee_id ?? ""}
-              onChange={(e) => setEdit({ ...edit, employee_id: e.target.value })}
-            >
-              {emps.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            <textarea
-              className={`${i} w-full`}
-              value={edit.notes ?? ""}
-              onChange={(e) => setEdit({ ...edit, notes: e.target.value })}
-            />
-            <div className="flex justify-end gap-2">
-              <button className={i} onClick={() => setEdit(null)}>
+              Edit Data Tamu
+            </h2>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                  Nama Lengkap
+                </label>
+                <input
+                  className={`${i} w-full`}
+                  value={edit.name}
+                  onChange={(e) => setEdit({ ...edit, name: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                  Instansi / Perusahaan
+                </label>
+                <input
+                  className={`${i} w-full`}
+                  value={edit.institution}
+                  onChange={(e) => setEdit({ ...edit, institution: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                  Nomor Telepon / WhatsApp
+                </label>
+                <input
+                  className={`${i} w-full`}
+                  value={edit.phone}
+                  onChange={(e) => setEdit({ ...edit, phone: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                  Tujuan Kunjungan
+                </label>
+                <select
+                  className={`${i} w-full`}
+                  value={edit.visit_purpose_id ?? ""}
+                  onChange={(e) => setEdit({ ...edit, visit_purpose_id: e.target.value })}
+                >
+                  {purps.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                  Karyawan yang Dituju
+                </label>
+                <select
+                  className={`${i} w-full`}
+                  value={edit.employee_id ?? ""}
+                  onChange={(e) => setEdit({ ...edit, employee_id: e.target.value })}
+                >
+                  {emps.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                  Catatan Kunjungan
+                </label>
+                <textarea
+                  rows={2}
+                  className={`${i} w-full resize-none`}
+                  value={edit.notes ?? ""}
+                  onChange={(e) => setEdit({ ...edit, notes: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/60">
+              <button
+                type="button"
+                className="rounded-xl border border-border px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted transition-colors active:scale-95"
+                onClick={() => setEdit(null)}
+              >
                 Batal
               </button>
               <button
-                className="rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground"
+                type="button"
+                className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-sm hover:brightness-110 active:scale-95 transition-all"
                 onClick={save}
               >
-                Simpan
+                Simpan Perubahan
               </button>
             </div>
           </div>

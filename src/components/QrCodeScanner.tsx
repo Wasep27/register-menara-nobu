@@ -575,9 +575,9 @@ export function QrCodeScanner({ onSuccess, onClose, isModal = false }: QrCodeSca
         </div>
       ) : (
         /* CAMERA SCANNER VIEWPORT */
-        <div className="space-y-3.5">
-          {/* Camera Viewport Frame */}
-          <div className="relative aspect-square w-full max-w-[340px] mx-auto overflow-hidden rounded-2xl border-2 border-primary/30 bg-neutral-950 shadow-inner flex items-center justify-center">
+        <div className="space-y-3">
+          {/* Responsive Camera Viewport Frame (Compact & Adaptive Height) */}
+          <div className="relative h-44 xs:h-52 sm:h-64 w-full max-w-[320px] sm:max-w-[360px] mx-auto overflow-hidden rounded-2xl border-2 border-primary/30 bg-neutral-950 shadow-inner flex items-center justify-center">
             {/* Live Video Element */}
             <video
               ref={videoRef}
@@ -591,33 +591,35 @@ export function QrCodeScanner({ onSuccess, onClose, isModal = false }: QrCodeSca
 
             {/* Scanning Viewfinder Overlay Reticle */}
             {cameraState === "active" && (
-              <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-6">
-                {/* Viewfinder Target Box */}
-                <div className="relative h-48 w-48 sm:h-56 sm:w-56 rounded-2xl border-2 border-primary/60 shadow-[0_0_0_9999px_rgba(0,0,0,0.45)]">
+              <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-4">
+                {/* Viewfinder Target Box - Responsive Scaling */}
+                <div className="relative h-36 w-36 xs:h-40 xs:w-40 sm:h-48 sm:w-48 rounded-2xl border-2 border-primary/60 shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]">
                   {/* Glowing Corner Brackets */}
-                  <div className="absolute -top-1.5 -left-1.5 h-6 w-6 border-t-4 border-l-4 border-brand rounded-tl-lg" />
-                  <div className="absolute -top-1.5 -right-1.5 h-6 w-6 border-t-4 border-r-4 border-brand rounded-tr-lg" />
-                  <div className="absolute -bottom-1.5 -left-1.5 h-6 w-6 border-b-4 border-l-4 border-brand rounded-bl-lg" />
-                  <div className="absolute -bottom-1.5 -right-1.5 h-6 w-6 border-b-4 border-r-4 border-brand rounded-br-lg" />
+                  <div className="absolute -top-1.5 -left-1.5 h-5 w-5 border-t-3 border-l-3 border-brand rounded-tl-lg" />
+                  <div className="absolute -top-1.5 -right-1.5 h-5 w-5 border-t-3 border-r-3 border-brand rounded-tr-lg" />
+                  <div className="absolute -bottom-1.5 -left-1.5 h-5 w-5 border-b-3 border-l-3 border-brand rounded-bl-lg" />
+                  <div className="absolute -bottom-1.5 -right-1.5 h-5 w-5 border-b-3 border-r-3 border-brand rounded-br-lg" />
 
                   {/* Animated Sweeping Laser Line */}
                   <div className="absolute inset-x-2 h-0.5 bg-gradient-to-r from-transparent via-brand to-transparent shadow-[0_0_12px_#10D5A0] animate-[scanLaser_2s_easeInOut_infinite]" />
                 </div>
 
-                <p className="absolute bottom-3 text-center text-[11px] font-semibold text-white/90 drop-shadow-md">
-                  Arahkan kamera ke QR code undangan atau badge pass
+                <p className="absolute bottom-2 text-center text-[10px] sm:text-[11px] font-semibold text-white/90 drop-shadow-md px-2">
+                  Arahkan QR code pass tepat di dalam kotak
                 </p>
               </div>
             )}
 
             {/* Permission Denied / Error State */}
             {cameraState === "denied" && (
-              <div className="absolute inset-0 p-5 flex flex-col items-center justify-center text-center bg-card text-foreground">
-                <AlertCircle className="h-10 w-10 text-amber-500 mb-2" />
-                <h3 className="font-display text-sm font-bold">Izin Kamera Dinonaktifkan</h3>
-                <p className="mt-1 text-xs text-muted-foreground max-w-xs">
-                  Browser memerlukan izin kamera untuk memindai QR code. Silakan aktifkan izin di
-                  pengaturan browser atau gunakan opsi alternatif di bawah.
+              <div className="absolute inset-0 p-4 flex flex-col items-center justify-center text-center bg-card text-foreground">
+                <AlertCircle className="h-8 w-8 text-amber-500 mb-1.5" />
+                <h3 className="font-display text-xs sm:text-sm font-bold">
+                  Izin Kamera Dinonaktifkan
+                </h3>
+                <p className="mt-1 text-[11px] text-muted-foreground max-w-xs leading-tight">
+                  Browser memerlukan izin kamera. Anda dapat mengizinkannya di pengaturan browser
+                  atau unggah foto QR di bawah.
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2 justify-center">
                   <button
@@ -642,19 +644,19 @@ export function QrCodeScanner({ onSuccess, onClose, isModal = false }: QrCodeSca
 
             {/* Requesting / Loading State */}
             {cameraState === "requesting" && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-center bg-neutral-900 text-white">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-brand mb-2" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center bg-neutral-900 text-white p-4">
+                <div className="h-7 w-7 animate-spin rounded-full border-2 border-white/20 border-t-brand mb-2" />
                 <p className="text-xs font-semibold">Mengaktifkan kamera...</p>
               </div>
             )}
 
             {/* Unsupported Camera */}
             {cameraState === "unsupported" && (
-              <div className="absolute inset-0 p-5 flex flex-col items-center justify-center text-center bg-card text-foreground">
-                <Camera className="h-10 w-10 text-muted-foreground mb-2" />
-                <h3 className="font-display text-sm font-bold">Kamera Tidak Tersedia</h3>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Perangkat tidak memiliki kamera atau koneksi tidak aman (HTTPS diperlukan).
+              <div className="absolute inset-0 p-4 flex flex-col items-center justify-center text-center bg-card text-foreground">
+                <Camera className="h-8 w-8 text-muted-foreground mb-1.5" />
+                <h3 className="font-display text-xs sm:text-sm font-bold">Kamera Tidak Tersedia</h3>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Gunakan unggah foto QR code atau ketik kode pass secara manual.
                 </p>
                 <button
                   type="button"
@@ -668,37 +670,37 @@ export function QrCodeScanner({ onSuccess, onClose, isModal = false }: QrCodeSca
             )}
           </div>
 
-          {/* Camera Quick Controls */}
-          <div className="flex items-center justify-center gap-2">
-            {hasTorch && cameraState === "active" && (
+          {/* Camera Quick Controls: Responsive Grid (Never overflows/cuts off) */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full max-w-[360px] mx-auto pt-1">
+            {hasTorch && cameraState === "active" ? (
               <button
                 type="button"
                 onClick={toggleTorch}
                 title={torchOn ? "Matikan lampu senter" : "Nyalakan lampu senter"}
-                className={`inline-flex min-h-10 items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all active:scale-95 ${
+                className={`inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border px-2 py-2 text-xs font-semibold transition-all active:scale-95 shadow-2xs ${
                   torchOn
                     ? "border-amber-400 bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200"
                     : "border-border bg-card text-foreground hover:bg-muted"
                 }`}
               >
                 {torchOn ? (
-                  <FlashlightOff className="h-4 w-4" />
+                  <FlashlightOff className="h-4 w-4 shrink-0 text-amber-600" />
                 ) : (
-                  <Flashlight className="h-4 w-4" />
+                  <Flashlight className="h-4 w-4 shrink-0" />
                 )}
-                <span>{torchOn ? "Senter Nyala" : "Senter"}</span>
+                <span className="truncate">{torchOn ? "Senter Nyala" : "Senter"}</span>
               </button>
-            )}
+            ) : null}
 
             {cameraState === "active" && (
               <button
                 type="button"
                 onClick={toggleCameraFacing}
                 title="Ganti kamera depan / belakang"
-                className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted active:scale-95"
+                className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-2 py-2 text-xs font-semibold text-foreground hover:bg-muted active:scale-95 shadow-2xs"
               >
-                <SwitchCamera className="h-4 w-4" />
-                <span>Ganti Kamera</span>
+                <SwitchCamera className="h-4 w-4 shrink-0" />
+                <span className="truncate">Kamera</span>
               </button>
             )}
 
@@ -706,48 +708,48 @@ export function QrCodeScanner({ onSuccess, onClose, isModal = false }: QrCodeSca
               type="button"
               onClick={() => fileInputRef.current?.click()}
               title="Pindai dari galeri atau berkas foto"
-              className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted active:scale-95"
+              className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-2 py-2 text-xs font-semibold text-foreground hover:bg-muted active:scale-95 shadow-2xs"
             >
-              <Upload className="h-4 w-4 text-muted-foreground" />
-              <span>Unggah Foto</span>
+              <Upload className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="truncate">Unggah Foto</span>
             </button>
 
             <button
               type="button"
               onClick={() => setShowManualInput(!showManualInput)}
               title="Ketik kode pass secara manual"
-              className={`inline-flex min-h-10 items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all active:scale-95 ${
+              className={`inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border px-2 py-2 text-xs font-semibold transition-all active:scale-95 shadow-2xs ${
                 showManualInput
                   ? "border-primary/40 bg-brand-soft text-primary font-bold"
                   : "border-border bg-card text-foreground hover:bg-muted"
               }`}
             >
-              <Keyboard className="h-4 w-4 text-muted-foreground" />
-              <span>Ketik Kode</span>
+              <Keyboard className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="truncate">Ketik Kode</span>
             </button>
           </div>
 
-          {/* Manual Code Input Form (Toggled or Fallback) */}
+          {/* Manual Code Input Form (Toggled) */}
           {showManualInput && (
             <form
               onSubmit={handleManualSubmit}
-              className="fade-up rounded-2xl border border-border/80 bg-muted/40 p-3.5 space-y-2.5"
+              className="fade-up rounded-2xl border border-border/80 bg-muted/40 p-3 sm:p-3.5 space-y-2 mt-2"
             >
-              <p className="text-xs font-semibold text-foreground">
+              <p className="text-[11px] sm:text-xs font-semibold text-foreground">
                 Ketikkan nomor pass tamu (contoh: <code>VTR-261017-8A3F</code>):
               </p>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-2">
                 <input
                   type="text"
                   value={manualCode}
                   onChange={(e) => setManualCode(e.target.value.toUpperCase())}
                   placeholder="VTR-YYMMDD-XXXX"
-                  className="flex-1 min-h-11 rounded-xl border border-input bg-card px-3 text-xs font-mono font-bold tracking-wider text-foreground placeholder:text-muted-foreground focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
+                  className="flex-1 min-h-10 rounded-xl border border-input bg-card px-3 text-xs font-mono font-bold tracking-wider text-foreground placeholder:text-muted-foreground focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
                 />
                 <button
                   type="submit"
                   disabled={loadingSearch || !manualCode.trim()}
-                  className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95 disabled:opacity-50"
+                  className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95 disabled:opacity-50"
                 >
                   <Search className="h-4 w-4" />
                   <span>{loadingSearch ? "Mencari..." : "Periksa"}</span>
