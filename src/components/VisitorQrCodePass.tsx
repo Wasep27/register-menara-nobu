@@ -265,10 +265,10 @@ export function VisitorQrCodePass({
           )}
         </div>
 
-        {/* Bottom Actions */}
-        <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border/60">
-          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground font-medium">
-            <Clock className="h-3 w-3 text-primary" />
+        {/* Bottom Actions — Rapi & Responsif di Mobile */}
+        <div className="mt-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 pt-2.5 border-t border-border/60">
+          <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground font-medium">
+            <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
             Check-In: {displayTime} WIB · {displayDate}
           </span>
 
@@ -276,9 +276,9 @@ export function VisitorQrCodePass({
             type="button"
             disabled={isDownloading}
             onClick={handleDownload}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-primary/30 bg-card px-3 py-1.5 text-xs font-bold text-primary hover:bg-brand-soft transition-all active:scale-95 disabled:opacity-50 ml-auto shadow-2xs"
+            className="w-full sm:w-auto inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-primary/30 bg-card px-3.5 py-2 text-xs font-bold text-primary hover:bg-brand-soft transition-all active:scale-95 disabled:opacity-50 shadow-2xs"
           >
-            <Download className="h-3.5 w-3.5" />
+            <Download className="h-3.5 w-3.5 shrink-0" />
             <span>{isDownloading ? "Menyimpan..." : "Simpan Gambar Pass"}</span>
           </button>
         </div>

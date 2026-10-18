@@ -374,46 +374,46 @@ export function AdminFeedbackPage() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
           <button
             type="button"
             onClick={handleExportExcel}
             disabled={filteredRows.length === 0}
-            className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 sm:px-4 text-xs font-bold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95 disabled:opacity-60"
+            className="col-span-1 inline-flex min-h-11 sm:min-h-10 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 sm:px-4 text-xs sm:text-sm font-bold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95 disabled:opacity-60"
             title="Unduh data feedback ke Excel (.xlsx)"
           >
-            <FileSpreadsheet className="h-4 w-4" />
-            <span>Excel (.xlsx)</span>
+            <FileSpreadsheet className="h-4 w-4 shrink-0" />
+            <span className="truncate">Excel (.xlsx)</span>
           </button>
           <button
             type="button"
             onClick={handleExportPdf}
             disabled={filteredRows.length === 0}
-            className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-rose-600 px-3.5 sm:px-4 text-xs font-bold text-white shadow-sm transition-all hover:bg-rose-700 active:scale-95 disabled:opacity-60"
+            className="col-span-1 inline-flex min-h-11 sm:min-h-10 items-center justify-center gap-1.5 rounded-xl bg-rose-600 px-3 sm:px-4 text-xs sm:text-sm font-bold text-white shadow-sm transition-all hover:bg-rose-700 active:scale-95 disabled:opacity-60"
             title="Unduh dokumen PDF laporan feedback"
           >
-            <FileText className="h-4 w-4" />
-            <span>PDF</span>
+            <FileText className="h-4 w-4 shrink-0" />
+            <span className="truncate">Unduh PDF</span>
           </button>
           <button
             type="button"
             onClick={handleExportCsv}
             disabled={filteredRows.length === 0}
-            className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-border bg-card px-3 text-xs font-medium text-foreground shadow-sm transition-all hover:bg-muted active:scale-95 disabled:opacity-60"
+            className="col-span-1 inline-flex min-h-11 sm:min-h-10 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 text-xs sm:text-sm font-medium text-foreground shadow-sm transition-all hover:bg-muted active:scale-95 disabled:opacity-60"
             title="Unduh format CSV"
           >
-            <Download className="h-3.5 w-3.5 text-muted-foreground" />
+            <Download className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             <span>CSV</span>
           </button>
           <button
             onClick={load}
             disabled={loading}
-            className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95 disabled:opacity-60"
+            className="col-span-1 inline-flex min-h-11 sm:min-h-10 items-center justify-center gap-2 rounded-xl bg-primary px-3 sm:px-4 text-xs sm:text-sm font-bold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95 disabled:opacity-60"
           >
             <RefreshCw
-              className={`h-3.5 w-3.5 ${loading ? "animate-spin text-primary-foreground" : ""}`}
+              className={`h-3.5 w-3.5 shrink-0 ${loading ? "animate-spin text-primary-foreground" : ""}`}
             />
-            Segarkan
+            <span>Segarkan</span>
           </button>
         </div>
       </div>

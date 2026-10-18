@@ -429,21 +429,21 @@ export function RegistrationSuccess({ data, onReset }: RegistrationSuccessProps)
           </AnimatePresence>
         </section>
 
-        {/* BOTTOM ACTION CONTROLS (Tamu Baru, Cetak Struk, Countdown) */}
+        {/* BOTTOM ACTION CONTROLS (Tamu Baru, Cetak Struk, Countdown) — Responsif Rapi di Mobile */}
         <div className="mt-7 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
               onClick={printPass}
-              className="inline-flex min-h-11 flex-1 sm:flex-initial items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 text-xs font-semibold text-foreground shadow-xs transition-colors hover:bg-muted active:scale-95"
+              className="inline-flex min-h-12 flex-1 sm:flex-initial items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 text-xs sm:text-sm font-semibold text-foreground shadow-xs transition-colors hover:bg-muted active:scale-95"
               title="Cetak struk ringkas halaman"
             >
-              <Printer className="h-4 w-4 text-muted-foreground" />
+              <Printer className="h-4 w-4 shrink-0 text-muted-foreground" />
               <span>Cetak Struk</span>
             </button>
 
             <button
               onClick={() => setIsPaused(!isPaused)}
-              className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 text-xs text-muted-foreground hover:bg-muted active:scale-95"
+              className="inline-flex min-h-12 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3.5 text-xs text-muted-foreground hover:bg-muted active:scale-95"
               title={isPaused ? "Lanjutkan timer otomatis" : "Jeda timer otomatis"}
             >
               {isPaused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
@@ -455,7 +455,7 @@ export function RegistrationSuccess({ data, onReset }: RegistrationSuccessProps)
             onClick={onReset}
             className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-foreground px-6 font-display text-xs sm:text-sm font-bold text-background shadow-soft transition-all hover:bg-foreground/90 active:scale-95"
           >
-            <RotateCcw className="h-4 w-4" />
+            <RotateCcw className="h-4 w-4 shrink-0" />
             <span>Selesai / Registrasi Baru</span>
             {!isPaused && countdown > 0 && (
               <span className="ml-1 rounded-full bg-background/20 px-2 py-0.5 text-[11px] font-mono">

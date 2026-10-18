@@ -480,34 +480,34 @@ export const VisitorBadgeModal = React.memo(function VisitorBadgeModal({
             Tutup
           </button>
 
-          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
+          <div className="grid grid-cols-3 sm:flex sm:flex-nowrap items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
             <button
               type="button"
               onClick={handleDownloadPdf}
-              className="flex-1 sm:flex-initial inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-rose-600 px-3 sm:px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-rose-700 active:scale-95 whitespace-nowrap"
+              className="col-span-1 sm:flex-initial inline-flex min-h-11 sm:min-h-10 items-center justify-center gap-1 sm:gap-1.5 rounded-xl bg-rose-600 px-2 sm:px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-rose-700 active:scale-95"
               title="Unduh kartu badge pass tamu dalam dokumen PDF resmi siap cetak"
             >
               <FileText className="h-4 w-4 shrink-0" />
-              <span>Unduh PDF</span>
+              <span className="truncate">PDF</span>
             </button>
 
             <button
               type="button"
               disabled={downloading}
               onClick={handleDownloadImage}
-              className="flex-1 sm:flex-initial inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-primary/40 bg-brand-soft px-3 sm:px-3.5 py-2 text-xs font-bold text-primary transition-all hover:bg-brand-soft/80 active:scale-95 disabled:opacity-50 whitespace-nowrap"
+              className="col-span-1 sm:flex-initial inline-flex min-h-11 sm:min-h-10 items-center justify-center gap-1 sm:gap-1.5 rounded-xl border border-primary/40 bg-brand-soft px-2 sm:px-3.5 py-2 text-xs font-bold text-primary transition-all hover:bg-brand-soft/80 active:scale-95 disabled:opacity-50"
             >
               <Download className="h-4 w-4 shrink-0" />
-              <span>{downloading ? "Mengunduh…" : "Unduh PNG"}</span>
+              <span className="truncate">{downloading ? "…" : "PNG"}</span>
             </button>
 
             <button
               type="button"
               onClick={handlePrint}
-              className="flex-1 sm:flex-initial inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 sm:px-4 py-2 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95 whitespace-nowrap"
+              className="col-span-1 sm:flex-initial inline-flex min-h-11 sm:min-h-10 items-center justify-center gap-1 sm:gap-1.5 rounded-xl bg-primary px-2 sm:px-4 py-2 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95"
             >
               <Printer className="h-4 w-4 shrink-0" />
-              <span>Cetak (Print)</span>
+              <span className="truncate">Cetak</span>
             </button>
           </div>
         </div>

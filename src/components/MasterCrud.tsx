@@ -301,10 +301,10 @@ export function MasterCrud({
         {/* Action button - only visible if user has add permission (Admin & Staff) */}
         {canAdd && (
           <button
-            className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs sm:text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95 shrink-0"
+            className="w-full sm:w-auto inline-flex min-h-11 sm:min-h-10 items-center justify-center gap-1.5 rounded-xl sm:rounded-full bg-primary px-4 py-2.5 sm:py-2 text-xs sm:text-sm font-bold sm:font-semibold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95 shrink-0"
             onClick={() => openForm()}
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-4 w-4 shrink-0" />
             <span>Tambah {label}</span>
           </button>
         )}
@@ -750,17 +750,17 @@ export function MasterCrud({
               </div>
             )}
 
-            <DialogFooter className="gap-2 pt-2">
+            <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
               <button
                 type="button"
-                className="min-h-10 rounded-lg border border-input px-4 text-xs font-medium"
+                className="w-full sm:w-auto min-h-11 sm:min-h-10 rounded-xl sm:rounded-lg border border-input px-4 text-xs font-semibold sm:font-medium text-foreground hover:bg-muted transition-colors active:scale-95"
                 onClick={() => setFormOpen(false)}
                 disabled={saving}
               >
                 Batal
               </button>
               <button
-                className="min-h-10 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground hover:brightness-110 active:scale-95"
+                className="w-full sm:w-auto min-h-11 sm:min-h-10 rounded-xl sm:rounded-lg bg-primary px-4 text-xs font-bold sm:font-semibold text-primary-foreground hover:brightness-110 active:scale-95 transition-all shadow-sm"
                 disabled={saving}
               >
                 {saving ? "Menyimpan…" : "Simpan Data"}
@@ -809,21 +809,21 @@ export function MasterCrud({
               </p>
             </div>
 
-            <DialogFooter className="gap-2">
+            <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
               <button
                 type="button"
                 disabled={accountLoading}
                 onClick={() => setAccountTarget(null)}
-                className="min-h-9 rounded-lg border border-input px-3.5 text-xs font-medium"
+                className="w-full sm:w-auto min-h-11 sm:min-h-10 rounded-xl sm:rounded-lg border border-input px-4 text-xs font-semibold sm:font-medium text-foreground hover:bg-muted transition-colors active:scale-95"
               >
                 Batal
               </button>
               <button
                 type="submit"
                 disabled={accountLoading}
-                className="min-h-9 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground hover:brightness-110 active:scale-95 inline-flex items-center gap-1.5"
+                className="w-full sm:w-auto min-h-11 sm:min-h-10 rounded-xl sm:rounded-lg bg-primary px-4 text-xs font-bold sm:font-semibold text-primary-foreground hover:brightness-110 active:scale-95 inline-flex items-center justify-center gap-1.5 transition-all shadow-sm"
               >
-                {accountLoading && <Loader2 className="h-3 w-3 animate-spin" />}
+                {accountLoading && <Loader2 className="h-3 w-3 animate-spin shrink-0" />}
                 <span>
                   {accountLoading
                     ? "Memproses…"

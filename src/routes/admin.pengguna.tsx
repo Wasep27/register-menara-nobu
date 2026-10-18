@@ -812,21 +812,21 @@ function UsersPage() {
               </div>
             </div>
 
-            <DialogFooter className="gap-2 pt-2 border-t border-border/60">
+            <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2 border-t border-border/60">
               <button
                 type="button"
                 disabled={createLoading}
                 onClick={() => setCreateOpen(false)}
-                className="rounded-xl border border-input px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted"
+                className="w-full sm:w-auto min-h-11 sm:min-h-10 rounded-xl border border-input px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted transition-colors active:scale-95"
               >
                 Batal
               </button>
               <button
                 type="submit"
                 disabled={createLoading}
-                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-sm hover:brightness-110 active:scale-95 disabled:opacity-50"
+                className="w-full sm:w-auto inline-flex min-h-11 sm:min-h-10 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-sm hover:brightness-110 active:scale-95 disabled:opacity-50 transition-all"
               >
-                {createLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                {createLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" /> : null}
                 <span>{createLoading ? "Membuat Akun..." : "Buat Akun Sekarang"}</span>
               </button>
             </DialogFooter>
@@ -868,21 +868,21 @@ function UsersPage() {
               />
             </div>
 
-            <DialogFooter className="gap-2 pt-2 border-t border-border/60">
+            <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2 border-t border-border/60">
               <button
                 type="button"
                 disabled={resetLoading}
                 onClick={() => setResetTarget(null)}
-                className="rounded-xl border border-input px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted"
+                className="w-full sm:w-auto min-h-11 sm:min-h-10 rounded-xl border border-input px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted transition-colors active:scale-95"
               >
                 Batal
               </button>
               <button
                 type="submit"
                 disabled={resetLoading}
-                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-sm hover:brightness-110 active:scale-95 disabled:opacity-50"
+                className="w-full sm:w-auto inline-flex min-h-11 sm:min-h-10 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-sm hover:brightness-110 active:scale-95 disabled:opacity-50 transition-all"
               >
-                {resetLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                {resetLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" /> : null}
                 <span>{resetLoading ? "Menyimpan..." : "Simpan Password Baru"}</span>
               </button>
             </DialogFooter>

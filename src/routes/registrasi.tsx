@@ -656,18 +656,21 @@ function GuestForm() {
             </p>
           )}
 
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-sm text-muted-foreground" aria-live="polite">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
+            <span
+              className="text-xs sm:text-sm text-muted-foreground order-2 sm:order-1 text-center sm:text-left"
+              aria-live="polite"
+            >
               {statusText}
             </span>
             <button
               type="submit"
               disabled={submitting}
-              className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-full bg-primary px-7 font-semibold text-primary-foreground shadow-soft transition-all hover:-translate-y-0.5 hover:brightness-110 active:scale-95 disabled:opacity-75"
+              className="w-full sm:w-auto order-1 sm:order-2 inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl sm:rounded-full bg-primary px-8 text-sm font-bold text-primary-foreground shadow-soft transition-all hover:brightness-110 active:scale-95 disabled:opacity-75"
             >
               {submitting && (
                 <svg
-                  className="h-4 w-4 animate-spin text-primary-foreground"
+                  className="h-4 w-4 animate-spin text-primary-foreground shrink-0"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
@@ -688,7 +691,9 @@ function GuestForm() {
                   />
                 </svg>
               )}
-              {submitting ? "Mengirim…" : submitErr ? "Coba lagi" : "Kirim"}
+              <span>
+                {submitting ? "Mengirim Data…" : submitErr ? "Coba Lagi" : "Kirim Formulir"}
+              </span>
             </button>
           </div>
         </form>

@@ -598,49 +598,49 @@ export function AdminActivityLogPage() {
           </p>
         </div>
 
-        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
           <button
             onClick={loadActivities}
             disabled={loading}
-            className="flex-1 sm:flex-initial inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-primary px-3.5 sm:px-4 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95 disabled:opacity-60 whitespace-nowrap"
+            className="col-span-1 inline-flex min-h-11 sm:min-h-10 items-center justify-center gap-2 rounded-xl bg-primary px-3 sm:px-4 text-xs sm:text-sm font-bold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95 disabled:opacity-60"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-3.5 w-3.5 shrink-0 ${loading ? "animate-spin" : ""}`} />
             <span>Segarkan</span>
           </button>
           <button
             type="button"
             onClick={exportLogExcel}
-            className="flex-1 sm:flex-initial inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 sm:px-4 text-xs font-bold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95 whitespace-nowrap"
+            className="col-span-1 inline-flex min-h-11 sm:min-h-10 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 sm:px-4 text-xs sm:text-sm font-bold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95"
             title="Unduh log aktivitas ke format Excel (.xlsx)"
           >
-            <FileSpreadsheet className="h-4 w-4" />
-            <span>Excel (.xlsx)</span>
+            <FileSpreadsheet className="h-4 w-4 shrink-0" />
+            <span className="truncate">Excel (.xlsx)</span>
           </button>
           <button
             type="button"
             onClick={exportLogPdf}
-            className="flex-1 sm:flex-initial inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-rose-600 px-3.5 sm:px-4 text-xs font-bold text-white shadow-sm transition-all hover:bg-rose-700 active:scale-95 whitespace-nowrap"
+            className="col-span-1 inline-flex min-h-11 sm:min-h-10 items-center justify-center gap-1.5 rounded-xl bg-rose-600 px-3 sm:px-4 text-xs sm:text-sm font-bold text-white shadow-sm transition-all hover:bg-rose-700 active:scale-95"
             title="Unduh dokumen PDF log aktivitas resmi"
           >
-            <FileText className="h-4 w-4" />
-            <span>PDF</span>
+            <FileText className="h-4 w-4 shrink-0" />
+            <span className="truncate">Unduh PDF</span>
           </button>
           <button
             type="button"
             onClick={exportLogCsv}
-            className="flex-1 sm:flex-initial inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 text-xs font-medium text-foreground shadow-sm transition-all hover:bg-muted active:scale-95 whitespace-nowrap"
+            className="col-span-1 inline-flex min-h-11 sm:min-h-10 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 text-xs sm:text-sm font-medium text-foreground shadow-sm transition-all hover:bg-muted active:scale-95"
             title="Unduh format CSV alternatif"
           >
-            <Download className="h-3.5 w-3.5 text-muted-foreground" />
+            <Download className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             <span>CSV</span>
           </button>
           {isAdmin && logs.length > 0 && (
             <button
               onClick={() => setToClearLogs(true)}
               title="Bersihkan catatan riwayat log aktivitas"
-              className="w-full sm:w-auto inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-destructive/30 bg-destructive/10 px-3.5 text-xs font-semibold text-destructive shadow-sm transition-all hover:bg-destructive hover:text-destructive-foreground active:scale-95 shrink-0 whitespace-nowrap"
+              className="col-span-2 sm:col-span-1 inline-flex min-h-11 sm:min-h-10 items-center justify-center gap-1.5 rounded-xl border border-destructive/30 bg-destructive/10 px-3.5 text-xs sm:text-sm font-semibold text-destructive shadow-sm transition-all hover:bg-destructive hover:text-destructive-foreground active:scale-95"
             >
-              <Trash2 className="h-3.5 w-3.5" />
+              <Trash2 className="h-3.5 w-3.5 shrink-0" />
               <span>Bersihkan Log</span>
             </button>
           )}

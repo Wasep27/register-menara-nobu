@@ -254,45 +254,47 @@ function Report() {
           </div>
         )}
 
-        {/* Tombol Ekspor & Cetak saat Data Ditampilkan */}
+        {/* Tombol Ekspor & Cetak saat Data Ditampilkan — Rapi & Responsif di Mobile */}
         {rows && (
-          <div className="mt-4 flex flex-wrap items-center justify-end gap-2 border-t border-border pt-4">
-            <button
-              type="button"
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95 sm:text-sm"
-              onClick={handleExportExcel}
-              title="Unduh laporan dalam format spreadsheet Excel (.xlsx) rapih dengan kolom otomatis"
-            >
-              <FileSpreadsheet className="h-4 w-4" />
-              <span>Ekspor Excel (.xlsx)</span>
-            </button>
-            <button
-              type="button"
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-rose-700 active:scale-95 sm:text-sm"
-              onClick={handleExportPdf}
-              title="Unduh dokumen laporan PDF resmi Menara Nobu bergaris rapih"
-            >
-              <FileText className="h-4 w-4" />
-              <span>Unduh PDF (.pdf)</span>
-            </button>
-            <button
-              type="button"
-              className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-border bg-background px-3.5 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-muted active:scale-95 sm:text-sm"
-              onClick={handleExportCsv}
-              title="Unduh data dalam format CSV teks"
-            >
-              <Download className="h-4 w-4 text-muted-foreground" />
-              <span>CSV</span>
-            </button>
-            <button
-              type="button"
-              className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-border bg-background px-3.5 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-muted active:scale-95 sm:text-sm"
-              onClick={() => window.print()}
-              title="Cetak langsung menggunakan dialog printer peramban"
-            >
-              <Printer className="h-4 w-4 text-muted-foreground" />
-              <span>Cetak</span>
-            </button>
+          <div className="mt-4 border-t border-border pt-4">
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end gap-2">
+              <button
+                type="button"
+                className="col-span-1 inline-flex min-h-11 sm:min-h-10 items-center justify-center gap-1.5 sm:gap-2 rounded-xl bg-emerald-600 px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95"
+                onClick={handleExportExcel}
+                title="Unduh laporan dalam format spreadsheet Excel (.xlsx) rapih dengan kolom otomatis"
+              >
+                <FileSpreadsheet className="h-4 w-4 shrink-0" />
+                <span className="truncate">Excel (.xlsx)</span>
+              </button>
+              <button
+                type="button"
+                className="col-span-1 inline-flex min-h-11 sm:min-h-10 items-center justify-center gap-1.5 sm:gap-2 rounded-xl bg-rose-600 px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold text-white shadow-sm transition-all hover:bg-rose-700 active:scale-95"
+                onClick={handleExportPdf}
+                title="Unduh dokumen laporan PDF resmi Menara Nobu bergaris rapih"
+              >
+                <FileText className="h-4 w-4 shrink-0" />
+                <span className="truncate">Unduh PDF</span>
+              </button>
+              <button
+                type="button"
+                className="col-span-1 inline-flex min-h-11 sm:min-h-10 items-center justify-center gap-1.5 rounded-xl border border-border bg-background px-3 sm:px-3.5 py-2 text-xs sm:text-sm font-semibold text-foreground transition-colors hover:bg-muted active:scale-95"
+                onClick={handleExportCsv}
+                title="Unduh data dalam format CSV teks"
+              >
+                <Download className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span>CSV</span>
+              </button>
+              <button
+                type="button"
+                className="col-span-1 inline-flex min-h-11 sm:min-h-10 items-center justify-center gap-1.5 rounded-xl border border-border bg-background px-3 sm:px-3.5 py-2 text-xs sm:text-sm font-semibold text-foreground transition-colors hover:bg-muted active:scale-95"
+                onClick={() => window.print()}
+                title="Cetak langsung menggunakan dialog printer peramban"
+              >
+                <Printer className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span>Cetak</span>
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -348,34 +350,35 @@ function Report() {
               </div>
             </div>
 
-            {/* Pilihan Pintas Cepat (Quick Presets) */}
-            <div className="mt-6 flex flex-wrap justify-center gap-2">
+            {/* Pilihan Pintas Cepat (Quick Presets) — Responsif Rapi di Mobile */}
+            <div className="mt-6 grid grid-cols-2 sm:flex sm:flex-wrap justify-center gap-2 w-full sm:w-auto">
               <button
                 onClick={() => loadRange(today, today)}
-                className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-border bg-background px-4 py-1.5 text-xs font-semibold text-foreground shadow-sm transition-all hover:bg-brand-soft hover:text-primary active:scale-95"
+                className="col-span-1 inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full border border-border bg-background px-3 sm:px-4 py-1.5 text-xs font-semibold text-foreground shadow-sm transition-all hover:bg-brand-soft hover:text-primary active:scale-95"
               >
-                <CalendarRange className="h-3.5 w-3.5 text-primary" />
-                Hari Ini
+                <CalendarRange className="h-3.5 w-3.5 text-primary shrink-0" />
+                <span>Hari Ini</span>
               </button>
               <button
                 onClick={() => applyPreset(7)}
-                className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-border bg-background px-4 py-1.5 text-xs font-semibold text-foreground shadow-sm transition-all hover:bg-brand-soft hover:text-primary active:scale-95"
+                className="col-span-1 inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full border border-border bg-background px-3 sm:px-4 py-1.5 text-xs font-semibold text-foreground shadow-sm transition-all hover:bg-brand-soft hover:text-primary active:scale-95"
               >
-                <CalendarRange className="h-3.5 w-3.5 text-primary" />7 Hari Terakhir
+                <CalendarRange className="h-3.5 w-3.5 text-primary shrink-0" />
+                <span>7 Hari Terakhir</span>
               </button>
               <button
                 onClick={() => applyPreset(30)}
-                className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-primary px-4 py-1.5 text-xs font-bold text-primary-foreground shadow-soft transition-transform hover:brightness-110 active:scale-95"
+                className="col-span-1 inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-primary px-3 sm:px-4 py-1.5 text-xs font-bold text-primary-foreground shadow-soft transition-transform hover:brightness-110 active:scale-95"
               >
-                <CalendarRange className="h-3.5 w-3.5" />
-                30 Hari Terakhir
+                <CalendarRange className="h-3.5 w-3.5 shrink-0" />
+                <span>30 Hari Terakhir</span>
               </button>
               <button
                 onClick={applyCurrentMonth}
-                className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-border bg-background px-4 py-1.5 text-xs font-semibold text-foreground shadow-sm transition-all hover:bg-brand-soft hover:text-primary active:scale-95"
+                className="col-span-1 inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full border border-border bg-background px-3 sm:px-4 py-1.5 text-xs font-semibold text-foreground shadow-sm transition-all hover:bg-brand-soft hover:text-primary active:scale-95"
               >
-                <CalendarRange className="h-3.5 w-3.5 text-primary" />
-                Bulan Ini
+                <CalendarRange className="h-3.5 w-3.5 text-primary shrink-0" />
+                <span>Bulan Ini</span>
               </button>
             </div>
           </div>

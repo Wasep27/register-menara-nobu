@@ -74,12 +74,12 @@ function AdminScanPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <Link
             to="/admin/tamu"
-            className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-border bg-card px-4 text-xs font-bold text-foreground shadow-2xs hover:bg-muted active:scale-95 transition-all"
+            className="w-full sm:w-auto inline-flex min-h-11 sm:min-h-10 items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 text-xs sm:text-sm font-bold text-foreground shadow-2xs hover:bg-muted active:scale-95 transition-all"
           >
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="h-4 w-4 shrink-0 text-muted-foreground" />
             <span>Lihat Buku Tamu</span>
           </Link>
         </div>

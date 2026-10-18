@@ -422,55 +422,61 @@ function Guests() {
           Reset filter
         </button>
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">{count} kunjungan ditemukan</p>
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <p className="text-xs sm:text-sm font-medium text-muted-foreground">
+          {count} kunjungan ditemukan
+        </p>
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center gap-2 w-full sm:w-auto">
           <Link
             to="/admin/scan"
-            className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-primary/30 bg-brand-soft px-3.5 sm:px-4 text-xs sm:text-sm font-semibold text-primary transition-all hover:bg-primary hover:text-primary-foreground active:scale-95"
+            className="col-span-1 inline-flex min-h-11 sm:min-h-10 items-center justify-center gap-1.5 rounded-xl border border-primary/30 bg-brand-soft px-3 sm:px-4 text-xs sm:text-sm font-semibold text-primary transition-all hover:bg-primary hover:text-primary-foreground active:scale-95"
             title="Buka pemindai barcode / QR pass tamu"
           >
-            <QrCode className="h-4 w-4" />
-            <span>Pindai QR</span>
+            <QrCode className="h-4 w-4 shrink-0" />
+            <span className="truncate">Pindai QR</span>
           </Link>
           <button
             type="button"
             disabled={Boolean(exporting) || count === 0}
+            onClick={exportDailyLog}
+            className="col-span-1 inline-flex min-h-11 sm:min-h-10 items-center justify-center gap-1.5 rounded-xl border border-sky-500/40 bg-sky-50 dark:bg-sky-950/40 px-3 sm:px-3.5 text-xs sm:text-sm font-semibold text-sky-700 dark:text-sky-300 transition-all hover:bg-sky-100 dark:hover:bg-sky-900/60 active:scale-95 disabled:opacity-50"
+            title="Unduh Lembar Log Kunjungan Harian Pos Keamanan lengkap dengan kolom paraf satpam & pengesahan"
+          >
+            <ShieldCheck className="h-4 w-4 shrink-0 text-sky-600 dark:text-sky-400" />
+            <span className="truncate">
+              {exporting === "daily-log" ? "Menyiapkan…" : "Log Harian"}
+            </span>
+          </button>
+          <button
+            type="button"
+            disabled={Boolean(exporting) || count === 0}
             onClick={exportExcel}
-            className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 sm:px-4 text-xs sm:text-sm font-bold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95 disabled:opacity-50"
+            className="col-span-1 inline-flex min-h-11 sm:min-h-10 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 sm:px-4 text-xs sm:text-sm font-bold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95 disabled:opacity-50"
             title="Unduh data buku tamu ke spreadsheet Excel (.xlsx)"
           >
-            <FileSpreadsheet className="h-4 w-4" />
-            <span>{exporting === "excel" ? "Menyiapkan…" : "Excel (.xlsx)"}</span>
+            <FileSpreadsheet className="h-4 w-4 shrink-0" />
+            <span className="truncate">
+              {exporting === "excel" ? "Menyiapkan…" : "Excel (.xlsx)"}
+            </span>
           </button>
           <button
             type="button"
             disabled={Boolean(exporting) || count === 0}
             onClick={exportPdf}
-            className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-rose-600 px-3.5 sm:px-4 text-xs sm:text-sm font-bold text-white shadow-sm transition-all hover:bg-rose-700 active:scale-95 disabled:opacity-50"
+            className="col-span-1 inline-flex min-h-11 sm:min-h-10 items-center justify-center gap-1.5 rounded-xl bg-rose-600 px-3 sm:px-4 text-xs sm:text-sm font-bold text-white shadow-sm transition-all hover:bg-rose-700 active:scale-95 disabled:opacity-50"
             title="Unduh laporan PDF bergaris rapih dengan kop Menara Nobu"
           >
-            <FileText className="h-4 w-4" />
-            <span>{exporting === "pdf" ? "Menyiapkan…" : "PDF"}</span>
-          </button>
-          <button
-            type="button"
-            disabled={Boolean(exporting) || count === 0}
-            onClick={exportDailyLog}
-            className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-sky-500/40 bg-sky-50 dark:bg-sky-950/40 px-3 sm:px-3.5 text-xs sm:text-sm font-semibold text-sky-700 dark:text-sky-300 transition-all hover:bg-sky-100 dark:hover:bg-sky-900/60 active:scale-95 disabled:opacity-50"
-            title="Unduh Lembar Log Kunjungan Harian Pos Keamanan lengkap dengan kolom paraf satpam & pengesahan"
-          >
-            <ShieldCheck className="h-4 w-4 text-sky-600 dark:text-sky-400" />
-            <span>{exporting === "daily-log" ? "Menyiapkan…" : "Log Harian PDF"}</span>
+            <FileText className="h-4 w-4 shrink-0" />
+            <span className="truncate">{exporting === "pdf" ? "Menyiapkan…" : "PDF"}</span>
           </button>
           <button
             type="button"
             disabled={Boolean(exporting) || count === 0}
             onClick={exportCsv}
-            className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-border bg-card px-3 text-xs sm:text-sm font-medium text-foreground transition-all hover:bg-muted active:scale-95 disabled:opacity-50"
+            className="col-span-2 sm:col-span-1 inline-flex min-h-11 sm:min-h-10 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 text-xs sm:text-sm font-medium text-foreground transition-all hover:bg-muted active:scale-95 disabled:opacity-50"
             title="Unduh format CSV alternatif"
           >
-            <Download className="h-3.5 w-3.5 text-muted-foreground" />
+            <Download className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             <span>CSV</span>
           </button>
         </div>
@@ -750,20 +756,27 @@ function Guests() {
           </tbody>
         </table>
       </div>
-      <div className="flex items-center gap-3 text-sm">
-        <button disabled={page === 0} className={i} onClick={() => setPage(page - 1)}>
-          Sebelumnya
-        </button>
-        <span>
-          Halaman {page + 1} dari {Math.max(1, Math.ceil(count / PAGE))}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-sm py-2">
+        <span className="text-xs sm:text-sm text-muted-foreground order-2 sm:order-1">
+          Halaman <strong className="text-foreground">{page + 1}</strong> dari{" "}
+          {Math.max(1, Math.ceil(count / PAGE))} ({count} total tamu)
         </span>
-        <button
-          disabled={(page + 1) * PAGE >= count}
-          className={i}
-          onClick={() => setPage(page + 1)}
-        >
-          Berikutnya
-        </button>
+        <div className="flex items-center gap-2 w-full sm:w-auto order-1 sm:order-2">
+          <button
+            disabled={page === 0}
+            className={`${i} flex-1 sm:flex-initial text-center justify-center min-h-10 disabled:opacity-40`}
+            onClick={() => setPage(page - 1)}
+          >
+            Sebelumnya
+          </button>
+          <button
+            disabled={(page + 1) * PAGE >= count}
+            className={`${i} flex-1 sm:flex-initial text-center justify-center min-h-10 disabled:opacity-40`}
+            onClick={() => setPage(page + 1)}
+          >
+            Berikutnya
+          </button>
+        </div>
       </div>
 
       {edit &&
