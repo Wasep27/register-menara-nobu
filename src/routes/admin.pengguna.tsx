@@ -16,9 +16,12 @@ import {
   Lock,
   RefreshCw,
   Search,
+  Pencil,
+  User,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { PasswordInput } from "@/components/ui/password-input";
+import { adminUpdateUserName } from "@/lib/profile-utils";
 import {
   Dialog,
   DialogContent,
@@ -90,6 +93,11 @@ function UsersPage() {
   const [createPassword, setCreatePassword] = useState("");
   const [createRole, setCreateRole] = useState<AppRole>("staff");
   const [createLoading, setCreateLoading] = useState(false);
+
+  // State Dialog Edit Nama Pengguna
+  const [editTarget, setEditTarget] = useState<Row | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
 
   // State Dialog Reset Password
   const [resetTarget, setResetTarget] = useState<Row | null>(null);
@@ -262,6 +270,41 @@ function UsersPage() {
       toast.error((e as Error).message);
     } finally {
       setDeleteLoading(false);
+    }
+  };
+
+  const handleOpenEdit = (user: Row) => {
+    setEditTarget(user);
+    setEditName(user.full_name || "");
+  };
+
+  const handleSaveEditName = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editTarget) return;
+    const trimmed = editName.trim();
+    if (!trimmed) {
+      toast.error("Nama lengkap tidak boleh kosong");
+      return;
+    }
+
+    setEditLoading(true);
+    try {
+      const res = await adminUpdateUserName(editTarget.id, trimmed);
+      if (!res.success) {
+        toast.error(`Gagal mengubah nama: ${res.error || "Terjadi kesalahan"}`);
+        return;
+      }
+
+      toast.success(`Nama pengguna ${editTarget.email} berhasil diubah menjadi "${trimmed}"`);
+      setRows((prev) =>
+        prev ? prev.map((r) => (r.id === editTarget.id ? { ...r, full_name: trimmed } : r)) : prev,
+      );
+      setEditTarget(null);
+      setEditName("");
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setEditLoading(false);
     }
   };
 
@@ -461,11 +504,21 @@ function UsersPage() {
                     <div className="flex items-center gap-1.5 shrink-0">
                       <button
                         type="button"
+                        onClick={() => handleOpenEdit(r)}
+                        title="Edit Nama Pengguna"
+                        aria-label="Edit Nama Pengguna"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-muted/40 text-muted-foreground hover:bg-brand-soft hover:text-primary transition-colors active:scale-95"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => {
                           setResetTarget(r);
                           setNewPassword("");
                         }}
                         title="Ubah / Reset Password Akun"
+                        aria-label="Reset Password"
                         className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-muted/40 text-muted-foreground hover:bg-brand-soft hover:text-primary transition-colors active:scale-95"
                       >
                         <KeyRound className="h-4 w-4" />
@@ -477,6 +530,7 @@ function UsersPage() {
                         title={
                           isSelf ? "Tidak dapat menghapus akun Anda sendiri" : "Hapus Akun Pengguna"
                         }
+                        aria-label="Hapus Akun"
                         className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-destructive/20 bg-muted/40 text-destructive hover:bg-destructive/10 transition-colors active:scale-95 disabled:opacity-30 disabled:pointer-events-none"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -685,11 +739,21 @@ function UsersPage() {
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             type="button"
+                            onClick={() => handleOpenEdit(r)}
+                            title="Edit Nama Pengguna"
+                            aria-label="Edit Nama Pengguna"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:bg-brand-soft hover:text-primary transition-colors active:scale-90"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => {
                               setResetTarget(r);
                               setNewPassword("");
                             }}
                             title="Ubah / Reset Password Akun"
+                            aria-label="Reset Password"
                             className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:bg-brand-soft hover:text-primary transition-colors active:scale-90"
                           >
                             <KeyRound className="h-3.5 w-3.5" />
@@ -703,6 +767,7 @@ function UsersPage() {
                                 ? "Tidak dapat menghapus akun Anda sendiri"
                                 : "Hapus Akun Pengguna"
                             }
+                            aria-label="Hapus Akun"
                             className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-destructive/20 bg-card text-destructive hover:bg-destructive/10 transition-colors active:scale-90 disabled:opacity-30 disabled:pointer-events-none"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -828,6 +893,62 @@ function UsersPage() {
               >
                 {createLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" /> : null}
                 <span>{createLoading ? "Membuat Akun..." : "Buat Akun Sekarang"}</span>
+              </button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Edit Nama Pengguna */}
+      <Dialog open={!!editTarget} onOpenChange={(o) => !editLoading && !o && setEditTarget(null)}>
+        <DialogContent className="rounded-2xl max-w-sm">
+          <form onSubmit={handleSaveEditName} className="space-y-4">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-soft text-primary">
+                  <Pencil className="h-4 w-4" />
+                </span>
+                Edit Nama Pengguna
+              </DialogTitle>
+              <DialogDescription>
+                Perbarui nama lengkap petugas untuk akun <strong>{editTarget?.email}</strong>.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div>
+              <label className="text-xs font-semibold text-foreground block mb-1">
+                Nama Lengkap Petugas <span className="text-destructive">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                autoFocus
+                placeholder="Contoh: Budi Santoso (Pos Jaga)"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className="w-full rounded-xl border border-input bg-card px-3.5 py-2 text-sm shadow-xs focus:ring-2 focus:ring-primary/20"
+              />
+              <p className="mt-1.5 text-[11px] text-muted-foreground">
+                Nama ini akan tampil di seluruh buku tamu, dashboard, dan riwayat audit aktivitas.
+              </p>
+            </div>
+
+            <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2 border-t border-border/60">
+              <button
+                type="button"
+                disabled={editLoading}
+                onClick={() => setEditTarget(null)}
+                className="w-full sm:w-auto min-h-11 sm:min-h-10 rounded-xl border border-input px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted transition-colors active:scale-95"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                disabled={editLoading}
+                className="w-full sm:w-auto inline-flex min-h-11 sm:min-h-10 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-sm hover:brightness-110 active:scale-95 disabled:opacity-50 transition-all"
+              >
+                {editLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" /> : null}
+                <span>{editLoading ? "Menyimpan..." : "Simpan Perubahan"}</span>
               </button>
             </DialogFooter>
           </form>

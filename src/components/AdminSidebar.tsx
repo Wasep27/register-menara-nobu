@@ -24,7 +24,9 @@ import type { AppRole } from "@/lib/supabase";
 
 export interface AdminSidebarProps {
   userName?: string;
+  userAvatar?: string | null;
   onLogout?: () => void;
+  onOpenProfile?: () => void;
   userRoles?: AppRole[];
 }
 
@@ -206,7 +208,13 @@ const STAFF_NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-export function AdminSidebar({ userName, onLogout, userRoles = ["admin"] }: AdminSidebarProps) {
+export function AdminSidebar({
+  userName,
+  userAvatar,
+  onLogout,
+  onOpenProfile,
+  userRoles = ["admin"],
+}: AdminSidebarProps) {
   const pathname = useLocation().pathname;
   const isAdmin = userRoles.includes("admin");
   const isSecurityOnly = userRoles.includes("security") && !isAdmin;
@@ -449,12 +457,15 @@ export function AdminSidebar({ userName, onLogout, userRoles = ["admin"] }: Admi
         {/* Profile Card & Logout */}
         {collapsed ? (
           <div className="flex flex-col items-center gap-2">
-            <div
-              title={`Akun: ${userName || "Petugas"} (${userRoleDescription})`}
-              className="flex shrink-0 items-center justify-center"
+            <button
+              type="button"
+              onClick={onOpenProfile}
+              title={`Akun: ${userName || "Petugas"} (${userRoleDescription}) — Klik untuk edit profil & foto`}
+              aria-label="Buka profil saya"
+              className="flex shrink-0 items-center justify-center rounded-full p-0.5 border border-border/80 hover:border-primary/50 transition-all active:scale-95 cursor-pointer"
             >
-              <Avatar name={userName || "Petugas"} size="sm" />
-            </div>
+              <Avatar name={userName || "Petugas"} src={userAvatar} size="sm" />
+            </button>
             {onLogout && (
               <button
                 type="button"
@@ -468,11 +479,17 @@ export function AdminSidebar({ userName, onLogout, userRoles = ["admin"] }: Admi
             )}
           </div>
         ) : (
-          <div className="flex items-center justify-between gap-2 rounded-2xl border border-border/70 bg-card p-2 shadow-xs">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <Avatar name={userName || "Petugas"} size="sm" />
-              <div className="min-w-0">
-                <p className="truncate text-xs font-bold text-foreground leading-tight">
+          <div className="flex items-center justify-between gap-2 rounded-2xl border border-border/70 bg-card p-2 shadow-xs group">
+            <button
+              type="button"
+              onClick={onOpenProfile}
+              title="Klik untuk membuka & mengedit profil akun Anda"
+              aria-label="Buka profil akun saya"
+              className="flex items-center gap-2.5 min-w-0 text-left rounded-xl p-1 -m-1 hover:bg-muted/50 transition-colors flex-1"
+            >
+              <Avatar name={userName || "Petugas"} src={userAvatar} size="sm" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-bold text-foreground leading-tight group-hover:text-primary transition-colors">
                   {userName || (isAdmin ? "Administrator" : "Petugas Jaga")}
                 </p>
                 <p className="text-[10px] text-muted-foreground flex items-center gap-1 leading-tight mt-0.5">
@@ -485,10 +502,10 @@ export function AdminSidebar({ userName, onLogout, userRoles = ["admin"] }: Admi
                           : "bg-primary"
                     }`}
                   />
-                  {userRoleDescription}
+                  <span className="truncate">{userRoleDescription}</span>
                 </p>
               </div>
-            </div>
+            </button>
 
             {onLogout && (
               <button

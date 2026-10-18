@@ -7,6 +7,10 @@ export interface AdminRoleContextType {
   isSecurity: boolean;
   isStaff: boolean;
   userName: string;
+  userAvatar?: string | null;
+  userEmail?: string;
+  openProfileModal?: () => void;
+  refreshProfile?: () => Promise<void>;
 }
 
 export const AdminRoleContext = createContext<AdminRoleContextType>({
@@ -15,6 +19,8 @@ export const AdminRoleContext = createContext<AdminRoleContextType>({
   isSecurity: false,
   isStaff: false,
   userName: "",
+  userAvatar: null,
+  userEmail: "",
 });
 
 export function useAdminRole(): AdminRoleContextType {

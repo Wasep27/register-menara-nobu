@@ -49,9 +49,11 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/email-admin": "Email Notifikasi",
   "/admin/pengguna": "Pengguna & Hak Akses",
   "/admin/panduan": "Panduan Teknis",
+  "/admin/profil": "Profil Akun Saya",
 };
 
 import { AdminRoleContext, type AdminRoleContextType } from "@/hooks/useAdminRole";
+import { UserProfileModal } from "@/components/UserProfileModal";
 
 const SECURITY_ALLOWED_ROUTES = [
   "/admin",
@@ -59,6 +61,7 @@ const SECURITY_ALLOWED_ROUTES = [
   "/admin/tamu",
   "/admin/karyawan",
   "/admin/aktivitas",
+  "/admin/profil",
 ];
 const STAFF_ALLOWED_ROUTES = [
   "/admin",
@@ -67,6 +70,7 @@ const STAFF_ALLOWED_ROUTES = [
   "/admin/karyawan",
   "/admin/feedback",
   "/admin/aktivitas",
+  "/admin/profil",
 ];
 
 function AdminLayout() {
@@ -76,6 +80,10 @@ function AdminLayout() {
   const [userRoles, setUserRoles] = useState<AppRole[]>([]);
   const [idle, setIdle] = useState(false);
   const [name, setName] = useState("");
+  const [avatar, setAvatar] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string>("");
+  const [userEmail, setUserEmail] = useState<string>("");
+  const [profileOpen, setProfileOpen] = useState(false);
   const isLogin = loc.pathname === "/admin/login";
   const currentTitle = PAGE_TITLES[loc.pathname] || "Dashboard Staf";
 
@@ -95,6 +103,9 @@ function AdminLayout() {
         nav({ to: "/admin/login" });
         return;
       }
+      setUserId(data.user.id);
+      setUserEmail(data.user.email || "");
+
       const { data: roles } = await supabase
         .from("user_roles")
         .select("role")
@@ -105,12 +116,32 @@ function AdminLayout() {
       const isAllowed = assigned.length > 0;
       setState(isAllowed ? "ok" : "noadmin");
 
+      // Cek cache lokal profil untuk kecepatan render
+      if (typeof window !== "undefined") {
+        try {
+          const cached = localStorage.getItem(`nobu_user_profile_${data.user.id}`);
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (parsed.full_name) setName(parsed.full_name);
+            if (parsed.avatar_url) setAvatar(parsed.avatar_url);
+          }
+        } catch {
+          // ignore
+        }
+      }
+
       const { data: prof } = await supabase
         .from("profiles")
-        .select("full_name")
+        .select("full_name, avatar_url")
         .eq("id", data.user.id)
         .maybeSingle();
-      setName(prof?.full_name || data.user.email?.split("@")[0] || "Petugas");
+
+      if (prof) {
+        if (prof.full_name) setName(prof.full_name);
+        if (prof.avatar_url) setAvatar(prof.avatar_url);
+      } else {
+        setName(data.user.email?.split("@")[0] || "Petugas");
+      }
     });
   }, [isLogin, loc.pathname, nav, state]);
 
@@ -135,7 +166,20 @@ function AdminLayout() {
     });
   }, [state]);
 
-  const [askLogout, setAskLogout] = useState(false);
+  const refreshProfile = async () => {
+    const { data: authData } = await supabase.auth.getUser();
+    if (!authData.user) return;
+    const { data: prof } = await supabase
+      .from("profiles")
+      .select("full_name, avatar_url")
+      .eq("id", authData.user.id)
+      .maybeSingle();
+    if (prof) {
+      if (prof.full_name) setName(prof.full_name);
+      setAvatar(prof.avatar_url || null);
+    }
+  };
+
   const logout = async () => {
     await signOutLocal();
     toast.success("Anda berhasil keluar");
@@ -219,7 +263,9 @@ function AdminLayout() {
         <SiteNav
           items={[...permittedLinks]}
           userName={name}
+          userAvatar={avatar}
           onLogout={() => setAskLogout(true)}
+          onOpenProfile={() => setProfileOpen(true)}
           isDashboard={true}
           hideRegistration={isSecurity}
           right={
@@ -237,7 +283,13 @@ function AdminLayout() {
       {/* Layout Desktop Modern (md ke atas): Sidebar Mengambang dengan Radius */}
       <div className="mx-auto flex max-w-[1440px] items-start gap-4 p-3 md:p-4 lg:gap-6">
         {/* Sidebar Mengambang Desktop */}
-        <AdminSidebar userName={name} onLogout={() => setAskLogout(true)} userRoles={userRoles} />
+        <AdminSidebar
+          userName={name}
+          userAvatar={avatar}
+          onLogout={() => setAskLogout(true)}
+          onOpenProfile={() => setProfileOpen(true)}
+          userRoles={userRoles}
+        />
 
         {/* Viewport Konten Utama */}
         <div className="flex-1 min-w-0 flex flex-col">
@@ -265,13 +317,16 @@ function AdminLayout() {
                 </Link>
               )}
 
-              {/* Avatar saja tanpa nama di sampingnya agar clean */}
-              <div
-                title={`Akun: ${name || "Petugas"}`}
-                className="flex shrink-0 items-center justify-center rounded-full p-0.5 border border-border/80 bg-card shadow-2xs hover:border-primary/50 transition-all cursor-default"
+              {/* Avatar Interaktif untuk Buka & Edit Profil */}
+              <button
+                type="button"
+                onClick={() => setProfileOpen(true)}
+                title={`Profil Saya: ${name || "Petugas"} (Klik untuk edit nama & foto)`}
+                aria-label="Buka profil saya"
+                className="flex shrink-0 items-center justify-center rounded-full p-0.5 border border-border/80 bg-card shadow-2xs hover:border-primary hover:shadow-xs transition-all active:scale-95 cursor-pointer"
               >
-                <Avatar name={name || "Admin"} size="sm" />
-              </div>
+                <Avatar name={name || "Admin"} src={avatar} size="sm" />
+              </button>
 
               <button
                 type="button"
@@ -287,7 +342,17 @@ function AdminLayout() {
           {/* Area Halaman */}
           <main key={loc.pathname} className="fade-up flex-1 pb-24 md:pb-6">
             <AdminRoleContext.Provider
-              value={{ userRoles, isAdmin, isSecurity, isStaff, userName: name }}
+              value={{
+                userRoles,
+                isAdmin,
+                isSecurity,
+                isStaff,
+                userName: name,
+                userAvatar: avatar,
+                userEmail,
+                openProfileModal: () => setProfileOpen(true),
+                refreshProfile,
+              }}
             >
               {isRouteUnauthorized ? (
                 <div className="mx-auto my-12 max-w-md rounded-3xl border border-amber-500/30 bg-card p-6 sm:p-8 text-center shadow-soft">
@@ -316,6 +381,23 @@ function AdminLayout() {
           </main>
         </div>
       </div>
+
+      {/* Modal Edit Profil Pengguna Login Mandiri */}
+      {userId && (
+        <UserProfileModal
+          open={profileOpen}
+          onClose={() => setProfileOpen(false)}
+          userId={userId}
+          initialName={name}
+          initialAvatar={avatar}
+          userEmail={userEmail}
+          userRoles={userRoles}
+          onProfileUpdated={(newName, newAvatar) => {
+            setName(newName);
+            setAvatar(newAvatar);
+          }}
+        />
+      )}
 
       <ConfirmDialog
         open={askLogout}

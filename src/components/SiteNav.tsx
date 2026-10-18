@@ -24,7 +24,9 @@ export function SiteNav({
   items,
   right,
   userName,
+  userAvatar,
   onLogout,
+  onOpenProfile,
   isDashboard,
   hideRegistration,
 }: SiteNavProps) {
@@ -327,7 +329,7 @@ export function SiteNav({
               onClick={() => setOpen(!open)}
               className={`${focusRing} group relative flex items-center justify-center rounded-full border border-border/80 bg-card p-0.5 transition-all duration-200 active:scale-95 shadow-2xs hover:border-primary/50 hover:shadow-xs`}
             >
-              <Avatar name={avatarName} size="sm" />
+              <Avatar name={avatarName} src={userAvatar} size="sm" />
               {isSecondaryMenuActive && (
                 <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-card bg-primary" />
               )}
@@ -354,10 +356,12 @@ export function SiteNav({
         open={open}
         onClose={() => setOpen(false)}
         userName={userName}
+        userAvatar={userAvatar}
         avatarName={avatarName}
         isDashboardMode={isDashboardMode}
         hideRegistration={hideRegistration}
         onLogout={onLogout}
+        onOpenProfile={onOpenProfile}
         groupedItems={groupedItems}
         isItemActive={isItemActive}
         focusRing={focusRing}

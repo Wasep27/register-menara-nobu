@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 /** Palet warna yang senada dan harmonis dengan tema utama Menara Nobu (Emerald, Teal, Forest, Sage, Slate Pine).
  * Menghindari warna yang terlalu kontras/menyolok (seperti neon merah/pink/kuning terang) agar visual tetap elegan dan menyatu.
  */
@@ -20,16 +22,24 @@ const NOBU_AVATAR_PALETTES = [
   { bg: "linear-gradient(135deg, #1f4e43, #123029)", border: "rgba(16, 213, 160, 0.3)" },
 ];
 
-/** Avatar inisial dengan warna harmonis dan konsisten berdasarkan nama. */
+/** Avatar dengan dukungan foto profil kustom (URL/Base64) dan fallback inisial bergradien Nobu. */
 export function Avatar({
   name,
+  src,
   size = "md",
   className = "",
 }: {
   name: string;
-  size?: "xs" | "sm" | "md" | "lg";
+  src?: string | null;
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
   className?: string;
 }) {
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [src]);
+
   const initials =
     name
       .trim()
@@ -53,7 +63,30 @@ export function Avatar({
         ? "h-8 w-8 text-xs"
         : size === "lg"
           ? "h-12 w-12 text-base"
-          : "h-10 w-10 text-sm";
+          : size === "xl"
+            ? "h-20 w-20 text-2xl"
+            : "h-10 w-10 text-sm";
+
+  // Jika terdapat foto avatar dan belum error, tampilkan gambar
+  if (src && !imgError) {
+    return (
+      <span
+        aria-hidden
+        className={`relative inline-block ${cls} shrink-0 select-none overflow-hidden rounded-full shadow-xs ${className}`}
+        style={{
+          boxShadow: `inset 0 0 0 1.5px rgba(16, 213, 160, 0.4), 0 2px 6px -1px rgba(7, 147, 110, 0.25)`,
+        }}
+      >
+        <img
+          src={src}
+          alt={name}
+          className="h-full w-full object-cover rounded-full"
+          onError={() => setImgError(true)}
+        />
+      </span>
+    );
+  }
+
   return (
     <span
       aria-hidden

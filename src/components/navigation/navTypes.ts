@@ -12,7 +12,9 @@ export interface SiteNavProps {
   items: NavItem[];
   right?: ReactNode;
   userName?: string;
+  userAvatar?: string | null;
   onLogout?: () => void;
+  onOpenProfile?: () => void;
   isDashboard?: boolean;
   hideRegistration?: boolean;
 }

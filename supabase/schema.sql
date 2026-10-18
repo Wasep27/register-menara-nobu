@@ -207,15 +207,17 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text not null,
   full_name text,
+  avatar_url text,
   created_at timestamptz not null default now()
 );
+alter table public.profiles add column if not exists avatar_url text;
 grant select, update on public.profiles to authenticated;
 grant all on public.profiles to service_role;
 alter table public.profiles enable row level security;
 drop policy if exists "own profile read" on public.profiles;
-create policy "own profile read" on public.profiles for select to authenticated using (id = auth.uid());
+create policy "own profile read" on public.profiles for select to authenticated using (id = auth.uid() or public.has_role(auth.uid(), 'admin'));
 drop policy if exists "own profile update" on public.profiles;
-create policy "own profile update" on public.profiles for update to authenticated using (id = auth.uid()) with check (id = auth.uid());
+create policy "own profile update" on public.profiles for update to authenticated using (id = auth.uid() or public.has_role(auth.uid(), 'admin')) with check (id = auth.uid() or public.has_role(auth.uid(), 'admin'));
 
 create table if not exists public.admin_emails (
   email text primary key
@@ -533,6 +535,58 @@ begin
 end $$;
 revoke all on function public.set_user_role(uuid, text, boolean) from public, anon;
 grant execute on function public.set_user_role(uuid, text, boolean) to authenticated;
+
+-- Memperbarui nama lengkap pengguna oleh administrator
+create or replace function public.admin_update_user_name(_target_user_id uuid, _full_name text)
+returns boolean language plpgsql security definer set search_path = public, auth, extensions as $$
+begin
+  if not public.has_role(auth.uid(), 'admin') then
+    raise exception 'Hanya administrator yang dapat mengubah data pengguna' using errcode = '42501';
+  end if;
+
+  update public.profiles
+  set full_name = nullif(trim(_full_name), '')
+  where id = _target_user_id;
+
+  update auth.users
+  set raw_user_meta_data = coalesce(raw_user_meta_data, '{}'::jsonb) || jsonb_build_object(
+    'full_name', trim(_full_name),
+    'name', trim(_full_name)
+  )
+  where id = _target_user_id;
+
+  return true;
+end $$;
+revoke all on function public.admin_update_user_name(uuid, text) from public, anon;
+grant execute on function public.admin_update_user_name(uuid, text) to authenticated;
+
+-- Memperbarui profil akun sendiri (Nama Lengkap & Foto Profil Avatar)
+create or replace function public.update_own_profile(_full_name text, _avatar_url text)
+returns boolean language plpgsql security definer set search_path = public, auth, extensions as $$
+declare
+  _uid uuid := auth.uid();
+begin
+  if _uid is null then
+    raise exception 'Autentikasi diperlukan' using errcode = '42501';
+  end if;
+
+  update public.profiles
+  set full_name = nullif(trim(_full_name), ''),
+      avatar_url = nullif(trim(_avatar_url), '')
+  where id = _uid;
+
+  update auth.users
+  set raw_user_meta_data = coalesce(raw_user_meta_data, '{}'::jsonb) || jsonb_build_object(
+    'full_name', trim(_full_name),
+    'name', trim(_full_name),
+    'avatar_url', nullif(trim(_avatar_url), '')
+  )
+  where id = _uid;
+
+  return true;
+end $$;
+revoke all on function public.update_own_profile(text, text) from public, anon;
+grant execute on function public.update_own_profile(text, text) to authenticated;
 
 -- ============================================================
 -- MANAJEMEN AKUN PENGGUNA VIA DASHBOARD ADMIN

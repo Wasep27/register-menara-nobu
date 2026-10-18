@@ -7,6 +7,7 @@ import {
   LogOut,
   QrCode,
   ShieldCheck,
+  UserCog,
   Users,
   X,
 } from "lucide-react";
@@ -19,10 +20,12 @@ interface NavDrawerModalProps {
   open: boolean;
   onClose: () => void;
   userName?: string | undefined;
+  userAvatar?: string | null | undefined;
   avatarName: string;
   isDashboardMode: boolean;
   hideRegistration?: boolean | undefined;
   onLogout?: (() => void) | undefined;
+  onOpenProfile?: (() => void) | undefined;
   groupedItems: Record<string, NavItem[]>;
   isItemActive: (to: string) => boolean;
   focusRing: string;
@@ -33,10 +36,12 @@ export const NavDrawerModal = React.memo(function NavDrawerModal({
   open,
   onClose,
   userName,
+  userAvatar,
   avatarName,
   isDashboardMode,
   hideRegistration,
   onLogout,
+  onOpenProfile,
   groupedItems,
   isItemActive,
   focusRing,
@@ -221,41 +226,59 @@ export const NavDrawerModal = React.memo(function NavDrawerModal({
         {/* User Profile Quick Card */}
         <div className="mx-4 mt-3 rounded-2xl border border-border/60 bg-muted/30 p-3 shrink-0">
           <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <Avatar name={avatarName} size="sm" />
-              <div className="min-w-0">
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <Avatar name={avatarName} src={userAvatar} size="sm" />
+              <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-bold text-foreground">
                   {userName || (isDashboardMode ? "Administrator" : "Pengunjung Menara Nobu")}
                 </p>
                 <p className="text-[10px] text-muted-foreground flex items-center gap-1">
                   <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
-                  {isDashboardMode ? "Admin Nobu" : "Tamu Digital"}
+                  {isDashboardMode ? "Petugas Terautentikasi" : "Tamu Digital"}
                 </p>
               </div>
             </div>
 
-            {onLogout ? (
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
-                  onLogout();
-                }}
-                className="inline-flex items-center gap-1 rounded-xl border border-destructive/30 bg-destructive/10 px-2.5 py-1.5 text-xs font-semibold text-destructive transition-all hover:bg-destructive hover:text-destructive-foreground active:scale-95"
-              >
-                <LogOut className="h-3.5 w-3.5" />
-                Keluar
-              </button>
-            ) : !isDashboardMode ? (
-              <Link
-                to="/admin/login"
-                onClick={onClose}
-                className="inline-flex items-center gap-1 rounded-xl border border-primary/30 bg-primary/10 px-2.5 py-1.5 text-xs font-semibold text-primary transition-all hover:bg-primary hover:text-primary-foreground active:scale-95"
-              >
-                <ShieldCheck className="h-3.5 w-3.5" />
-                Masuk
-              </Link>
-            ) : null}
+            <div className="flex items-center gap-1.5 shrink-0">
+              {onOpenProfile && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onOpenProfile();
+                  }}
+                  title="Edit profil nama & avatar"
+                  className="inline-flex items-center gap-1 rounded-xl border border-primary/30 bg-brand-soft px-2.5 py-1.5 text-xs font-semibold text-primary transition-all hover:bg-primary hover:text-primary-foreground active:scale-95"
+                >
+                  <UserCog className="h-3.5 w-3.5" />
+                  <span>Edit Profil</span>
+                </button>
+              )}
+
+              {onLogout ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onLogout();
+                  }}
+                  title="Keluar dari sesi"
+                  className="inline-flex items-center gap-1 rounded-xl border border-destructive/30 bg-destructive/10 px-2.5 py-1.5 text-xs font-semibold text-destructive transition-all hover:bg-destructive hover:text-destructive-foreground active:scale-95"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                  <span>Keluar</span>
+                </button>
+              ) : !isDashboardMode ? (
+                <Link
+                  to="/admin/login"
+                  onClick={onClose}
+                  className="inline-flex items-center gap-1 rounded-xl border border-primary/30 bg-primary/10 px-2.5 py-1.5 text-xs font-semibold text-primary transition-all hover:bg-primary hover:text-primary-foreground active:scale-95"
+                >
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  <span>Masuk</span>
+                </Link>
+              ) : null}
+            </div>
           </div>
         </div>
 
