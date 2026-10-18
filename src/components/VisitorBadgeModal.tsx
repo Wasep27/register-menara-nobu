@@ -12,12 +12,14 @@ import {
   Calendar,
   Building2,
   User,
+  FileText,
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { encodeCode39, formatBadgeCode, generateQrMatrix } from "@/lib/barcode";
 import { toast } from "sonner";
 import type { VisitorBadgeData } from "@/lib/badge-utils";
 import { downloadBadgeAsPng } from "@/lib/badge-download";
+import { exportBadgePassPdf } from "@/lib/export-utils";
 import { getNowWibDateString, getNowWibTimeString } from "@/lib/date-utils";
 export type { VisitorBadgeData };
 
@@ -154,6 +156,24 @@ export const VisitorBadgeModal = React.memo(function VisitorBadgeModal({
       toast.error("Gagal mengunduh gambar badge");
     } finally {
       setDownloading(false);
+    }
+  };
+
+  const handleDownloadPdf = () => {
+    try {
+      exportBadgePassPdf({
+        data: {
+          ...data,
+          badgeNumber: badgeCode,
+          checkInTime: displayTime,
+          checkInDate: displayDate,
+        },
+        format,
+      });
+      toast.success("Dokumen PDF Pass Tamu resmi berhasil diunduh!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Gagal membuat dokumen PDF kartu tamu");
     }
   };
 
@@ -460,12 +480,22 @@ export const VisitorBadgeModal = React.memo(function VisitorBadgeModal({
             Tutup
           </button>
 
-          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleDownloadPdf}
+              className="flex-1 sm:flex-initial inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-rose-600 px-3 sm:px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-rose-700 active:scale-95 whitespace-nowrap"
+              title="Unduh kartu badge pass tamu dalam dokumen PDF resmi siap cetak"
+            >
+              <FileText className="h-4 w-4 shrink-0" />
+              <span>Unduh PDF</span>
+            </button>
+
             <button
               type="button"
               disabled={downloading}
               onClick={handleDownloadImage}
-              className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-primary/40 bg-brand-soft px-3 sm:px-4 py-2 text-xs font-bold text-primary transition-all hover:bg-brand-soft/80 active:scale-95 disabled:opacity-50"
+              className="flex-1 sm:flex-initial inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-primary/40 bg-brand-soft px-3 sm:px-3.5 py-2 text-xs font-bold text-primary transition-all hover:bg-brand-soft/80 active:scale-95 disabled:opacity-50 whitespace-nowrap"
             >
               <Download className="h-4 w-4 shrink-0" />
               <span>{downloading ? "Mengunduh…" : "Unduh PNG"}</span>
@@ -474,7 +504,7 @@ export const VisitorBadgeModal = React.memo(function VisitorBadgeModal({
             <button
               type="button"
               onClick={handlePrint}
-              className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 sm:px-4 py-2 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95"
+              className="flex-1 sm:flex-initial inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 sm:px-4 py-2 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:brightness-110 active:scale-95 whitespace-nowrap"
             >
               <Printer className="h-4 w-4 shrink-0" />
               <span>Cetak (Print)</span>

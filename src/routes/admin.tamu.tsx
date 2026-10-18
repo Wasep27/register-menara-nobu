@@ -16,12 +16,18 @@ import {
   FileSpreadsheet,
   FileText,
   Download,
+  ShieldCheck,
 } from "lucide-react";
 import { supabase, type Employee, type Guest, type Purpose } from "@/lib/supabase";
 import { VisitorBadgeModal } from "@/components/VisitorBadgeModal";
 import { createVisitorBadgeFromGuest, type VisitorBadgeData } from "@/lib/badge-utils";
 import { useAdminRole } from "@/hooks/useAdminRole";
-import { exportToExcel, exportToPdf, exportToCsv } from "@/lib/export-utils";
+import {
+  exportToExcel,
+  exportToPdf,
+  exportToCsv,
+  exportDailyVisitLogPdf,
+} from "@/lib/export-utils";
 import { formatWibDateTime } from "@/lib/date-utils";
 
 export const Route = createFileRoute("/admin/tamu")({ component: Guests });
@@ -246,6 +252,24 @@ function Guests() {
     }
   };
 
+  const exportDailyLog = async () => {
+    if (count === 0) return;
+    setExporting("daily-log");
+    try {
+      const all = await fetchAllData();
+      const targetDate = date || new Date().toISOString().slice(0, 10);
+      exportDailyVisitLogPdf({
+        date: targetDate,
+        rows: all,
+      });
+      toast.success("Lembar Log Kunjungan Harian Pos Keamanan berhasil diunduh!");
+    } catch {
+      toast.error("Gagal membuat berkas PDF log harian");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const load = useCallback(async () => {
     setLoading(true);
     const { data, count } = await buildQuery().range(page * PAGE, page * PAGE + PAGE - 1);
@@ -428,6 +452,16 @@ function Guests() {
           >
             <FileText className="h-4 w-4" />
             <span>{exporting === "pdf" ? "Menyiapkan…" : "PDF"}</span>
+          </button>
+          <button
+            type="button"
+            disabled={Boolean(exporting) || count === 0}
+            onClick={exportDailyLog}
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-sky-500/40 bg-sky-50 dark:bg-sky-950/40 px-3 sm:px-3.5 text-xs sm:text-sm font-semibold text-sky-700 dark:text-sky-300 transition-all hover:bg-sky-100 dark:hover:bg-sky-900/60 active:scale-95 disabled:opacity-50"
+            title="Unduh Lembar Log Kunjungan Harian Pos Keamanan lengkap dengan kolom paraf satpam & pengesahan"
+          >
+            <ShieldCheck className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+            <span>{exporting === "daily-log" ? "Menyiapkan…" : "Log Harian PDF"}</span>
           </button>
           <button
             type="button"

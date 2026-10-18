@@ -26,11 +26,12 @@ Aplikasi registrasi tamu digital untuk gedung **Menara Nobu (Bank Nobu)**. Tamu 
 ### Untuk admin (`/admin`)
 
 - **Ringkasan**: grafik kunjungan per hari, per tujuan, dan per karyawan (7 / 30 / 90 hari), jam tersibuk.
-- **Data tamu**: cari, filter (nama, tanggal, tujuan), hapus dengan konfirmasi, dan **ekspor CSV**.
+- **Data tamu**: cari, filter lanjutan (nama, tanggal, tujuan, karyawan), hapus aman, cetak badge, dan **Ekspor Lengkap** (Excel `.xlsx` rapi dengan kop dokumen & lebar otomatis, Dokumen PDF resmi korporat A4 Landscape, Lembar Log Kunjungan Harian Satpam PDF, dan CSV).
 - **Karyawan** dan **Tujuan kunjungan**: tambah / ubah lewat jendela pop-up dengan validasi, aktif / nonaktif, hapus dengan konfirmasi.
 - **Email Admin**: daftar email yang otomatis menjadi admin, tanpa perlu menjalankan SQL.
 - **Pengguna**: daftar akun beserta nama, email, dan peran.
 - Keamanan login: akun dikunci 15 menit setelah 5 kali salah password, lupa password lewat email, keluar otomatis setelah 30 menit tidak aktif, dan keluar bersamaan di semua tab.
+- **Dokumentasi Lengkap Sistem & Pengujian**: Tersedia di [`DOKUMENTASI_SISTEM.md`](./DOKUMENTASI_SISTEM.md) mencakup Diagram Kelas (*Class Diagram*), Diagram Alur (*Activity Diagram*), Diagram Urutan (*Sequence Diagram*), dan Laporan Hasil Pengujian Kotak Putih (*White-Box Testing* 100% Passed).
 
 ---
 
