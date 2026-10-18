@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import {
   Camera,
   Check,
@@ -13,11 +13,16 @@ import {
   Upload,
   User,
   X,
+  Sparkles,
+  RefreshCw,
+  Copy,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase, type AppRole } from "@/lib/supabase";
 import { Avatar } from "@/components/Avatar";
 import { PasswordInput } from "@/components/ui/password-input";
+import { evaluatePassword, generateStrongPassword } from "@/lib/password-utils";
+import { PasswordStrengthIndicator } from "@/components/PasswordStrengthIndicator";
 import {
   Dialog,
   DialogContent,
@@ -59,6 +64,29 @@ export function UserProfileModal({
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [pwdCopied, setPwdCopied] = useState(false);
+
+  const pwdStrength = useMemo(() => evaluatePassword(newPassword), [newPassword]);
+
+  const handleGeneratePassword = () => {
+    const generated = generateStrongPassword(14);
+    setNewPassword(generated);
+    setConfirmPassword(generated);
+    setPwdCopied(false);
+    toast.success("Password rekomendasi berhasil dibuat dan disinkronkan!");
+  };
+
+  const handleCopyPassword = async () => {
+    if (!newPassword) return;
+    try {
+      await navigator.clipboard.writeText(newPassword);
+      setPwdCopied(true);
+      toast.success("Password berhasil disalin!");
+      setTimeout(() => setPwdCopied(false), 3000);
+    } catch {
+      toast.info(`Password: ${newPassword}`);
+    }
+  };
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -70,6 +98,7 @@ export function UserProfileModal({
       setNewPassword("");
       setConfirmPassword("");
       setShowPasswordSection(false);
+      setPwdCopied(false);
     }
   }, [open, initialName, initialAvatar]);
 
@@ -124,13 +153,21 @@ export function UserProfileModal({
 
       // Jika pengguna mengisi password baru
       if (showPasswordSection && newPassword) {
-        if (newPassword.length < 6) {
-          toast.error("Password baru minimal 6 karakter.");
+        if (newPassword.length < 8) {
+          toast.error("Password baru minimal 8 karakter sesuai standar keamanan.");
+          setIsSaving(false);
+          return;
+        }
+        if (!pwdStrength.isComplete) {
+          toast.error(
+            pwdStrength.missingCriteria[0] ||
+              "Password wajib mengombinasikan huruf besar, huruf kecil, angka, dan simbol khusus.",
+          );
           setIsSaving(false);
           return;
         }
         if (newPassword !== confirmPassword) {
-          toast.error("Konfirmasi password tidak cocok.");
+          toast.error("Konfirmasi password tidak cocok dengan password baru.");
           setIsSaving(false);
           return;
         }
@@ -335,31 +372,99 @@ export function UserProfileModal({
             </div>
 
             {showPasswordSection && (
-              <div className="mt-3.5 space-y-3 pt-3 border-t border-border/70 fade-up">
+              <div className="mt-3.5 space-y-3.5 pt-3 border-t border-border/70 fade-up">
+                {/* Quick Action: Rekomendasi Password Generator */}
+                <div className="rounded-xl border border-primary/25 bg-brand-soft/50 p-2.5 sm:p-3 space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-primary">
+                      <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary" />
+                      <span>Rekomendasi Sandi Kuat</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleGeneratePassword}
+                      className="inline-flex items-center gap-1 rounded-lg border border-primary/30 bg-card px-2.5 py-1 text-[11px] font-semibold text-primary shadow-2xs hover:bg-primary hover:text-primary-foreground transition-all active:scale-95 cursor-pointer"
+                    >
+                      <RefreshCw className="h-3 w-3 shrink-0" />
+                      <span>Generate</span>
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                    Otomatis membuat 14 karakter kombinasi huruf besar, kecil, angka, dan simbol
+                    khusus, serta menyinkronkan kedua kolom sandi.
+                  </p>
+                </div>
+
                 <div>
-                  <label className="text-[11px] font-semibold text-foreground block mb-1">
-                    Password Baru
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-semibold text-foreground block">
+                      Password Baru <span className="text-destructive">*</span>
+                    </label>
+                    {newPassword && (
+                      <button
+                        type="button"
+                        onClick={handleCopyPassword}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline cursor-pointer"
+                      >
+                        {pwdCopied ? (
+                          <>
+                            <Check className="h-3 w-3 text-emerald-600" />
+                            <span className="text-emerald-600 font-bold">Tersalin!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-3 w-3" />
+                            <span>Salin</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
                   <PasswordInput
-                    minLength={6}
-                    placeholder="Minimal 6 karakter"
+                    minLength={8}
+                    placeholder="Minimal 8 karakter kombinasi"
                     value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
+                    onChange={(e) => {
+                      setNewPassword(e.target.value);
+                      setPwdCopied(false);
+                    }}
                     className="w-full min-h-11 sm:min-h-9 rounded-xl border border-input bg-card px-3 py-2 text-base sm:text-xs shadow-xs focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
 
+                {/* Live Strength Meter & Complexity Checklist */}
+                {newPassword && (
+                  <PasswordStrengthIndicator
+                    strength={pwdStrength}
+                    password={newPassword}
+                    showCriteria={true}
+                  />
+                )}
+
                 <div>
                   <label className="text-[11px] font-semibold text-foreground block mb-1">
-                    Konfirmasi Password Baru
+                    Konfirmasi Password Baru <span className="text-destructive">*</span>
                   </label>
                   <PasswordInput
-                    minLength={6}
+                    minLength={8}
                     placeholder="Ulangi password baru"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     className="w-full min-h-11 sm:min-h-9 rounded-xl border border-input bg-card px-3 py-2 text-base sm:text-xs shadow-xs focus:ring-2 focus:ring-primary/20"
                   />
+                  {confirmPassword && (
+                    <div className="pt-1">
+                      {newPassword === confirmPassword ? (
+                        <p className="flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                          <Check className="h-3 w-3" /> Konfirmasi password cocok & terverifikasi
+                        </p>
+                      ) : (
+                        <p className="flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                          ⚠ Konfirmasi password belum sama
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             )}

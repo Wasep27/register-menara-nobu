@@ -26,6 +26,12 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { PasswordInput } from "@/components/ui/password-input";
 import { adminUpdateUserName } from "@/lib/profile-utils";
 import {
+  evaluatePassword,
+  generateStrongPassword,
+  type PasswordStrength,
+} from "@/lib/password-utils";
+import { PasswordStrengthIndicator } from "@/components/PasswordStrengthIndicator";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -81,88 +87,6 @@ const AVAILABLE_ROLES: { role: AppRole; label: string; desc: string; badgeClass:
     badgeClass: "bg-amber-600 text-white dark:bg-amber-500",
   },
 ];
-
-interface PasswordStrength {
-  score: number; // 0 to 4
-  label: string;
-  colorClass: string;
-  hasMinLength: boolean;
-  hasUpper: boolean;
-  hasLower: boolean;
-  hasNumber: boolean;
-  hasSymbol: boolean;
-  isComplete: boolean;
-}
-
-function evaluatePassword(password: string): PasswordStrength {
-  const hasMinLength = password.length >= 8;
-  const hasUpper = /[A-Z]/.test(password);
-  const hasLower = /[a-z]/.test(password);
-  const hasNumber = /[0-9]/.test(password);
-  const hasSymbol = /[^A-Za-z0-9]/.test(password);
-
-  let score = 0;
-  if (hasMinLength) score++;
-  if (hasUpper && hasLower) score++;
-  if (hasNumber) score++;
-  if (hasSymbol) score++;
-
-  let label = "Sangat Lemah";
-  let colorClass = "bg-rose-500 text-rose-500";
-  if (score === 1) {
-    label = "Lemah";
-    colorClass = "bg-rose-500 text-rose-500";
-  } else if (score === 2) {
-    label = "Cukup";
-    colorClass = "bg-amber-500 text-amber-500";
-  } else if (score === 3) {
-    label = "Kuat";
-    colorClass = "bg-emerald-500 text-emerald-500";
-  } else if (score >= 4) {
-    label = "Sangat Kuat";
-    colorClass = "bg-emerald-600 text-emerald-600";
-  }
-
-  const isComplete = hasMinLength && hasUpper && hasLower && hasNumber && hasSymbol;
-
-  return {
-    score,
-    label,
-    colorClass,
-    hasMinLength,
-    hasUpper,
-    hasLower,
-    hasNumber,
-    hasSymbol,
-    isComplete,
-  };
-}
-
-function generateStrongPassword(length = 14): string {
-  const uppers = "ABCDEFGHJKLMNPQRSTUVWXYZ";
-  const lowers = "abcdefghijkmnopqrstuvwxyz";
-  const numbers = "23456789";
-  const symbols = "!@#$%^&*_-+=";
-  const all = uppers + lowers + numbers + symbols;
-
-  const res = [
-    uppers[Math.floor(Math.random() * uppers.length)],
-    lowers[Math.floor(Math.random() * lowers.length)],
-    numbers[Math.floor(Math.random() * numbers.length)],
-    symbols[Math.floor(Math.random() * symbols.length)],
-  ];
-
-  for (let i = res.length; i < length; i++) {
-    res.push(all[Math.floor(Math.random() * all.length)]);
-  }
-
-  for (let i = res.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [res[i], res[j]] = [res[j], res[i]];
-  }
-
-  return res.join("");
-}
 
 function UsersPage() {
   const [rows, setRows] = useState<Row[] | null>(null);
@@ -1026,12 +950,11 @@ function UsersPage() {
                   className="w-full rounded-xl border border-input bg-card px-3.5 py-2 text-base sm:text-sm shadow-xs focus:ring-2 focus:ring-primary/20"
                 />
                 {createPassword && (
-                  <div className="mt-1.5 flex items-center justify-between text-[11px]">
-                    <span className="text-muted-foreground">Kekuatan:</span>
-                    <span className={`font-bold ${createStrength.colorClass.split(" ")[1]}`}>
-                      {createStrength.label}
-                    </span>
-                  </div>
+                  <PasswordStrengthIndicator
+                    strength={createStrength}
+                    password={createPassword}
+                    showCriteria={true}
+                  />
                 )}
               </div>
 
@@ -1230,152 +1153,14 @@ function UsersPage() {
               />
             </div>
 
-            {/* Live Strength Meter */}
+            {/* Live Strength Meter & Complexity Checklist */}
             {newPassword && (
-              <div className="space-y-2 pt-1 fade-up">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground text-[11px]">Kekuatan Sandi:</span>
-                  <span
-                    className={`font-bold text-[11px] ${resetStrength.colorClass.split(" ")[1]}`}
-                  >
-                    {resetStrength.label}
-                  </span>
-                </div>
-                <div className="grid grid-cols-4 gap-1.5 h-1.5 w-full bg-muted/40 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-300 ${
-                      resetStrength.score >= 1
-                        ? resetStrength.colorClass.split(" ")[0]
-                        : "bg-transparent"
-                    }`}
-                  />
-                  <div
-                    className={`h-full rounded-full transition-all duration-300 ${
-                      resetStrength.score >= 2
-                        ? resetStrength.colorClass.split(" ")[0]
-                        : "bg-transparent"
-                    }`}
-                  />
-                  <div
-                    className={`h-full rounded-full transition-all duration-300 ${
-                      resetStrength.score >= 3
-                        ? resetStrength.colorClass.split(" ")[0]
-                        : "bg-transparent"
-                    }`}
-                  />
-                  <div
-                    className={`h-full rounded-full transition-all duration-300 ${
-                      resetStrength.score >= 4
-                        ? resetStrength.colorClass.split(" ")[0]
-                        : "bg-transparent"
-                    }`}
-                  />
-                </div>
-              </div>
+              <PasswordStrengthIndicator
+                strength={resetStrength}
+                password={newPassword}
+                showCriteria={true}
+              />
             )}
-
-            {/* Kriteria Kombinasi Checklist Sesuai Best Practice */}
-            <div className="rounded-xl border border-border/80 bg-muted/20 p-3 space-y-1.5 text-[11px]">
-              <p className="font-semibold text-foreground text-xs mb-1">
-                Kriteria Kombinasi Sandi:
-              </p>
-              <div className="grid grid-cols-2 gap-x-2 gap-y-1">
-                <div
-                  className={`flex items-center gap-1.5 ${
-                    resetStrength.hasMinLength
-                      ? "text-emerald-600 font-semibold"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  <span
-                    className={`inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px] ${
-                      resetStrength.hasMinLength
-                        ? "bg-emerald-500/10 text-emerald-600 font-bold"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {resetStrength.hasMinLength ? "✓" : "○"}
-                  </span>
-                  <span>Min. 8 Karakter</span>
-                </div>
-
-                <div
-                  className={`flex items-center gap-1.5 ${
-                    resetStrength.hasUpper
-                      ? "text-emerald-600 font-semibold"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  <span
-                    className={`inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px] ${
-                      resetStrength.hasUpper
-                        ? "bg-emerald-500/10 text-emerald-600 font-bold"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {resetStrength.hasUpper ? "✓" : "○"}
-                  </span>
-                  <span>Huruf Besar (A-Z)</span>
-                </div>
-
-                <div
-                  className={`flex items-center gap-1.5 ${
-                    resetStrength.hasLower
-                      ? "text-emerald-600 font-semibold"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  <span
-                    className={`inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px] ${
-                      resetStrength.hasLower
-                        ? "bg-emerald-500/10 text-emerald-600 font-bold"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {resetStrength.hasLower ? "✓" : "○"}
-                  </span>
-                  <span>Huruf Kecil (a-z)</span>
-                </div>
-
-                <div
-                  className={`flex items-center gap-1.5 ${
-                    resetStrength.hasNumber
-                      ? "text-emerald-600 font-semibold"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  <span
-                    className={`inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px] ${
-                      resetStrength.hasNumber
-                        ? "bg-emerald-500/10 text-emerald-600 font-bold"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {resetStrength.hasNumber ? "✓" : "○"}
-                  </span>
-                  <span>Angka (0-9)</span>
-                </div>
-
-                <div
-                  className={`col-span-2 flex items-center gap-1.5 ${
-                    resetStrength.hasSymbol
-                      ? "text-emerald-600 font-semibold"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  <span
-                    className={`inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px] ${
-                      resetStrength.hasSymbol
-                        ? "bg-emerald-500/10 text-emerald-600 font-bold"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {resetStrength.hasSymbol ? "✓" : "○"}
-                  </span>
-                  <span>Simbol Khusus (!@#$%^&*)</span>
-                </div>
-              </div>
-            </div>
 
             {/* Input Verifikasi Konfirmasi Password */}
             <div className="space-y-1.5">
