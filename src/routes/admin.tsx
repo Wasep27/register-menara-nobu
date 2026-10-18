@@ -17,7 +17,12 @@ export const Route = createFileRoute("/admin")({
       { property: "og:title", content: "Dashboard Admin — Menara Nobu" },
       { property: "og:description", content: "Kelola data tamu, karyawan, dan laporan kunjungan." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { property: "og:image", content: "/og-image.png" },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:alt", content: "Buku Tamu Digital Menara Nobu" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: "/og-image.png" },
     ],
   }),
   component: AdminLayout,
@@ -79,6 +84,7 @@ function AdminLayout() {
   const [state, setState] = useState<"loading" | "ok" | "noadmin" | "out">("loading");
   const [userRoles, setUserRoles] = useState<AppRole[]>([]);
   const [idle, setIdle] = useState(false);
+  const [askLogout, setAskLogout] = useState(false);
   const [name, setName] = useState("");
   const [avatar, setAvatar] = useState<string | null>(null);
   const [userId, setUserId] = useState<string>("");

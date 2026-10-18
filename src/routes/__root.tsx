@@ -103,10 +103,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "Buku Tamu Menara Nobu" },
       { name: "description", content: "Registrasi tamu digital Menara Nobu" },
       { name: "author", content: "Lovable" },
+      { property: "og:site_name", content: "Menara Nobu" },
       { property: "og:title", content: "Buku Tamu Menara Nobu" },
       { property: "og:description", content: "Registrasi tamu digital Menara Nobu" },
       { property: "og:type", content: "website" },
+      { property: "og:image", content: "/og-image.png" },
+      { property: "og:image:secure_url", content: "/og-image.png" },
+      { property: "og:image:type", content: "image/png" },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:alt", content: "Buku Tamu Menara Nobu" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Buku Tamu Menara Nobu" },
+      { name: "twitter:description", content: "Registrasi tamu digital Menara Nobu" },
+      { name: "twitter:image", content: "/og-image.png" },
+      { name: "twitter:image:alt", content: "Buku Tamu Menara Nobu" },
       { name: "theme-color", content: "#07936E" },
     ],
     links: [
@@ -130,11 +141,26 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
+const schemaOrgJsonLd = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "Buku Tamu Menara Nobu",
+  applicationCategory: "BusinessApplication",
+  operatingSystem: "All",
+  description: "Registrasi tamu digital Menara Nobu",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "IDR",
+  },
+});
+
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="id">
       <head>
         <HeadContent />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: schemaOrgJsonLd }} />
       </head>
       <body>
         {children}
