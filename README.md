@@ -103,6 +103,18 @@ Peran disimpan di tabel `user_roles` (bukan di profil) supaya pengguna tidak bis
 
 ---
 
+## Dokumentasi Teknis & Pengujian
+
+Dokumentasi lengkap diagram arsitektur dan hasil pengujian kotak putih tersedia di:
+- **[DOKUMENTASI_SISTEM.md](DOKUMENTASI_SISTEM.md)**:
+  - **Class Diagram**: Struktur entitas data, model TypeScript, dan modul analitik.
+  - **Activity Diagram**: Pemodelan alur proses registrasi lobi, pemindaian pos keamanan, dan analitik laporan.
+  - **Sequence Diagram**: Interaksi pesan pendaftaran realtime, pemindaian QR pass, dan pembuatan berkas Excel/PDF.
+  - **Hasil White-Box Testing**: Analisis kompleksitas siklomatis ($V(G)$), boundary values, dan matriks pengujian unit test (26 test case, 100% lulus).
+- **[PANDUAN_SETUP_DAN_DEPLOY.md](PANDUAN_SETUP_DAN_DEPLOY.md)**: Panduan konfigurasi Supabase dan deploy Vercel.
+
+---
+
 ## Deploy ke Vercel
 
 1. Import repository di Vercel.
