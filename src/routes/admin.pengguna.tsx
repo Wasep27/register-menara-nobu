@@ -18,6 +18,9 @@ import {
   Search,
   Pencil,
   User,
+  Sparkles,
+  Copy,
+  Check,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -79,6 +82,88 @@ const AVAILABLE_ROLES: { role: AppRole; label: string; desc: string; badgeClass:
   },
 ];
 
+interface PasswordStrength {
+  score: number; // 0 to 4
+  label: string;
+  colorClass: string;
+  hasMinLength: boolean;
+  hasUpper: boolean;
+  hasLower: boolean;
+  hasNumber: boolean;
+  hasSymbol: boolean;
+  isComplete: boolean;
+}
+
+function evaluatePassword(password: string): PasswordStrength {
+  const hasMinLength = password.length >= 8;
+  const hasUpper = /[A-Z]/.test(password);
+  const hasLower = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSymbol = /[^A-Za-z0-9]/.test(password);
+
+  let score = 0;
+  if (hasMinLength) score++;
+  if (hasUpper && hasLower) score++;
+  if (hasNumber) score++;
+  if (hasSymbol) score++;
+
+  let label = "Sangat Lemah";
+  let colorClass = "bg-rose-500 text-rose-500";
+  if (score === 1) {
+    label = "Lemah";
+    colorClass = "bg-rose-500 text-rose-500";
+  } else if (score === 2) {
+    label = "Cukup";
+    colorClass = "bg-amber-500 text-amber-500";
+  } else if (score === 3) {
+    label = "Kuat";
+    colorClass = "bg-emerald-500 text-emerald-500";
+  } else if (score >= 4) {
+    label = "Sangat Kuat";
+    colorClass = "bg-emerald-600 text-emerald-600";
+  }
+
+  const isComplete = hasMinLength && hasUpper && hasLower && hasNumber && hasSymbol;
+
+  return {
+    score,
+    label,
+    colorClass,
+    hasMinLength,
+    hasUpper,
+    hasLower,
+    hasNumber,
+    hasSymbol,
+    isComplete,
+  };
+}
+
+function generateStrongPassword(length = 14): string {
+  const uppers = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const lowers = "abcdefghijkmnopqrstuvwxyz";
+  const numbers = "23456789";
+  const symbols = "!@#$%^&*_-+=";
+  const all = uppers + lowers + numbers + symbols;
+
+  const res = [
+    uppers[Math.floor(Math.random() * uppers.length)],
+    lowers[Math.floor(Math.random() * lowers.length)],
+    numbers[Math.floor(Math.random() * numbers.length)],
+    symbols[Math.floor(Math.random() * symbols.length)],
+  ];
+
+  for (let i = res.length; i < length; i++) {
+    res.push(all[Math.floor(Math.random() * all.length)]);
+  }
+
+  for (let i = res.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [res[i], res[j]] = [res[j], res[i]];
+  }
+
+  return res.join("");
+}
+
 function UsersPage() {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [err, setErr] = useState("");
@@ -93,15 +178,18 @@ function UsersPage() {
   const [createPassword, setCreatePassword] = useState("");
   const [createRole, setCreateRole] = useState<AppRole>("staff");
   const [createLoading, setCreateLoading] = useState(false);
+  const [createCopied, setCreateCopied] = useState(false);
 
   // State Dialog Edit Nama Pengguna
   const [editTarget, setEditTarget] = useState<Row | null>(null);
   const [editName, setEditName] = useState("");
   const [editLoading, setEditLoading] = useState(false);
 
-  // State Dialog Reset Password
+  // State Dialog Reset Password (Sesuai Best Practice)
   const [resetTarget, setResetTarget] = useState<Row | null>(null);
   const [newPassword, setNewPassword] = useState("");
+  const [resetConfirmPassword, setResetConfirmPassword] = useState("");
+  const [resetCopied, setResetCopied] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
 
   // State Dialog Hapus Akun
@@ -222,11 +310,66 @@ function UsersPage() {
     }
   };
 
+  const resetStrength = useMemo(() => evaluatePassword(newPassword), [newPassword]);
+  const createStrength = useMemo(() => evaluatePassword(createPassword), [createPassword]);
+
+  const handleGenerateResetPassword = () => {
+    const generated = generateStrongPassword(14);
+    setNewPassword(generated);
+    setResetConfirmPassword(generated);
+    setResetCopied(false);
+    toast.success("Password rekomendasi berhasil dibuat dan disinkronkan ke kedua kolom!");
+  };
+
+  const handleCopyResetPassword = async () => {
+    if (!newPassword) return;
+    try {
+      await navigator.clipboard.writeText(newPassword);
+      setResetCopied(true);
+      toast.success("Password berhasil disalin ke clipboard!");
+      setTimeout(() => setResetCopied(false), 3000);
+    } catch {
+      toast.info(`Password: ${newPassword}`);
+    }
+  };
+
+  const handleGenerateCreatePassword = () => {
+    const generated = generateStrongPassword(14);
+    setCreatePassword(generated);
+    setCreateCopied(false);
+    toast.success("Password rekomendasi berhasil dibuat!");
+  };
+
+  const handleCopyCreatePassword = async () => {
+    if (!createPassword) return;
+    try {
+      await navigator.clipboard.writeText(createPassword);
+      setCreateCopied(true);
+      toast.success("Password berhasil disalin ke clipboard!");
+      setTimeout(() => setCreateCopied(false), 3000);
+    } catch {
+      toast.info(`Password: ${createPassword}`);
+    }
+  };
+
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!resetTarget) return;
-    if (newPassword.length < 6) {
-      toast.error("Password baru minimal 6 karakter");
+
+    if (newPassword.length < 8) {
+      toast.error("Password baru minimal 8 karakter sesuai standar keamanan.");
+      return;
+    }
+
+    if (!resetStrength.isComplete) {
+      toast.error(
+        "Password wajib mengombinasikan huruf besar, huruf kecil, angka, dan karakter khusus/simbol.",
+      );
+      return;
+    }
+
+    if (newPassword !== resetConfirmPassword) {
+      toast.error("Konfirmasi password tidak cocok dengan password baru.");
       return;
     }
 
@@ -243,6 +386,8 @@ function UsersPage() {
         toast.success(`Password untuk akun ${resetTarget.email} berhasil diubah!`);
         setResetTarget(null);
         setNewPassword("");
+        setResetConfirmPassword("");
+        setResetCopied(false);
       }
     } catch (e) {
       toast.error((e as Error).message);
@@ -835,17 +980,59 @@ function UsersPage() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-foreground block mb-1">
-                  Password Awal <span className="text-destructive">*</span>
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-semibold text-foreground block">
+                    Password Awal <span className="text-destructive">*</span>
+                  </label>
+                  <div className="flex items-center gap-2">
+                    {createPassword && (
+                      <button
+                        type="button"
+                        onClick={handleCopyCreatePassword}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline cursor-pointer"
+                      >
+                        {createCopied ? (
+                          <>
+                            <Check className="h-3 w-3 text-emerald-600" />
+                            <span className="text-emerald-600">Tersalin!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-3 w-3" />
+                            <span>Salin</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleGenerateCreatePassword}
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline cursor-pointer"
+                    >
+                      <Sparkles className="h-3 w-3 text-primary" />
+                      <span>Generate Acak</span>
+                    </button>
+                  </div>
+                </div>
                 <PasswordInput
                   required
-                  minLength={6}
-                  placeholder="Minimal 6 karakter"
+                  minLength={8}
+                  placeholder="Minimal 8 karakter kombinasi"
                   value={createPassword}
-                  onChange={(e) => setCreatePassword(e.target.value)}
-                  className="w-full rounded-xl border border-input bg-card px-3.5 py-2 text-sm shadow-xs focus:ring-2 focus:ring-primary/20"
+                  onChange={(e) => {
+                    setCreatePassword(e.target.value);
+                    setCreateCopied(false);
+                  }}
+                  className="w-full rounded-xl border border-input bg-card px-3.5 py-2 text-base sm:text-sm shadow-xs focus:ring-2 focus:ring-primary/20"
                 />
+                {createPassword && (
+                  <div className="mt-1.5 flex items-center justify-between text-[11px]">
+                    <span className="text-muted-foreground">Kekuatan:</span>
+                    <span className={`font-bold ${createStrength.colorClass.split(" ")[1]}`}>
+                      {createStrength.label}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="rounded-xl border border-primary/20 bg-brand-soft/70 p-2.5 text-xs text-primary leading-relaxed">
@@ -955,53 +1142,291 @@ function UsersPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog Reset Password */}
+      {/* Dialog Reset Password (Sesuai Best Practice Keamanan) */}
       <Dialog
         open={!!resetTarget}
-        onOpenChange={(o) => !resetLoading && !o && setResetTarget(null)}
+        onOpenChange={(o) => {
+          if (!resetLoading && !o) {
+            setResetTarget(null);
+            setNewPassword("");
+            setResetConfirmPassword("");
+            setResetCopied(false);
+          }
+        }}
       >
-        <DialogContent className="rounded-2xl max-w-sm">
+        <DialogContent className="w-[calc(100%-1.25rem)] sm:w-full max-w-md mx-auto rounded-3xl p-4 sm:p-6 max-h-[88dvh] overflow-y-auto">
           <form onSubmit={handleResetPassword} className="space-y-4">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <KeyRound className="h-4 w-4" />
+            <DialogHeader className="pr-6 sm:pr-0 text-left">
+              <DialogTitle className="flex items-center gap-2.5 text-base sm:text-lg font-bold text-foreground">
+                <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-brand-soft text-primary shadow-xs shrink-0">
+                  <KeyRound className="h-5 w-5" />
                 </span>
-                Reset Password Akun
+                <span className="truncate">Reset Password Akun</span>
               </DialogTitle>
-              <DialogDescription>
-                Masukkan password baru untuk akun <strong>{resetTarget?.email}</strong>.
+              <DialogDescription className="text-xs text-muted-foreground mt-1">
+                Tentukan kata sandi baru untuk akun <strong>{resetTarget?.email}</strong>.
               </DialogDescription>
             </DialogHeader>
 
-            <div>
-              <label className="text-xs font-semibold text-foreground block mb-1">
-                Password Baru
-              </label>
+            {/* Quick Action: Rekomendasi Password Generator */}
+            <div className="rounded-2xl border border-primary/25 bg-brand-soft/50 p-3 sm:p-3.5 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-primary">
+                  <Sparkles className="h-4 w-4 shrink-0 text-primary" />
+                  <span>Rekomendasi Password Kuat</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleGenerateResetPassword}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-primary/30 bg-card px-2.5 py-1 text-xs font-semibold text-primary shadow-2xs hover:bg-primary hover:text-primary-foreground transition-all active:scale-95 cursor-pointer"
+                >
+                  <RefreshCw className="h-3 w-3 shrink-0" />
+                  <span>Generate Acak</span>
+                </button>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Menghasilkan 14 karakter kombinasi huruf besar, kecil, angka, dan simbol aman, serta
+                otomatis mengisi kolom verifikasi.
+              </p>
+            </div>
+
+            {/* Input Password Baru */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-foreground block">
+                  Password Baru <span className="text-destructive">*</span>
+                </label>
+                {newPassword && (
+                  <button
+                    type="button"
+                    onClick={handleCopyResetPassword}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline cursor-pointer"
+                  >
+                    {resetCopied ? (
+                      <>
+                        <Check className="h-3.5 w-3.5 text-emerald-600" />
+                        <span className="text-emerald-600 font-bold">Tersalin!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-3.5 w-3.5" />
+                        <span>Salin Password</span>
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
               <PasswordInput
                 required
-                minLength={6}
+                minLength={8}
                 autoFocus
-                placeholder="Minimal 6 karakter"
+                placeholder="Minimal 8 karakter kombinasi"
                 value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full rounded-xl border border-input bg-card px-3.5 py-2 text-sm shadow-xs focus:ring-2 focus:ring-primary/20"
+                onChange={(e) => {
+                  setNewPassword(e.target.value);
+                  setResetCopied(false);
+                }}
+                className="w-full min-h-11 sm:min-h-10 rounded-xl border border-input bg-card px-3.5 py-2 text-base sm:text-sm shadow-xs focus:ring-2 focus:ring-primary/20"
               />
             </div>
 
-            <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2 border-t border-border/60">
+            {/* Live Strength Meter */}
+            {newPassword && (
+              <div className="space-y-2 pt-1 fade-up">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground text-[11px]">Kekuatan Sandi:</span>
+                  <span
+                    className={`font-bold text-[11px] ${resetStrength.colorClass.split(" ")[1]}`}
+                  >
+                    {resetStrength.label}
+                  </span>
+                </div>
+                <div className="grid grid-cols-4 gap-1.5 h-1.5 w-full bg-muted/40 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-300 ${
+                      resetStrength.score >= 1
+                        ? resetStrength.colorClass.split(" ")[0]
+                        : "bg-transparent"
+                    }`}
+                  />
+                  <div
+                    className={`h-full rounded-full transition-all duration-300 ${
+                      resetStrength.score >= 2
+                        ? resetStrength.colorClass.split(" ")[0]
+                        : "bg-transparent"
+                    }`}
+                  />
+                  <div
+                    className={`h-full rounded-full transition-all duration-300 ${
+                      resetStrength.score >= 3
+                        ? resetStrength.colorClass.split(" ")[0]
+                        : "bg-transparent"
+                    }`}
+                  />
+                  <div
+                    className={`h-full rounded-full transition-all duration-300 ${
+                      resetStrength.score >= 4
+                        ? resetStrength.colorClass.split(" ")[0]
+                        : "bg-transparent"
+                    }`}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Kriteria Kombinasi Checklist Sesuai Best Practice */}
+            <div className="rounded-xl border border-border/80 bg-muted/20 p-3 space-y-1.5 text-[11px]">
+              <p className="font-semibold text-foreground text-xs mb-1">
+                Kriteria Kombinasi Sandi:
+              </p>
+              <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+                <div
+                  className={`flex items-center gap-1.5 ${
+                    resetStrength.hasMinLength
+                      ? "text-emerald-600 font-semibold"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  <span
+                    className={`inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px] ${
+                      resetStrength.hasMinLength
+                        ? "bg-emerald-500/10 text-emerald-600 font-bold"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {resetStrength.hasMinLength ? "✓" : "○"}
+                  </span>
+                  <span>Min. 8 Karakter</span>
+                </div>
+
+                <div
+                  className={`flex items-center gap-1.5 ${
+                    resetStrength.hasUpper
+                      ? "text-emerald-600 font-semibold"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  <span
+                    className={`inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px] ${
+                      resetStrength.hasUpper
+                        ? "bg-emerald-500/10 text-emerald-600 font-bold"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {resetStrength.hasUpper ? "✓" : "○"}
+                  </span>
+                  <span>Huruf Besar (A-Z)</span>
+                </div>
+
+                <div
+                  className={`flex items-center gap-1.5 ${
+                    resetStrength.hasLower
+                      ? "text-emerald-600 font-semibold"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  <span
+                    className={`inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px] ${
+                      resetStrength.hasLower
+                        ? "bg-emerald-500/10 text-emerald-600 font-bold"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {resetStrength.hasLower ? "✓" : "○"}
+                  </span>
+                  <span>Huruf Kecil (a-z)</span>
+                </div>
+
+                <div
+                  className={`flex items-center gap-1.5 ${
+                    resetStrength.hasNumber
+                      ? "text-emerald-600 font-semibold"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  <span
+                    className={`inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px] ${
+                      resetStrength.hasNumber
+                        ? "bg-emerald-500/10 text-emerald-600 font-bold"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {resetStrength.hasNumber ? "✓" : "○"}
+                  </span>
+                  <span>Angka (0-9)</span>
+                </div>
+
+                <div
+                  className={`col-span-2 flex items-center gap-1.5 ${
+                    resetStrength.hasSymbol
+                      ? "text-emerald-600 font-semibold"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  <span
+                    className={`inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px] ${
+                      resetStrength.hasSymbol
+                        ? "bg-emerald-500/10 text-emerald-600 font-bold"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {resetStrength.hasSymbol ? "✓" : "○"}
+                  </span>
+                  <span>Simbol Khusus (!@#$%^&*)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Input Verifikasi Konfirmasi Password */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground block">
+                Konfirmasi Password Baru <span className="text-destructive">*</span>
+              </label>
+              <PasswordInput
+                required
+                minLength={8}
+                placeholder="Ketik ulang password baru untuk verifikasi"
+                value={resetConfirmPassword}
+                onChange={(e) => setResetConfirmPassword(e.target.value)}
+                className="w-full min-h-11 sm:min-h-10 rounded-xl border border-input bg-card px-3.5 py-2 text-base sm:text-sm shadow-xs focus:ring-2 focus:ring-primary/20"
+              />
+              {resetConfirmPassword && (
+                <div className="pt-0.5">
+                  {newPassword === resetConfirmPassword ? (
+                    <p className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                      <Check className="h-3.5 w-3.5" /> Konfirmasi password cocok & terverifikasi
+                    </p>
+                  ) : (
+                    <p className="flex items-center gap-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                      ⚠ Konfirmasi password belum sama
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-3 border-t border-border/60">
               <button
                 type="button"
                 disabled={resetLoading}
-                onClick={() => setResetTarget(null)}
-                className="w-full sm:w-auto min-h-11 sm:min-h-10 rounded-xl border border-input px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted transition-colors active:scale-95"
+                onClick={() => {
+                  setResetTarget(null);
+                  setNewPassword("");
+                  setResetConfirmPassword("");
+                }}
+                className="w-full sm:w-auto min-h-11 sm:min-h-10 rounded-xl border border-input px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted transition-colors active:scale-95 cursor-pointer"
               >
                 Batal
               </button>
               <button
                 type="submit"
-                disabled={resetLoading}
-                className="w-full sm:w-auto inline-flex min-h-11 sm:min-h-10 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-sm hover:brightness-110 active:scale-95 disabled:opacity-50 transition-all"
+                disabled={
+                  resetLoading ||
+                  !resetStrength.isComplete ||
+                  newPassword !== resetConfirmPassword ||
+                  !newPassword
+                }
+                className="w-full sm:w-auto inline-flex min-h-11 sm:min-h-10 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2 text-xs font-bold text-primary-foreground shadow-sm hover:brightness-110 active:scale-95 disabled:opacity-50 transition-all cursor-pointer"
               >
                 {resetLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" /> : null}
                 <span>{resetLoading ? "Menyimpan..." : "Simpan Password Baru"}</span>
