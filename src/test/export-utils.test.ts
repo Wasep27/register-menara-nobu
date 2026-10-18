@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { escapeCsvCell, exportToExcel, exportToPdf, exportToCsv } from "@/lib/export-utils";
+import {
+  escapeCsvCell,
+  exportToExcel,
+  exportToPdf,
+  exportToCsv,
+  exportBadgePassPdf,
+  exportDailyVisitLogPdf,
+} from "@/lib/export-utils";
 
 describe("export-utils", () => {
   let clickSpy: ReturnType<typeof vi.spyOn>;
@@ -49,7 +56,7 @@ describe("export-utils", () => {
   });
 
   describe("exportToPdf", () => {
-    it("generates a PDF document without throwing", () => {
+    it("generates a PDF document with Nobu theme and logo without throwing", () => {
       expect(() => {
         exportToPdf({
           filename: "test-laporan-pdf",
@@ -59,6 +66,70 @@ describe("export-utils", () => {
           rows: [
             [1, "10:00 WIB", "Ahmad", "PT Nobu", "Meeting"],
             [2, "11:00 WIB", "Dewi", "Bank Central", "Pengiriman"],
+          ],
+        });
+      }).not.toThrow();
+    });
+  });
+
+  describe("exportBadgePassPdf", () => {
+    it("generates visitor badge PDF with lanyard format without throwing", () => {
+      expect(() => {
+        exportBadgePassPdf({
+          data: {
+            id: "guest-test-123",
+            name: "Budi Santoso",
+            institution: "PT Teknologi Indonesia",
+            badgeNumber: "VTR-001",
+            checkInTime: "10:30 WIB",
+            checkInDate: "18 Okt 2026",
+            employeeName: "Andi Wijaya",
+            purposeName: "Meeting Proyek",
+          },
+          format: "lanyard",
+        });
+      }).not.toThrow();
+    });
+
+    it("generates visitor badge PDF with compact format without throwing", () => {
+      expect(() => {
+        exportBadgePassPdf({
+          data: {
+            id: "guest-test-456",
+            name: "Siti Rahma",
+            institution: "Kementerian Keuangan",
+            badgeNumber: "VTR-002",
+          },
+          format: "compact",
+        });
+      }).not.toThrow();
+    });
+  });
+
+  describe("exportDailyVisitLogPdf", () => {
+    it("generates daily security visit log PDF with 3-party sign-off without throwing", () => {
+      expect(() => {
+        exportDailyVisitLogPdf({
+          date: "2026-10-18",
+          rows: [
+            {
+              id: "g1",
+              name: "Joko",
+              institution: "PT Sentosa",
+              phone: "08123456789",
+              check_in_time: "2026-10-18T03:00:00Z",
+              badge_code: "VTR-001",
+              is_important: false,
+              scheduled_at: null,
+              signature_url: null,
+              notes: "Tamu VIP",
+              created_at: "2026-10-18T03:00:00Z",
+              fill_duration_seconds: 30,
+              visit_purpose_id: "p1",
+              employee_id: "e1",
+              employees: { name: "Rina", department: "IT" },
+              visit_purposes: { name: "Diskusi Teknis" },
+            },
           ],
         });
       }).not.toThrow();

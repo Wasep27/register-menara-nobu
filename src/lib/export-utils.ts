@@ -6,6 +6,27 @@ import type { VisitorBadgeData } from "@/lib/badge-utils";
 import { encodeCode39, formatBadgeCode, generateQrMatrix } from "@/lib/barcode";
 import type { Guest } from "@/lib/supabase";
 import { formatWibTime, formatWibWeekdayDate } from "@/lib/date-utils";
+import { NOBU_LOGO_BASE64, NOBU_LOGO_ASPECT_RATIO } from "@/assets/logo-base64";
+
+/**
+ * Palet warna resmi tema web Menara Nobu untuk dokumen PDF:
+ * - primary: Emerald Hijau Nobu (#07936e)
+ * - brand: Aksen Aqua/Mint cerah (#10d5a0)
+ * - brandSoft: Latar badge mint muda (#e3faf3)
+ * - tableAlt: Latar selang-seling baris tabel (#f4fbf8)
+ * - foreground: Teks gelap berwibawa (#10241e)
+ * - muted: Teks sekunder slate-sage (#4f625c)
+ * - border: Garis pembatas elegan (#d6e7e0)
+ */
+export const NOBU_PDF_THEME = {
+  primary: [7, 147, 110] as [number, number, number],
+  brand: [16, 213, 160] as [number, number, number],
+  brandSoft: [227, 250, 243] as [number, number, number],
+  tableAlt: [244, 251, 248] as [number, number, number],
+  foreground: [16, 36, 30] as [number, number, number],
+  muted: [79, 98, 92] as [number, number, number],
+  border: [214, 231, 224] as [number, number, number],
+};
 
 export interface ExportDataOptions {
   filename: string;
@@ -117,48 +138,63 @@ export function exportToPdf({
     timeStyle: "medium",
   });
 
-  // 1. Accent top bar (Navy & Primary Gold/Cyan)
-  doc.setFillColor(15, 23, 42); // slate-900 (Navy)
+  // 1. Accent top bar (Emerald & Mint Nobu Theme)
+  doc.setFillColor(...NOBU_PDF_THEME.primary);
   doc.rect(0, 0, pageWidth, 5, "F");
-  doc.setFillColor(14, 165, 233); // sky-500
+  doc.setFillColor(...NOBU_PDF_THEME.brand);
   doc.rect(0, 5, pageWidth, 1.5, "F");
 
-  // 2. Kop Dokumen
+  // 2. Kop Dokumen Resmi dengan Logo Asli Nobu
+  const logoW = 36;
+  const logoH = logoW / NOBU_LOGO_ASPECT_RATIO;
+  doc.addImage(NOBU_LOGO_BASE64, "PNG", 14, 8.5, logoW, logoH);
+
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.setTextColor(15, 23, 42);
-  doc.text("MENARA NOBU — BUKU TAMU DIGITAL", 14, 16);
+  doc.setFontSize(11);
+  doc.setTextColor(...NOBU_PDF_THEME.foreground);
+  doc.text("MENARA NOBU — BUKU TAMU DIGITAL", 54, 13);
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(100, 116, 139); // slate-500
-  doc.text(subtitle, 14, 21);
+  doc.setFontSize(8);
+  doc.setTextColor(...NOBU_PDF_THEME.muted);
+  doc.text(subtitle, 54, 17.5);
 
-  // 3. Garis pembatas kop
-  doc.setDrawColor(226, 232, 240); // slate-200
-  doc.setLineWidth(0.5);
-  doc.line(14, 24, pageWidth - 14, 24);
+  // Badge label resmi di sudut kanan atas
+  const tagW = 34;
+  doc.setFillColor(...NOBU_PDF_THEME.brandSoft);
+  doc.setDrawColor(...NOBU_PDF_THEME.brand);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(pageWidth - 14 - tagW, 9.5, tagW, 6.5, 2, 2, "FD");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7);
+  doc.setTextColor(...NOBU_PDF_THEME.primary);
+  doc.text("DOKUMEN RESMI", pageWidth - 14 - tagW / 2, 13.8, { align: "center" });
+
+  // 3. Garis pembatas kop beraksen tema
+  doc.setDrawColor(...NOBU_PDF_THEME.border);
+  doc.setLineWidth(0.4);
+  doc.line(14, 21.5, pageWidth - 14, 21.5);
 
   // 4. Judul Laporan & Metadata Card
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  doc.setTextColor(2, 132, 199); // primary blue
-  doc.text(title.toUpperCase(), 14, 31);
+  doc.setFontSize(11.5);
+  doc.setTextColor(...NOBU_PDF_THEME.primary);
+  doc.text(title.toUpperCase(), 14, 28);
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  doc.setTextColor(71, 85, 105); // slate-600
+  doc.setFontSize(8);
+  doc.setTextColor(...NOBU_PDF_THEME.muted);
 
   let metaText = `Waktu Cetak: ${exportDate} WIB`;
   if (period) {
     metaText = `Periode: ${period}  |  ${metaText}`;
   }
   metaText += `  |  Total Data: ${rows.length} Catatan`;
-  doc.text(metaText, 14, 36);
+  doc.text(metaText, 14, 33);
 
-  // 5. Render Tabel Data dengan jsPDF autoTable
+  // 5. Render Tabel Data dengan jsPDF autoTable bergaris rapi bertema web
   autoTable(doc, {
-    startY: 40,
+    startY: 37,
     head: [headers],
     body: rows.map((r) =>
       r.map((c) => (c === null || c === undefined ? "-" : String(c).trim() || "-")),
@@ -166,7 +202,7 @@ export function exportToPdf({
     margin: { left: 14, right: 14, bottom: 20 },
     theme: "grid",
     headStyles: {
-      fillColor: [15, 23, 42], // Slate 900
+      fillColor: NOBU_PDF_THEME.primary,
       textColor: [255, 255, 255],
       fontStyle: "bold",
       fontSize: 8.5,
@@ -174,28 +210,33 @@ export function exportToPdf({
       cellPadding: 2.5,
     },
     bodyStyles: {
-      textColor: [51, 65, 85], // Slate 700
+      textColor: NOBU_PDF_THEME.foreground,
       fontSize: 8,
       cellPadding: 2.2,
       valign: "middle",
     },
     alternateRowStyles: {
-      fillColor: [248, 250, 252], // Slate 50
+      fillColor: NOBU_PDF_THEME.tableAlt,
     },
-    tableLineColor: [226, 232, 240],
+    tableLineColor: NOBU_PDF_THEME.border,
     tableLineWidth: 0.2,
     didDrawPage: (data) => {
-      // Footer Nomor Halaman
+      // Garis pembatas footer
+      doc.setDrawColor(...NOBU_PDF_THEME.border);
+      doc.setLineWidth(0.3);
+      doc.line(14, pageHeight - 11, pageWidth - 14, pageHeight - 11);
+
+      // Footer Nomor Halaman & Metadata Sistem
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7.5);
-      doc.setTextColor(148, 163, 184); // Slate 400
+      doc.setTextColor(...NOBU_PDF_THEME.muted);
 
       const footerText = `Dokumen Resmi Menara Nobu · Halaman ${data.pageNumber}`;
-      doc.text(footerText, 14, pageHeight - 8);
+      doc.text(footerText, 14, pageHeight - 6);
 
       const systemTag = "Sistem Manajemen Resepsionis & Pos Keamanan";
-      const tagWidth = doc.getTextWidth(systemTag);
-      doc.text(systemTag, pageWidth - 14 - tagWidth, pageHeight - 8);
+      const systemWidth = doc.getTextWidth(systemTag);
+      doc.text(systemTag, pageWidth - 14 - systemWidth, pageHeight - 6);
     },
   });
 
@@ -241,93 +282,105 @@ export function exportBadgePassPdf({ data, format = "lanyard" }: BadgePdfOptions
       year: "numeric",
     });
 
-  // Border garis potong (cut guide)
-  doc.setDrawColor(203, 213, 225); // slate-300
+  // Border garis potong (cut guide) beraksen mint halus
+  doc.setDrawColor(...NOBU_PDF_THEME.border);
   doc.setLineWidth(0.4);
   doc.roundedRect(2, 2, width - 4, height - 4, 3, 3, "S");
 
   // Lubang tali lanyard (slot punch indicator) di bagian atas
   if (isLanyard) {
-    doc.setDrawColor(226, 232, 240);
-    doc.setFillColor(241, 245, 249);
+    doc.setDrawColor(...NOBU_PDF_THEME.border);
+    doc.setFillColor(...NOBU_PDF_THEME.tableAlt);
     doc.roundedRect(width / 2 - 7, 4, 14, 3, 1.5, 1.5, "FD");
   }
 
   const startY = isLanyard ? 10 : 4;
 
-  // Header Banner Gedung (Navy)
-  doc.setFillColor(15, 23, 42); // slate-900
-  doc.roundedRect(4, startY, width - 8, 14, 2, 2, "F");
+  // Header Banner Gedung dengan Logo Asli Nobu & Aksen Kartu
+  const bannerH = isLanyard ? 17 : 14;
+  doc.setFillColor(...NOBU_PDF_THEME.tableAlt);
+  doc.setDrawColor(...NOBU_PDF_THEME.border);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(4, startY, width - 8, bannerH, 2.5, 2.5, "FD");
+
+  // Tampilkan Logo Resmi Nobu di Header Kartu
+  const badgeLogoW = isLanyard ? 36 : 28;
+  const badgeLogoH = badgeLogoW / NOBU_LOGO_ASPECT_RATIO;
+  doc.addImage(
+    NOBU_LOGO_BASE64,
+    "PNG",
+    width / 2 - badgeLogoW / 2,
+    startY + 2.2,
+    badgeLogoW,
+    badgeLogoH,
+  );
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.setTextColor(255, 255, 255);
-  doc.text("MENARA NOBU", width / 2, startY + 6, { align: "center" });
+  doc.setFontSize(isLanyard ? 5.5 : 5);
+  doc.setTextColor(...NOBU_PDF_THEME.muted);
+  doc.text("GEDUNG PERKANTORAN · JAKARTA", width / 2, startY + badgeLogoH + 5.2, {
+    align: "center",
+  });
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(6.5);
-  doc.setTextColor(203, 213, 225);
-  doc.text("GEDUNG PERKANTORAN · JAKARTA", width / 2, startY + 10.5, { align: "center" });
-
-  // Visitor Pass Pill Banner (Emerald/Green)
-  const pillY = startY + 16;
-  doc.setFillColor(16, 185, 129); // emerald-500
-  doc.roundedRect(8, pillY, width - 16, 6, 3, 3, "F");
+  // Visitor Pass Pill Banner (Emerald Green #07936e)
+  const pillY = startY + bannerH + 2.5;
+  doc.setFillColor(...NOBU_PDF_THEME.primary);
+  doc.roundedRect(8, pillY, width - 16, 6.5, 3, 3, "F");
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7.5);
   doc.setTextColor(255, 255, 255);
-  doc.text("VISITOR PASS · KARTU TAMU", width / 2, pillY + 4.2, { align: "center" });
+  doc.text("VISITOR PASS · KARTU TAMU", width / 2, pillY + 4.5, { align: "center" });
 
   // Nama Pengunjung (Bold Besar)
-  const nameY = pillY + 12;
+  const nameY = pillY + 11.5;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
-  doc.setTextColor(15, 23, 42);
+  doc.setTextColor(...NOBU_PDF_THEME.foreground);
   const nameLines = doc.splitTextToSize(data.name.toUpperCase(), width - 12);
   doc.text(nameLines, width / 2, nameY, { align: "center" });
 
-  // Instansi / Perusahaan
+  // Instansi / Perusahaan (Emerald Accent)
   const instY = nameY + nameLines.length * 4.5 + 1;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8.5);
-  doc.setTextColor(2, 132, 199); // primary sky-600
+  doc.setTextColor(...NOBU_PDF_THEME.primary);
   const instLines = doc.splitTextToSize(data.institution || "-", width - 14);
   doc.text(instLines, width / 2, instY, { align: "center" });
 
   // Detail Box (Waktu, Tanggal, Menemui, Keperluan)
   const boxY = instY + instLines.length * 3.8 + 2;
   const boxHeight = 25;
-  doc.setFillColor(248, 250, 252); // slate-50
-  doc.setDrawColor(226, 232, 240);
+  doc.setFillColor(...NOBU_PDF_THEME.tableAlt);
+  doc.setDrawColor(...NOBU_PDF_THEME.border);
   doc.roundedRect(6, boxY, width - 12, boxHeight, 2, 2, "FD");
 
   // Row 1: Waktu & Tanggal
   doc.setFont("helvetica", "normal");
   doc.setFontSize(6);
-  doc.setTextColor(100, 116, 139);
+  doc.setTextColor(...NOBU_PDF_THEME.muted);
   doc.text("WAKTU CHECK-IN", 9, boxY + 4.5);
   doc.text("TANGGAL", width / 2 + 2, boxY + 4.5);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7.5);
-  doc.setTextColor(15, 23, 42);
+  doc.setTextColor(...NOBU_PDF_THEME.foreground);
   doc.text(displayTime, 9, boxY + 8.5);
   doc.text(displayDate, width / 2 + 2, boxY + 8.5);
 
   // Line separator internal box
-  doc.setDrawColor(226, 232, 240);
+  doc.setDrawColor(...NOBU_PDF_THEME.border);
   doc.line(9, boxY + 11.5, width - 9, boxY + 11.5);
 
   // Row 2: Menemui & Tujuan
   doc.setFont("helvetica", "normal");
   doc.setFontSize(6);
-  doc.setTextColor(100, 116, 139);
+  doc.setTextColor(...NOBU_PDF_THEME.muted);
   doc.text("MENEMUI / TUJUAN", 9, boxY + 15.5);
   doc.text("KEPERLUAN", width / 2 + 2, boxY + 15.5);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7.5);
-  doc.setTextColor(15, 23, 42);
+  doc.setTextColor(...NOBU_PDF_THEME.foreground);
   const hostText = data.employeeName || "Resepsionis Lobi (Umum)";
   const shortHost = hostText.length > 16 ? `${hostText.slice(0, 15)}…` : hostText;
   doc.text(shortHost, 9, boxY + 20);
@@ -345,7 +398,7 @@ export function exportBadgePassPdf({ data, format = "lanyard" }: BadgePdfOptions
   const qrSizeMm = 16;
   const qrX = width - 8 - qrSizeMm;
   const qrCellSize = qrSizeMm / qrMatrix.length;
-  doc.setFillColor(15, 23, 42);
+  doc.setFillColor(...NOBU_PDF_THEME.foreground);
   qrMatrix.forEach((row, r) => {
     row.forEach((val, c) => {
       if (val) {
@@ -359,7 +412,7 @@ export function exportBadgePassPdf({ data, format = "lanyard" }: BadgePdfOptions
   const scale = barcodeMaxW / (barcodeWidth || 1);
   const barH = 10;
   let currX = 8;
-  doc.setFillColor(15, 23, 42);
+  doc.setFillColor(...NOBU_PDF_THEME.foreground);
   barcodeElements.forEach((el) => {
     const barW = el.width * scale;
     if (el.isBar) {
@@ -371,14 +424,14 @@ export function exportBadgePassPdf({ data, format = "lanyard" }: BadgePdfOptions
   // Teks Kode Badge di bawah barcode
   doc.setFont("courier", "bold");
   doc.setFontSize(7.5);
-  doc.setTextColor(15, 23, 42);
+  doc.setTextColor(...NOBU_PDF_THEME.primary);
   doc.text(`*${badgeCode}*`, (8 + qrX - 4) / 2, codeY + 15.5, { align: "center" });
 
   // Security terms footer
   const footerY = height - 9;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(5.5);
-  doc.setTextColor(100, 116, 139);
+  doc.setTextColor(...NOBU_PDF_THEME.muted);
   doc.text(
     "Wajib dikalungkan selama berada di area Menara Nobu · Kembalikan saat check-out",
     width / 2,
@@ -426,43 +479,48 @@ export function exportDailyVisitLogPdf({
     timeStyle: "short",
   });
 
-  // Top colored corporate bar
-  doc.setFillColor(15, 23, 42); // slate-900 (Navy)
+  // Top colored corporate bar (Nobu Emerald & Mint)
+  doc.setFillColor(...NOBU_PDF_THEME.primary);
   doc.rect(0, 0, pageWidth, 5, "F");
-  doc.setFillColor(16, 185, 129); // emerald-500
+  doc.setFillColor(...NOBU_PDF_THEME.brand);
   doc.rect(0, 5, pageWidth, 1.5, "F");
 
-  // Kop Lembar Dokumen
+  // Kop Lembar Dokumen Resmi dengan Logo Nobu di Sisi Kanan
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
-  doc.setTextColor(15, 23, 42);
-  doc.text("MENARA NOBU — SISTEM MANAJEMEN KEAMANAN & RESEPSIONIS", 14, 15);
+  doc.setFontSize(12);
+  doc.setTextColor(...NOBU_PDF_THEME.foreground);
+  doc.text("MENARA NOBU — SISTEM MANAJEMEN KEAMANAN & RESEPSIONIS", 14, 13.5);
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  doc.setTextColor(100, 116, 139);
-  doc.text("Gedung Perkantoran Menara Nobu · Pos Jaga Lobi Utama & Akses Masuk", 14, 19.5);
+  doc.setFontSize(8);
+  doc.setTextColor(...NOBU_PDF_THEME.muted);
+  doc.text("Gedung Perkantoran Menara Nobu · Pos Jaga Lobi Utama & Akses Masuk", 14, 18);
 
-  // Line separator
-  doc.setDrawColor(226, 232, 240);
+  // Logo Resmi Nobu di Sudut Kanan Atas Kop
+  const logoW = 38;
+  const logoH = logoW / NOBU_LOGO_ASPECT_RATIO;
+  doc.addImage(NOBU_LOGO_BASE64, "PNG", pageWidth - 14 - logoW, 8, logoW, logoH);
+
+  // Garis pembatas kop beraksen tema
+  doc.setDrawColor(...NOBU_PDF_THEME.border);
   doc.setLineWidth(0.4);
-  doc.line(14, 22, pageWidth - 14, 22);
+  doc.line(14, 21.5, pageWidth - 14, 21.5);
 
   // Title Box
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(11.5);
-  doc.setTextColor(2, 132, 199); // sky-600
-  doc.text("LEMBAR LOG KUNJUNGAN HARIAN (DAILY VISITOR SECURITY LOG)", 14, 28);
+  doc.setFontSize(11);
+  doc.setTextColor(...NOBU_PDF_THEME.primary);
+  doc.text("LEMBAR LOG KUNJUNGAN HARIAN (DAILY VISITOR SECURITY LOG)", 14, 27);
 
   // Stats bar
   const staffVisits = rows.filter((r) => r.employees?.name).length;
   const generalVisits = rows.length - staffVisits;
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(51, 65, 85);
+  doc.setFontSize(7.5);
+  doc.setTextColor(...NOBU_PDF_THEME.muted);
   const metaLine = `Hari & Tanggal: ${formattedDate}   |   ${shiftName}   |   Total Tamu: ${rows.length} Orang (Bertemu Staf: ${staffVisits}, Umum/Resepsionis: ${generalVisits})   |   Dicetak: ${printTimestamp} WIB`;
-  doc.text(metaLine, 14, 33);
+  doc.text(metaLine, 14, 31.5);
 
   // Table Data
   const headers = [
@@ -494,21 +552,21 @@ export function exportDailyVisitLogPdf({
   ]);
 
   autoTable(doc, {
-    startY: 37,
+    startY: 35,
     head: [headers],
     body: bodyData,
     margin: { left: 14, right: 14, bottom: 35 },
     theme: "grid",
     headStyles: {
-      fillColor: [15, 23, 42],
+      fillColor: NOBU_PDF_THEME.primary,
       textColor: [255, 255, 255],
       fontStyle: "bold",
       fontSize: 8,
       halign: "left",
-      cellPadding: 2,
+      cellPadding: 2.2,
     },
     bodyStyles: {
-      textColor: [51, 65, 85],
+      textColor: NOBU_PDF_THEME.foreground,
       fontSize: 7.5,
       cellPadding: 2,
       valign: "middle",
@@ -516,7 +574,7 @@ export function exportDailyVisitLogPdf({
     columnStyles: {
       0: { cellWidth: 10, halign: "center" },
       1: { cellWidth: 18, halign: "center" },
-      2: { cellWidth: 26, font: "courier", fontSize: 7 },
+      2: { cellWidth: 26, font: "courier", fontSize: 7, fontStyle: "bold", textColor: NOBU_PDF_THEME.primary },
       3: { cellWidth: 36, fontStyle: "bold" },
       4: { cellWidth: 35 },
       5: { cellWidth: 24 },
@@ -526,14 +584,19 @@ export function exportDailyVisitLogPdf({
       9: { cellWidth: 24 }, // Paraf column
     },
     alternateRowStyles: {
-      fillColor: [248, 250, 252],
+      fillColor: NOBU_PDF_THEME.tableAlt,
     },
-    tableLineColor: [226, 232, 240],
+    tableLineColor: NOBU_PDF_THEME.border,
     tableLineWidth: 0.2,
     didDrawPage: (data) => {
+      // Garis pembatas footer
+      doc.setDrawColor(...NOBU_PDF_THEME.border);
+      doc.setLineWidth(0.3);
+      doc.line(14, pageHeight - 9, pageWidth - 14, pageHeight - 9);
+
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7);
-      doc.setTextColor(148, 163, 184);
+      doc.setTextColor(...NOBU_PDF_THEME.muted);
       doc.text(
         `Dokumen Resmi Keamanan Menara Nobu · Halaman ${data.pageNumber}`,
         14,
@@ -551,30 +614,45 @@ export function exportDailyVisitLogPdf({
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.5);
-  doc.setTextColor(71, 85, 105);
+  doc.setTextColor(...NOBU_PDF_THEME.muted);
 
   const col1X = 20;
   const col2X = pageWidth / 2 - 25;
   const col3X = pageWidth - 70;
 
   doc.text("Dibuat Oleh,", col1X, signY);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...NOBU_PDF_THEME.foreground);
   doc.text("Resepsionis Lobi", col1X, signY + 3.5);
+  doc.setDrawColor(...NOBU_PDF_THEME.primary);
   doc.line(col1X, signY + 16, col1X + 45, signY + 16);
+  doc.setFont("helvetica", "normal");
   doc.setFontSize(6.5);
+  doc.setTextColor(...NOBU_PDF_THEME.muted);
   doc.text("(Nama & Tanda Tangan)", col1X, signY + 19);
 
   doc.setFontSize(7.5);
   doc.text("Diperiksa Oleh,", col2X, signY);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...NOBU_PDF_THEME.foreground);
   doc.text("Petugas Pos Keamanan", col2X, signY + 3.5);
+  doc.setDrawColor(...NOBU_PDF_THEME.primary);
   doc.line(col2X, signY + 16, col2X + 45, signY + 16);
+  doc.setFont("helvetica", "normal");
   doc.setFontSize(6.5);
+  doc.setTextColor(...NOBU_PDF_THEME.muted);
   doc.text("(Nama & Tanda Tangan)", col2X, signY + 19);
 
   doc.setFontSize(7.5);
   doc.text("Disetujui Oleh,", col3X, signY);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...NOBU_PDF_THEME.foreground);
   doc.text("Komandan Regu / Chief Security", col3X, signY + 3.5);
+  doc.setDrawColor(...NOBU_PDF_THEME.primary);
   doc.line(col3X, signY + 16, col3X + 45, signY + 16);
+  doc.setFont("helvetica", "normal");
   doc.setFontSize(6.5);
+  doc.setTextColor(...NOBU_PDF_THEME.muted);
   doc.text("(Nama, NIK & Cap Stempel)", col3X, signY + 19);
 
   doc.save(`log-harian-keamanan-${date}.pdf`);
