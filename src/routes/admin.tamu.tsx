@@ -141,7 +141,7 @@ function Guests() {
     try {
       const all = await fetchAllData();
       const todayStr = new Date().toISOString().slice(0, 10);
-      exportToExcel({
+      await exportToExcel({
         filename: `buku-tamu-menara-nobu-${todayStr}`,
         title: "Daftar Buku Tamu Menara Nobu",
         subtitle: "Gedung Perkantoran Menara Nobu · Pos Keamanan & Resepsionis",
@@ -169,7 +169,7 @@ function Guests() {
           r.fill_duration_seconds ?? "-",
         ]),
       });
-      toast.success("Data buku tamu berhasil diekspor ke Excel (.xlsx)");
+      toast.success("Data buku tamu berhasil diekspor ke Excel (.xlsx) rapih bergaris");
     } catch {
       toast.error("Gagal mengekspor data ke Excel");
     } finally {

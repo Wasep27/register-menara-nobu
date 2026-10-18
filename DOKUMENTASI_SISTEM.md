@@ -1,4 +1,5 @@
 # Dokumentasi Perancangan Sistem & Pengujian White-Box
+
 ## Sistem Buku Tamu Digital — Menara Nobu
 
 Dokumen ini memuat dokumentasi rancangan berorientasi objek (**Class Diagram**), pemodelan proses bisnis (**Activity Diagram**), interaksi dinamis antar komponen (**Sequence Diagram**), serta laporan dan analisis pengujian kotak putih (**White-Box Testing**).
@@ -145,16 +146,18 @@ classDiagram
 ```
 
 ### Penjelasan Entitas & Relasi
-1. **Guest (Buku Tamu)**: Menyimpan transaksi kedatangan pengunjung. Memiliki relasi opsional (`0..1`) ke `Employee` (bila `null`, diklasifikasikan sebagai *Tujuan Umum / Resepsionis Lobi*) dan relasi wajib (`1`) ke `VisitPurpose`.
+
+1. **Guest (Buku Tamu)**: Menyimpan transaksi kedatangan pengunjung. Memiliki relasi opsional (`0..1`) ke `Employee` (bila `null`, diklasifikasikan sebagai _Tujuan Umum / Resepsionis Lobi_) dan relasi wajib (`1`) ke `VisitPurpose`.
 2. **Employee (Direktori Host / Karyawan)**: Mewakili staf gedung Menara Nobu beserta unit kerja/departemen. Dapat terhubung secara opsional dengan akun `auth.users` melalui tabel `Profile`.
-3. **UserRole & Profile**: Menerapkan *Role-Based Access Control* (RBAC) dengan 3 peran: `admin` (Super Admin), `security` (Pos Keamanan/Satpam), dan `staff` (Front Desk / Resepsionis).
-4. **DashboardAnalytics & ExportUtils**: Layer kalkulasi cerdas yang mengolah data mentah menjadi metrik visual (*Peak Hours*, *Department Breakdown*, *Actionable Building Insights*) dan memproduksi berkas biner `.xlsx` dan `.pdf`.
+3. **UserRole & Profile**: Menerapkan _Role-Based Access Control_ (RBAC) dengan 3 peran: `admin` (Super Admin), `security` (Pos Keamanan/Satpam), dan `staff` (Front Desk / Resepsionis).
+4. **DashboardAnalytics & ExportUtils**: Layer kalkulasi cerdas yang mengolah data mentah menjadi metrik visual (_Peak Hours_, _Department Breakdown_, _Actionable Building Insights_) dan memproduksi berkas biner `.xlsx` dan `.pdf`.
 
 ---
 
 ## 2. Activity Diagram (Diagram Aktivitas)
 
 ### A. Alur Registrasi Tamu (Kunjungan Spesifik & Tujuan Umum)
+
 Diagram ini memodelkan proses dari tamu membuka aplikasi di lobi hingga mendapatkan kartu badge akses digital.
 
 ```mermaid
@@ -163,29 +166,29 @@ flowchart TD
     OpenForm --> DraftCheck{Ada Draft Tersimpan di LocalStorage/Server?}
     DraftCheck -- Ya --> RestoreDraft[Pulihkan Data Isian Otomatis]
     DraftCheck -- Tidak --> NewForm[Tampilkan Formulir Kosong]
-    
+
     RestoreDraft --> SelectType[Pilih Kategori Kunjungan]
     NewForm --> SelectType
-    
+
     SelectType --> TypeDecision{Jenis Kunjungan?}
     TypeDecision -- Bertemu Staf / Karyawan --> SearchHost[Cari & Pilih Host dari Direktori Aktif]
     TypeDecision -- Tujuan Umum / Resepsionis --> SetGeneral[Tujuan: Resepsionis Lobi / Umum]
-    
+
     SearchHost --> FillDetails[Isi Nama, Instansi, Nomor HP, Jadwal, Catatan]
     SetGeneral --> FillDetails
-    
+
     FillDetails --> SubmitForm[Klik Tombol 'Kirim Data Kunjungan']
     SubmitForm --> ValidateInput{Validasi Client Zod Valid?}
-    
+
     ValidateInput -- Tidak Valid --> ShowError[Tampilkan Pesan Error pada Kolom Terkait]
     ShowError --> FillDetails
-    
+
     ValidateInput -- Valid --> CallRPC[Eksekusi RPC Supabase: submit_guest]
     CallRPC --> DBValidate{Validasi Database & RLS Sukses?}
-    
+
     DBValidate -- Gagal --> ShowServerError[Tampilkan Notifikasi Gagal Kirim]
     ShowServerError --> FillDetails
-    
+
     DBValidate -- Sukses --> GenBadge[Generate Unique Badge Code VTR-YYMMDD-XXXX]
     GenBadge --> TriggerRealtime[Kirim Realtime Notification ke Staf Host]
     TriggerRealtime --> CleanDraft[Hapus Draft Formulir]
@@ -200,28 +203,28 @@ flowchart TD
 flowchart TD
     StartScan([Mulai: Tamu Datang ke Meja Keamanan]) --> OpenScanner[Petugas Buka Halaman /admin/scan]
     OpenScanner --> ScanMethod{Metode Input?}
-    
+
     ScanMethod -- Kamera Ponsel / Webcam --> VideoScan[Arahkan Kamera ke QR Code Tamu]
     ScanMethod -- Barcode Reader USB --> ReaderInput[Scan Barcode Kartu Fisik Tamu]
     ScanMethod -- Input Manual --> ManualInput[Ketik Kode Badge Pass]
-    
+
     VideoScan --> DetectCode[Deteksi Kode Badge Pass]
     ReaderInput --> DetectCode
     ManualInput --> DetectCode
-    
+
     DetectCode --> QueryDB[Panggil RPC: check_guest_status]
     QueryDB --> CheckResult{Status Tamu?}
-    
+
     CheckResult -- Tidak Ditemukan --> AlertInvalid[Bunyikan Nada Error & Tampilkan Badge Invalid]
     CheckResult -- Ditemukan --> DisplayGuest[Tampilkan Nama, Instansi, Host & Waktu Check-in]
-    
+
     DisplayGuest --> ActionConfirm{Aksi Petugas?}
     ActionConfirm -- Sudah Sesuai --> ConfirmPass[Klik Konfirmasi Check-in / Verifikasi]
     ConfirmPass --> ExecCheckin[Panggil RPC: quick_checkin_by_code]
     ExecCheckin --> LogAudit[Catat Riwayat ke activity_logs]
     LogAudit --> PlayAudioSuccess[Bunyikan Nada Beep Sukses & Tanda Hijau]
     PlayAudioSuccess --> AccessGranted[Izinkan Tamu Masuk Gerbang / Lift]
-    
+
     AlertInvalid --> EndScan([Selesai])
     AccessGranted --> EndScan
 ```
@@ -233,30 +236,30 @@ flowchart TD
     StartAnalytics([Mulai: Admin / Manajemen Gedung]) --> OpenReport[Buka Dashboard /admin atau /admin/laporan]
     OpenReport --> SelectPeriod[Pilih Rentang Periode Waktu: 7 / 30 / 90 Hari / Kustom]
     SelectPeriod --> FetchData[Ambil Data Tamu + Relasi Karyawan & Departemen]
-    
+
     FetchData --> CalculateMetrics[Eksekusi calculateDashboardStats]
     CalculateMetrics --> ProcessHourly[Hitung Distribusi Jam Kedatangan 07:00-18:00 WIB]
     CalculateMetrics --> ProcessDept[Agregasi Total & Persentase per Departemen]
     CalculateMetrics --> GenerateInsights[Kalkulasi 4 Actionable Building Insights]
-    
+
     ProcessHourly --> RenderRecharts[Render BarChart Peak Hours & AreaChart Tren]
     ProcessDept --> RenderDeptChart[Render BarChart Distribusi Departemen]
     GenerateInsights --> RenderInsightCards[Tampilkan Rekomendasi Manajemen Gedung]
-    
+
     RenderInsightCards --> UserChoice{Kebutuhan Dokumen?}
     UserChoice -- Cetak Layar --> BrowserPrint[Panggil window.print Dialog Printer]
     UserChoice -- Spreadsheet Excel --> GenExcel[Ekspor via SheetJS XLSX]
     UserChoice -- Dokumen Resmi PDF --> GenPdf[Ekspor via jsPDF + autoTable]
     UserChoice -- Teks CSV --> GenCsv[Ekspor via exportToCsv]
-    
+
     GenExcel --> AutoColWidth[Hitung Lebar Kolom Otomatis + Kop Menara Nobu]
     AutoColWidth --> DownloadExcel[Unduh .xlsx]
-    
+
     GenPdf --> FormatA4[Render Tabel Bergaris + Kop Kop Surat + Nomor Halaman]
     FormatA4 --> DownloadPdf[Unduh .pdf]
-    
+
     GenCsv --> DownloadCsv[Unduh .csv]
-    
+
     DownloadExcel --> EndReport([Selesai])
     DownloadPdf --> EndReport
     DownloadCsv --> EndReport
@@ -268,6 +271,7 @@ flowchart TD
 ## 3. Sequence Diagram (Diagram Urutan)
 
 ### Skenario 1: Registrasi Tamu Baru & Notifikasi Real-time
+
 Diagram berikut memperlihatkan pertukaran pesan antar aktor dan komponen sistem saat tamu mendaftar.
 
 ```mermaid
@@ -285,7 +289,7 @@ sequenceDiagram
     Client->>LocalStore: Simpan draft sementara (Auto-save)
     Tamu->>Client: Klik tombol "Kirim Data Kunjungan"
     Client->>Zod: guestFormSchema.parse(formData)
-    
+
     alt Data Tidak Valid
         Zod-->>Client: Error validasi (misal: nomor HP bukan format Indonesia)
         Client-->>Tamu: Tampilkan pesan error pada field formulir
@@ -300,7 +304,7 @@ sequenceDiagram
         SupaClient-->>Client: Status sukses & ID tamu
         Client->>LocalStore: Hapus draft token
         Client-->>Tamu: Tampilkan Modal Badge Pass Digital (QR & Barcode)
-        
+
         par Pengiriman Realtime
             DB->>Host: Supabase Realtime WebSocket Event ("INSERT on notifications")
             Host-->>Host: Tampilkan notifikasi pop-up tamu telah tiba di lobi
@@ -309,6 +313,7 @@ sequenceDiagram
 ```
 
 ### Skenario 2: Pemindaian QR Code di Pos Keamanan
+
 Diagram interaksi antara petugas keamanan gedung, kamera scanner, dan sistem verifikasi status tamu.
 
 ```mermaid
@@ -325,10 +330,10 @@ sequenceDiagram
     Security->>Camera: Arahkan kartu pass / ponsel tamu ke scanner
     Camera->>ScanView: Tangkap payload string (badge_code / QR URL)
     ScanView->>ScanView: Ekstrak kode badge pass (Format VTR-*)
-    
+
     ScanView->>Supa: rpc("check_guest_status", { _badge_code })
     Supa->>DB: SELECT * FROM guests WHERE badge_code = _badge_code
-    
+
     alt Tamu Tidak Ditemukan
         DB-->>Supa: null
         Supa-->>ScanView: Tamu tidak terdaftar
@@ -339,7 +344,7 @@ sequenceDiagram
         Supa-->>ScanView: Tamu valid ditemukan
         ScanView->>ScanView: Mainkan audio beep sukses & status Hijau
         ScanView-->>Security: Tampilkan kartu verifikasi tamu di layar
-        
+
         Security->>ScanView: Klik tombol "Konfirmasi Check-in Cepat"
         ScanView->>Supa: rpc("quick_checkin_by_code", { _badge_code })
         Supa->>DB: UPDATE guests SET check_in_time = now()
@@ -365,7 +370,7 @@ sequenceDiagram
     Admin->>UI: Pilih rentang tanggal ("2026-10-01 s/d 2026-10-18")
     UI->>Supa: from("guests").select("...").gte(...).lte(...)
     Supa-->>UI: Array data tamu (Check-in, Nama, Instansi, Tujuan, Staf)
-    
+
     alt Klik "Ekspor Excel (.xlsx)"
         Admin->>UI: Klik tombol Ekspor Excel
         UI->>ExportUtil: exportToExcel({ filename, title, period, headers, rows })
@@ -390,12 +395,13 @@ sequenceDiagram
 
 ## 4. Laporan Hasil White-Box Testing (Pengujian Kotak Putih)
 
-White-Box Testing dilakukan langsung pada struktur internal kode sumber (*control flow*, *decision logic*, *branching*, dan penanganan kondisi batas).
+White-Box Testing dilakukan langsung pada struktur internal kode sumber (_control flow_, _decision logic_, _branching_, dan penanganan kondisi batas).
 
 ### A. Metodologi Pengujian
-1. **Basis Path Testing**: Menguji seluruh jalur independen (*linearly independent paths*) dalam fungsi algoritma.
-2. **Branch & Decision Coverage**: Memastikan setiap percabangan `if/else`, operator ternary, dan *optional chaining* dieksekusi baik bernilai `true` maupun `false`.
-3. **Security Data Flow Testing**: Memastikan pencegahan *Formula Injection* pada ekspor spreadsheet terhadap karakter berbahaya (`=`, `+`, `-`, `@`).
+
+1. **Basis Path Testing**: Menguji seluruh jalur independen (_linearly independent paths_) dalam fungsi algoritma.
+2. **Branch & Decision Coverage**: Memastikan setiap percabangan `if/else`, operator ternary, dan _optional chaining_ dieksekusi baik bernilai `true` maupun `false`.
+3. **Security Data Flow Testing**: Memastikan pencegahan _Formula Injection_ pada ekspor spreadsheet terhadap karakter berbahaya (`=`, `+`, `-`, `@`).
 4. **Boundary Value Testing**: Menguji nilai ambang durasi pengisian formulir (10 detik s/d 360 detik) dan batas toleransi jadwal.
 
 ---
@@ -408,17 +414,19 @@ Atau dihitung dari jumlah predikat keputusan:
 $$V(G) = P_{decisions} + 1$$
 
 #### 1. Fungsi `escapeCsvCell(value: unknown)` (`src/lib/csv-export.ts`)
+
 - **Node Keputusan**:
   1. `value === null || value === undefined`
   2. `/^[=+\-@]/.test(str)` (Pencegahan formula injection)
   3. `str.replace(/"/g, '""')`
 - **Cyclomatic Complexity**: $V(G) = 2 + 1 = 3$ (Kategori: Sangat Baik / Low Risk, $\le 10$)
 - **Jalur Pengujian (Basis Paths)**:
-  - *Path 1*: Nilai `null`/`undefined` $\rightarrow$ mengembalikan `""`.
-  - *Path 2*: Nilai biasa tanpa karakter formula $\rightarrow$ di-quote standar `"[text]"`.
-  - *Path 3*: Nilai berawalan formula (`=`, `+`, `-`, `@`) $\rightarrow$ di-prefix tanda petik tunggal `"'[text]"`.
+  - _Path 1_: Nilai `null`/`undefined` $\rightarrow$ mengembalikan `""`.
+  - _Path 2_: Nilai biasa tanpa karakter formula $\rightarrow$ di-quote standar `"[text]"`.
+  - _Path 3_: Nilai berawalan formula (`=`, `+`, `-`, `@`) $\rightarrow$ di-prefix tanda petik tunggal `"'[text]"`.
 
 #### 2. Fungsi `calculateDashboardStats(rows, days)` (`src/lib/dashboard-analytics.ts`)
+
 - **Node Keputusan**:
   1. Perulangan inisialisasi hari `for (let i = days - 1; i >= 0; i--)`
   2. Pengecekan hari ini `k === today`
@@ -437,34 +445,34 @@ $$V(G) = P_{decisions} + 1$$
 
 Pengujian dijalankan menggunakan test runner **Vitest v4.1.12** dengan engine virtual DOM **JSDOM**:
 
-| No | File Test Suite | Target Modul / Fungsi | Deskripsi Pengujian Kotak Putih | Hasil |
-|:--:|:----------------|:---------------------|:--------------------------------|:-----:|
-| 1 | `src/test/validation.test.ts` | `guestSchema` | Input data tamu lengkap dan valid diterima | **PASSED** (5ms) |
-| 2 | `src/test/validation.test.ts` | `guestSchema` | Tamu kunjungan umum (`employee_id: null`) tetap valid | **PASSED** (1ms) |
-| 3 | `src/test/validation.test.ts` | `guestSchema` | Validasi nama tamu wajib (kosong ditolak) | **PASSED** (1ms) |
-| 4 | `src/test/validation.test.ts` | `guestSchema` | Validasi nomor ponsel Indonesia (harus valid format) | **PASSED** (1ms) |
-| 5 | `src/test/validation.test.ts` | `guestSchema` | Validasi batas waktu: jadwal masa lalu ditolak | **PASSED** (1ms) |
-| 6 | `src/test/validation.test.ts` | `guestSchema` | Validasi tujuan kunjungan wajib dipilih | **PASSED** (0ms) |
-| 7 | `src/test/validation.test.ts` | `employeeSchema` | Email karyawan format salah ditolak | **PASSED** (1ms) |
-| 8 | `src/test/validation.test.ts` | `employeeSchema` | Email karyawan bernilai kosong diperbolehkan | **PASSED** (0ms) |
-| 9 | `src/test/validation.test.ts` | `purposeSchema` | Nama tujuan kunjungan wajib diisi | **PASSED** (1ms) |
-| 10 | `src/test/export-utils.test.ts` | `escapeCsvCell` | Penanganan nilai `null` dan `undefined` | **PASSED** (4ms) |
-| 11 | `src/test/export-utils.test.ts` | `escapeCsvCell` | Escaping karakter injeksi formula spreadsheet (`=`, `+`, `-`, `@`) | **PASSED** (1ms) |
-| 12 | `src/test/export-utils.test.ts` | `escapeCsvCell` | Escaping tanda kutip ganda internal pada string | **PASSED** (1ms) |
-| 13 | `src/test/export-utils.test.ts` | `exportToExcel` | Pembentukan workbook XLSX, penataan AOA, dan auto column width | **PASSED** (62ms) |
-| 14 | `src/test/export-utils.test.ts` | `exportToPdf` | Instansiasi jsPDF, render autoTable A4 Landscape, dan penomoran | **PASSED** (31ms) |
-| 15 | `src/test/export-utils.test.ts` | `exportToCsv` | Pembuatan Blob UTF-8 BOM dan trigger unduhan peramban | **PASSED** (7ms) |
-| 16 | `src/test/dashboard-analytics.test.ts` | `calculateDashboardStats` | Kalkulasi distribusi lalu lintas per jam operasional & identifikasi peak | **PASSED** (24ms) |
-| 17 | `src/test/dashboard-analytics.test.ts` | `calculateDashboardStats` | Agregasi dan pengelompokan tamu per divisi/departemen gedung | **PASSED** (2ms) |
-| 18 | `src/test/dashboard-analytics.test.ts` | `calculateDashboardStats` | Sintesis 4 actionable building management insights dari metrik riil | **PASSED** (2ms) |
-| 19 | `src/test/dashboard-analytics.test.ts` | `calculatePeriodDiff` | Perhitungan persentase pertumbuhan volume kunjungan antarkerangka waktu | **PASSED** (0ms) |
-| 20 | `src/test/activity-and-feedback.test.ts` | `filterActivityLogs` | Penyaringan log aktivitas berdasarkan kategori aksi | **PASSED** (4ms) |
-| 21 | `src/test/activity-and-feedback.test.ts` | `filterActivityLogs` | Pencarian teks bebas pada judul dan objek rincian JSON | **PASSED** (1ms) |
-| 22 | `src/test/activity-and-feedback.test.ts` | `calculateActivityStats` | Akumulasi statistik aktivitas harian dan aktor staf | **PASSED** (1ms) |
-| 23 | `src/test/activity-and-feedback.test.ts` | `buildSyntheticLogs` | Pembentukan log audit sintetis dari entitas tamu & feedback | **PASSED** (1ms) |
-| 24 | `src/test/activity-and-feedback.test.ts` | `escapeCsvCell` | Proteksi tambahan injeksi formula pada modul aktivitas | **PASSED** (0ms) |
-| 25 | `src/test/activity-and-feedback.test.ts` | `escapeCsvCell` | Pembersihan teks bersarang ganda pada ekspor log | **PASSED** (0ms) |
-| 26 | `src/test/app-routing.test.tsx` | TanStack Router | Integritas routing URL root `/` dan layout komponen | **PASSED** (11ms) |
+| No  | File Test Suite                          | Target Modul / Fungsi     | Deskripsi Pengujian Kotak Putih                                          |       Hasil       |
+| :-: | :--------------------------------------- | :------------------------ | :----------------------------------------------------------------------- | :---------------: |
+|  1  | `src/test/validation.test.ts`            | `guestSchema`             | Input data tamu lengkap dan valid diterima                               | **PASSED** (5ms)  |
+|  2  | `src/test/validation.test.ts`            | `guestSchema`             | Tamu kunjungan umum (`employee_id: null`) tetap valid                    | **PASSED** (1ms)  |
+|  3  | `src/test/validation.test.ts`            | `guestSchema`             | Validasi nama tamu wajib (kosong ditolak)                                | **PASSED** (1ms)  |
+|  4  | `src/test/validation.test.ts`            | `guestSchema`             | Validasi nomor ponsel Indonesia (harus valid format)                     | **PASSED** (1ms)  |
+|  5  | `src/test/validation.test.ts`            | `guestSchema`             | Validasi batas waktu: jadwal masa lalu ditolak                           | **PASSED** (1ms)  |
+|  6  | `src/test/validation.test.ts`            | `guestSchema`             | Validasi tujuan kunjungan wajib dipilih                                  | **PASSED** (0ms)  |
+|  7  | `src/test/validation.test.ts`            | `employeeSchema`          | Email karyawan format salah ditolak                                      | **PASSED** (1ms)  |
+|  8  | `src/test/validation.test.ts`            | `employeeSchema`          | Email karyawan bernilai kosong diperbolehkan                             | **PASSED** (0ms)  |
+|  9  | `src/test/validation.test.ts`            | `purposeSchema`           | Nama tujuan kunjungan wajib diisi                                        | **PASSED** (1ms)  |
+| 10  | `src/test/export-utils.test.ts`          | `escapeCsvCell`           | Penanganan nilai `null` dan `undefined`                                  | **PASSED** (4ms)  |
+| 11  | `src/test/export-utils.test.ts`          | `escapeCsvCell`           | Escaping karakter injeksi formula spreadsheet (`=`, `+`, `-`, `@`)       | **PASSED** (1ms)  |
+| 12  | `src/test/export-utils.test.ts`          | `escapeCsvCell`           | Escaping tanda kutip ganda internal pada string                          | **PASSED** (1ms)  |
+| 13  | `src/test/export-utils.test.ts`          | `exportToExcel`           | Pembentukan workbook XLSX, penataan AOA, dan auto column width           | **PASSED** (62ms) |
+| 14  | `src/test/export-utils.test.ts`          | `exportToPdf`             | Instansiasi jsPDF, render autoTable A4 Landscape, dan penomoran          | **PASSED** (31ms) |
+| 15  | `src/test/export-utils.test.ts`          | `exportToCsv`             | Pembuatan Blob UTF-8 BOM dan trigger unduhan peramban                    | **PASSED** (7ms)  |
+| 16  | `src/test/dashboard-analytics.test.ts`   | `calculateDashboardStats` | Kalkulasi distribusi lalu lintas per jam operasional & identifikasi peak | **PASSED** (24ms) |
+| 17  | `src/test/dashboard-analytics.test.ts`   | `calculateDashboardStats` | Agregasi dan pengelompokan tamu per divisi/departemen gedung             | **PASSED** (2ms)  |
+| 18  | `src/test/dashboard-analytics.test.ts`   | `calculateDashboardStats` | Sintesis 4 actionable building management insights dari metrik riil      | **PASSED** (2ms)  |
+| 19  | `src/test/dashboard-analytics.test.ts`   | `calculatePeriodDiff`     | Perhitungan persentase pertumbuhan volume kunjungan antarkerangka waktu  | **PASSED** (0ms)  |
+| 20  | `src/test/activity-and-feedback.test.ts` | `filterActivityLogs`      | Penyaringan log aktivitas berdasarkan kategori aksi                      | **PASSED** (4ms)  |
+| 21  | `src/test/activity-and-feedback.test.ts` | `filterActivityLogs`      | Pencarian teks bebas pada judul dan objek rincian JSON                   | **PASSED** (1ms)  |
+| 22  | `src/test/activity-and-feedback.test.ts` | `calculateActivityStats`  | Akumulasi statistik aktivitas harian dan aktor staf                      | **PASSED** (1ms)  |
+| 23  | `src/test/activity-and-feedback.test.ts` | `buildSyntheticLogs`      | Pembentukan log audit sintetis dari entitas tamu & feedback              | **PASSED** (1ms)  |
+| 24  | `src/test/activity-and-feedback.test.ts` | `escapeCsvCell`           | Proteksi tambahan injeksi formula pada modul aktivitas                   | **PASSED** (0ms)  |
+| 25  | `src/test/activity-and-feedback.test.ts` | `escapeCsvCell`           | Pembersihan teks bersarang ganda pada ekspor log                         | **PASSED** (0ms)  |
+| 26  | `src/test/app-routing.test.tsx`          | TanStack Router           | Integritas routing URL root `/` dan layout komponen                      | **PASSED** (11ms) |
 
 ---
 
@@ -479,6 +487,7 @@ Pengujian dijalankan menggunakan test runner **Vitest v4.1.12** dengan engine vi
 ```
 
 ### Kesimpulan Pengujian Kotak Putih:
+
 1. **Keamanan Formula Spreadsheet Terjamin**: Input berbasis spreadsheet terproteksi dari potensi eksploitasi eksekusi formula DDE/CSV injection.
-2. **Kesesuaian Validasi Alur Tamu**: Jalur untuk tamu spesifik karyawan maupun kunjungan umum/resepsionis telah tervalidasi bebas dari error percabangan (*null pointer reference*).
-3. **Kestabilan Perhitungan Visualisasi**: Algoritma kalkulasi *Peak Hours* dan *Department Traffic* mampu menangani kumpulan data kosong (*empty dataset*) maupun data bervolume ribuan baris dengan kompleksitas linear $O(N)$.
+2. **Kesesuaian Validasi Alur Tamu**: Jalur untuk tamu spesifik karyawan maupun kunjungan umum/resepsionis telah tervalidasi bebas dari error percabangan (_null pointer reference_).
+3. **Kestabilan Perhitungan Visualisasi**: Algoritma kalkulasi _Peak Hours_ dan _Department Traffic_ mampu menangani kumpulan data kosong (_empty dataset_) maupun data bervolume ribuan baris dengan kompleksitas linear $O(N)$.

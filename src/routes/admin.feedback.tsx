@@ -260,39 +260,47 @@ export function AdminFeedbackPage() {
     return pages;
   }, [validCurrentPage, totalPages]);
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     if (filteredRows.length === 0) {
       toast.error("Tidak ada data feedback untuk diekspor");
       return;
     }
     const todayStr = new Date().toISOString().slice(0, 10);
-    exportToExcel({
-      filename: `feedback-tamu-nobu-${todayStr}`,
-      title: "Laporan Feedback & Kepuasan Tamu (CSAT)",
-      subtitle: "Gedung Perkantoran Menara Nobu · Evaluasi Resepsionis & Buku Tamu",
-      sheetName: "CSAT Feedback",
-      headers: [
-        "No",
-        "Waktu Pengisian (WIB)",
-        "Nama Tamu",
-        "Instansi / Perusahaan",
-        "Penilaian (Bintang)",
-        "Aspek Layanan",
-        "Komentar / Saran Tamu",
-        "Durasi Pengisian (detik)",
-      ],
-      rows: filteredRows.map((r, idx) => [
-        idx + 1,
-        formatWibDateTime(r.created_at, false),
-        r.guest_name || "Tamu Anonim",
-        r.institution || "-",
-        `${r.rating} / 5 Bintang`,
-        (r.tags || []).join(", ") || "-",
-        r.comment || "-",
-        r.fill_duration_seconds ? `${r.fill_duration_seconds}` : "-",
-      ]),
-    });
-    toast.success("Data feedback berhasil diekspor ke Excel (.xlsx)");
+    const toastId = toast.loading("Menyiapkan dokumen Excel feedback tamu...");
+    try {
+      await exportToExcel({
+        filename: `feedback-tamu-nobu-${todayStr}`,
+        title: "Laporan Feedback & Kepuasan Tamu (CSAT)",
+        subtitle: "Gedung Perkantoran Menara Nobu · Evaluasi Resepsionis & Buku Tamu",
+        sheetName: "CSAT Feedback",
+        headers: [
+          "No",
+          "Waktu Pengisian (WIB)",
+          "Nama Tamu",
+          "Instansi / Perusahaan",
+          "Penilaian (Bintang)",
+          "Aspek Layanan",
+          "Komentar / Saran Tamu",
+          "Durasi Pengisian (detik)",
+        ],
+        rows: filteredRows.map((r, idx) => [
+          idx + 1,
+          formatWibDateTime(r.created_at, false),
+          r.guest_name || "Tamu Anonim",
+          r.institution || "-",
+          `${r.rating} / 5 Bintang`,
+          (r.tags || []).join(", ") || "-",
+          r.comment || "-",
+          r.fill_duration_seconds ? `${r.fill_duration_seconds}` : "-",
+        ]),
+      });
+      toast.success("Data feedback berhasil diekspor ke Excel (.xlsx) dengan tabel bergaris", {
+        id: toastId,
+      });
+    } catch (err) {
+      toast.error("Gagal mengekspor data feedback ke Excel", { id: toastId });
+      console.error(err);
+    }
   };
 
   const handleExportPdf = () => {

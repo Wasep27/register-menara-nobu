@@ -327,37 +327,45 @@ export function AdminActivityLogPage() {
     return calculateActivityStats(logs);
   }, [logs]);
 
-  const exportLogExcel = () => {
+  const exportLogExcel = async () => {
     if (filteredLogs.length === 0) {
       toast.error("Tidak ada aktivitas untuk diekspor");
       return;
     }
     const todayStr = new Date().toISOString().slice(0, 10);
-    exportToExcel({
-      filename: `log-aktivitas-menara-nobu-${todayStr}`,
-      title: "Log Audit Aktivitas & Jejak Sistem",
-      subtitle: "Gedung Perkantoran Menara Nobu · Portal Resepsionis & Keamanan",
-      sheetName: "Log Aktivitas",
-      headers: [
-        "No",
-        "Waktu Kejadian (WIB)",
-        "Kategori",
-        "Aksi",
-        "Judul Aktivitas",
-        "Pelaku / Akun",
-        "Rincian Teknis",
-      ],
-      rows: filteredLogs.map((l, idx) => [
-        idx + 1,
-        formatWibDateTime(l.created_at),
-        l.category.toUpperCase(),
-        l.action,
-        l.title,
-        l.actor_email || l.actor_type,
-        l.details && Object.keys(l.details).length > 0 ? JSON.stringify(l.details) : "-",
-      ]),
-    });
-    toast.success("Log aktivitas berhasil diekspor ke Excel (.xlsx)");
+    const toastId = toast.loading("Menyiapkan dokumen Excel log aktivitas...");
+    try {
+      await exportToExcel({
+        filename: `log-aktivitas-menara-nobu-${todayStr}`,
+        title: "Log Audit Aktivitas & Jejak Sistem",
+        subtitle: "Gedung Perkantoran Menara Nobu · Portal Resepsionis & Keamanan",
+        sheetName: "Log Aktivitas",
+        headers: [
+          "No",
+          "Waktu Kejadian (WIB)",
+          "Kategori",
+          "Aksi",
+          "Judul Aktivitas",
+          "Pelaku / Akun",
+          "Rincian Teknis",
+        ],
+        rows: filteredLogs.map((l, idx) => [
+          idx + 1,
+          formatWibDateTime(l.created_at),
+          l.category.toUpperCase(),
+          l.action,
+          l.title,
+          l.actor_email || l.actor_type,
+          l.details && Object.keys(l.details).length > 0 ? JSON.stringify(l.details) : "-",
+        ]),
+      });
+      toast.success("Log aktivitas berhasil diekspor ke Excel (.xlsx) dengan tabel bergaris", {
+        id: toastId,
+      });
+    } catch (err) {
+      toast.error("Gagal mengekspor log aktivitas ke Excel", { id: toastId });
+      console.error(err);
+    }
   };
 
   const exportLogPdf = () => {

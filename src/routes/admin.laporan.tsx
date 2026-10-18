@@ -89,41 +89,52 @@ function Report() {
     loadRange(firstDay, today);
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     if (!rows || rows.length === 0) {
       toast.error("Tidak ada data kunjungan untuk diekspor");
       return;
     }
-    exportToExcel({
-      filename: `laporan-tamu-menara-nobu-${from}-${to}`,
-      title: "Laporan Rekapitulasi Kunjungan Tamu",
-      subtitle: "Gedung Perkantoran Menara Nobu · Pos Keamanan & Resepsionis",
-      period: `${from} s/d ${to}`,
-      sheetName: "Kunjungan Tamu",
-      headers: [
-        "No",
-        "Waktu Check-In (WIB)",
-        "Nama Tamu",
-        "Instansi / Perusahaan",
-        "Nomor Telepon",
-        "Tujuan Kunjungan",
-        "Menemui / Staf Dituju",
-        "Catatan Kunjungan",
-        "Durasi Pengisian (detik)",
-      ],
-      rows: rows.map((r, idx) => [
-        idx + 1,
-        formatWibDateTime(r.check_in_time),
-        r.name,
-        r.institution,
-        r.phone,
-        r.visit_purposes?.name || "-",
-        r.employees?.name || "Resepsionis Lobi (Umum)",
-        r.notes || "-",
-        r.fill_duration_seconds ?? "-",
-      ]),
-    });
-    toast.success("Laporan Excel (.xlsx) rapih berhasil diunduh");
+    const toastId = toast.loading("Menyiapkan dokumen spreadsheet Excel profesional...");
+    try {
+      await exportToExcel({
+        filename: `laporan-tamu-menara-nobu-${from}-${to}`,
+        title: "Laporan Rekapitulasi Kunjungan Tamu",
+        subtitle: "Gedung Perkantoran Menara Nobu · Pos Keamanan & Resepsionis",
+        period: `${from} s/d ${to}`,
+        sheetName: "Kunjungan Tamu",
+        headers: [
+          "No",
+          "Waktu Check-In (WIB)",
+          "Nama Tamu",
+          "Instansi / Perusahaan",
+          "Nomor Telepon",
+          "Tujuan Kunjungan",
+          "Menemui / Staf Dituju",
+          "Catatan Kunjungan",
+          "Durasi Pengisian (detik)",
+        ],
+        rows: rows.map((r, idx) => [
+          idx + 1,
+          formatWibDateTime(r.check_in_time),
+          r.name,
+          r.institution,
+          r.phone,
+          r.visit_purposes?.name || "-",
+          r.employees?.name || "Resepsionis Lobi (Umum)",
+          r.notes || "-",
+          r.fill_duration_seconds ?? "-",
+        ]),
+      });
+      toast.success(
+        "Laporan Excel (.xlsx) dengan tabel bergaris, logo, & insight berhasil diunduh",
+        {
+          id: toastId,
+        },
+      );
+    } catch (err) {
+      toast.error("Gagal mengekspor laporan Excel", { id: toastId });
+      console.error(err);
+    }
   };
 
   const handleExportPdf = () => {
@@ -148,7 +159,7 @@ function Report() {
         r.notes || "-",
       ]),
     });
-    toast.success("Dokumen Laporan PDF resmi berhasil diunduh");
+    toast.success("Dokumen Laporan PDF resmi Menara Nobu berhasil diunduh");
   };
 
   const handleExportCsv = () => {

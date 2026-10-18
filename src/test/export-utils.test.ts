@@ -38,8 +38,8 @@ describe("export-utils", () => {
   });
 
   describe("exportToExcel", () => {
-    it("creates an xlsx workbook and triggers download without throwing", () => {
-      expect(() => {
+    it("creates an xlsx workbook and triggers download without throwing", async () => {
+      await expect(
         exportToExcel({
           filename: "test-laporan",
           title: "Test Laporan Kunjungan",
@@ -50,8 +50,8 @@ describe("export-utils", () => {
             [1, "Budi", "PT ABC", "Meeting"],
             [2, "Siti", "PT XYZ", "Interview"],
           ],
-        });
-      }).not.toThrow();
+        }),
+      ).resolves.not.toThrow();
     });
   });
 

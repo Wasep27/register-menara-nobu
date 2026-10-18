@@ -31,7 +31,7 @@ Aplikasi registrasi tamu digital untuk gedung **Menara Nobu (Bank Nobu)**. Tamu 
 - **Email Admin**: daftar email yang otomatis menjadi admin, tanpa perlu menjalankan SQL.
 - **Pengguna**: daftar akun beserta nama, email, dan peran.
 - Keamanan login: akun dikunci 15 menit setelah 5 kali salah password, lupa password lewat email, keluar otomatis setelah 30 menit tidak aktif, dan keluar bersamaan di semua tab.
-- **Dokumentasi Lengkap Sistem & Pengujian**: Tersedia di [`DOKUMENTASI_SISTEM.md`](./DOKUMENTASI_SISTEM.md) mencakup Diagram Kelas (*Class Diagram*), Diagram Alur (*Activity Diagram*), Diagram Urutan (*Sequence Diagram*), dan Laporan Hasil Pengujian Kotak Putih (*White-Box Testing* 100% Passed).
+- **Dokumentasi Lengkap Sistem & Pengujian**: Tersedia di [`DOKUMENTASI_SISTEM.md`](./DOKUMENTASI_SISTEM.md) mencakup Diagram Kelas (_Class Diagram_), Diagram Alur (_Activity Diagram_), Diagram Urutan (_Sequence Diagram_), dan Laporan Hasil Pengujian Kotak Putih (_White-Box Testing_ 100% Passed).
 
 ---
 
@@ -107,6 +107,7 @@ Peran disimpan di tabel `user_roles` (bukan di profil) supaya pengguna tidak bis
 ## Dokumentasi Teknis & Pengujian
 
 Dokumentasi lengkap diagram arsitektur dan hasil pengujian kotak putih tersedia di:
+
 - **[DOKUMENTASI_SISTEM.md](DOKUMENTASI_SISTEM.md)**:
   - **Class Diagram**: Struktur entitas data, model TypeScript, dan modul analitik.
   - **Activity Diagram**: Pemodelan alur proses registrasi lobi, pemindaian pos keamanan, dan analitik laporan.
