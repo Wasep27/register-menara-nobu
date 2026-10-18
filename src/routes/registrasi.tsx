@@ -228,11 +228,12 @@ function GuestForm() {
 
     // Validasi pemilihan tujuan: jika mode employee aktif tapi belum memilih karyawan
     const isGeneral =
-      destinationType === "general" ||
-      form.employee_id === "__general__" ||
-      !form.employee_id;
+      destinationType === "general" || form.employee_id === "__general__" || !form.employee_id;
 
-    if (destinationType === "employee" && (!form.employee_id || form.employee_id === "__general__")) {
+    if (
+      destinationType === "employee" &&
+      (!form.employee_id || form.employee_id === "__general__")
+    ) {
       setErrors((e) => ({
         ...e,
         employee_id: "Pilih nama karyawan yang dituju atau alihkan ke opsi Tujuan Umum",
@@ -273,7 +274,8 @@ function GuestForm() {
       return;
     }
     const targetEmployee = employees.find((x) => x.id === effectiveEmployeeId);
-    const employeeDisplayName = targetEmployee?.name || (isGeneral ? "Resepsionis Lobi (Umum)" : undefined);
+    const employeeDisplayName =
+      targetEmployee?.name || (isGeneral ? "Resepsionis Lobi (Umum)" : undefined);
     const targetPurpose = purposes.find((x) => x.id === r.data.visit_purpose_id);
     const nowTime = getNowWibTimeString();
     const nowDate = getNowWibDateString();
@@ -359,7 +361,9 @@ function GuestForm() {
                 onClick={() => {
                   setForm({ ...empty, ...restore });
                   if (restore.employee_id === "__general__" || !restore.employee_id) {
-                    setDestinationType(restore.employee_id === "__general__" ? "general" : "employee");
+                    setDestinationType(
+                      restore.employee_id === "__general__" ? "general" : "employee",
+                    );
                   }
                   hasInteracted.current = true;
                   lastActiveTime.current = Date.now();
@@ -580,7 +584,8 @@ function GuestForm() {
                 </div>
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 pt-2 border-t border-primary/15 text-[11px]">
                   <span className="flex items-center gap-1 font-semibold text-primary">
-                    <Sparkles className="h-3 w-3" /> Langsung diarahkan ke petugas resepsionis di lobi utama
+                    <Sparkles className="h-3 w-3" /> Langsung diarahkan ke petugas resepsionis di
+                    lobi utama
                   </span>
                   <button
                     type="button"

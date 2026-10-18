@@ -136,16 +136,7 @@ function Report() {
       title: "Laporan Rekapitulasi Kunjungan Tamu",
       subtitle: "Gedung Perkantoran Menara Nobu · Pos Keamanan & Resepsionis Lobi",
       period: `${from} s/d ${to}`,
-      headers: [
-        "No",
-        "Waktu",
-        "Nama Tamu",
-        "Instansi",
-        "Telepon",
-        "Tujuan",
-        "Menemui",
-        "Catatan",
-      ],
+      headers: ["No", "Waktu", "Nama Tamu", "Instansi", "Telepon", "Tujuan", "Menemui", "Catatan"],
       rows: rows.map((r, idx) => [
         idx + 1,
         formatWibDateTime(r.check_in_time, false),

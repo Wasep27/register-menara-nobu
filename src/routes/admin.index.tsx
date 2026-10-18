@@ -1164,10 +1164,7 @@ function PeakHoursChart({
           />
           <Bar dataKey="count" radius={[6, 6, 0, 0]}>
             {data.map((entry, index) => (
-              <Cell
-                key={`cell-${index}`}
-                fill={entry.isPeak ? "#f59e0b" : "var(--primary)"}
-              />
+              <Cell key={`cell-${index}`} fill={entry.isPeak ? "#f59e0b" : "var(--primary)"} />
             ))}
           </Bar>
         </BarChart>
@@ -1236,10 +1233,7 @@ function DepartmentTrafficChart({
           />
           <Bar dataKey="value" radius={[0, 6, 6, 0]}>
             {chartData.map((_, idx) => (
-              <Cell
-                key={`dept-${idx}`}
-                fill={idx === 0 ? "var(--primary)" : "var(--brand)"}
-              />
+              <Cell key={`dept-${idx}`} fill={idx === 0 ? "var(--primary)" : "var(--brand)"} />
             ))}
           </Bar>
         </BarChart>

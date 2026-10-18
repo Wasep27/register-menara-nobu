@@ -290,9 +290,48 @@ h1 {
     margin: 10mm auto !important;
   }
 
+  /* Dedicated print layout for Daily Visit Logs & Reports */
+  .sm\:hidden {
+    display: none !important;
+  }
+
+  .sm\:block,
+  div.overflow-x-auto {
+    display: block !important;
+    overflow: visible !important;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 9.5pt !important;
+    color: #000000 !important;
+  }
+
+  th {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+    border: 1px solid #94a3b8 !important;
+    padding: 6px 8px !important;
+    font-weight: 700 !important;
+    text-align: left !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  td {
+    border: 1px solid #cbd5e1 !important;
+    padding: 5px 8px !important;
+    font-size: 9pt !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+  }
+
   @page {
     size: auto;
-    margin: 10mm;
+    margin: 12mm 10mm;
   }
 }
 html {

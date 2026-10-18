@@ -354,9 +354,7 @@ export function AdminActivityLogPage() {
         l.action,
         l.title,
         l.actor_email || l.actor_type,
-        l.details && Object.keys(l.details).length > 0
-          ? JSON.stringify(l.details)
-          : "-",
+        l.details && Object.keys(l.details).length > 0 ? JSON.stringify(l.details) : "-",
       ]),
     });
     toast.success("Log aktivitas berhasil diekspor ke Excel (.xlsx)");
@@ -372,14 +370,7 @@ export function AdminActivityLogPage() {
       filename: `log-aktivitas-menara-nobu-${todayStr}`,
       title: "Laporan Log Audit Aktivitas Sistem",
       subtitle: "Gedung Perkantoran Menara Nobu · Rekap Jejak Audit",
-      headers: [
-        "No",
-        "Waktu (WIB)",
-        "Kategori",
-        "Aksi",
-        "Judul Aktivitas",
-        "Pelaku / Akun",
-      ],
+      headers: ["No", "Waktu (WIB)", "Kategori", "Aksi", "Judul Aktivitas", "Pelaku / Akun"],
       rows: filteredLogs.map((l, idx) => [
         idx + 1,
         formatWibDateTime(l.created_at, false),

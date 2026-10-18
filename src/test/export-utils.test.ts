@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { escapeCsvCell, exportToExcel, exportToPdf, exportToCsv } from "@/lib/export-utils";
 
 describe("export-utils", () => {
-  let clickSpy: any;
+  let clickSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     clickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
@@ -67,8 +67,12 @@ describe("export-utils", () => {
 
   describe("exportToCsv", () => {
     it("triggers browser download for CSV", () => {
-      const appendSpy = vi.spyOn(document.body, "appendChild").mockImplementation(() => document.body);
-      const removeSpy = vi.spyOn(document.body, "removeChild").mockImplementation(() => document.body);
+      const appendSpy = vi
+        .spyOn(document.body, "appendChild")
+        .mockImplementation(() => document.body);
+      const removeSpy = vi
+        .spyOn(document.body, "removeChild")
+        .mockImplementation(() => document.body);
 
       exportToCsv({
         filename: "test-data",

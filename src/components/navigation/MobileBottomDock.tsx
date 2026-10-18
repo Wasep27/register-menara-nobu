@@ -49,16 +49,16 @@ export const MobileBottomDock = React.memo(function MobileBottomDock({
   }, []);
 
   // SVG curved notch path calculation:
-  // Smooth concentric scoop curve closely cradling the center FAB button with uniform clearance
+  // Concentric scoop cradle tailored precisely around the 48px circular button with harmonious clearance
   const notchPath = useMemo(() => {
     const w = barWidth;
-    const h = 64;
+    const h = 68;
     const r = 28; // original pill radius
     const cx = w / 2;
 
-    // Elegant, snug cubic bezier cradle brought closer to the 48px circular button without feeling too distant
-    // Scoop spans from cx - 42 to cx + 42 (84px wide) and dips gracefully to y = 36 for clean, uniform clearance
-    return `M ${r} 0 H ${cx - 42} C ${cx - 29} 0, ${cx - 27} 36, ${cx} 36 C ${cx + 27} 36, ${cx + 29} 0, ${cx + 42} 0 H ${w - r} A ${r} ${r} 0 0 1 ${w} ${r} V ${h - r} A ${r} ${r} 0 0 1 ${w - r} ${h} H ${r} A ${r} ${r} 0 0 1 0 ${h - r} V ${r} A ${r} ${r} 0 0 1 ${r} 0 Z`;
+    // Harmonious, concentric curve around center button:
+    // Mouth width = 80px (cx - 40 to cx + 40), depth = 40px, giving smooth, uniform 6px gap around 48px button
+    return `M ${r} 0 H ${cx - 40} C ${cx - 28} 0, ${cx - 28} 24, ${cx - 18} 34 C ${cx - 10} 40, ${cx + 10} 40, ${cx + 18} 34 C ${cx + 28} 24, ${cx + 28} 0, ${cx + 40} 0 H ${w - r} A ${r} ${r} 0 0 1 ${w} ${r} V ${h - r} A ${r} ${r} 0 0 1 ${w - r} ${h} H ${r} A ${r} ${r} 0 0 1 0 ${h - r} V ${r} A ${r} ${r} 0 0 1 ${r} 0 Z`;
   }, [barWidth]);
 
   const centerActive = isItemActive(centerDockItem.to);
@@ -69,13 +69,13 @@ export const MobileBottomDock = React.memo(function MobileBottomDock({
       aria-label="Navigasi cepat ponsel"
       className="fixed bottom-[max(0.85rem,env(safe-area-inset-bottom))] inset-x-3 z-40 mx-auto max-w-[430px] md:hidden pointer-events-none"
     >
-      <div ref={barRef} className="pointer-events-auto relative w-full h-[64px]">
+      <div ref={barRef} className="pointer-events-auto relative w-full h-[68px]">
         {/* Custom Organic Curved-Notch SVG Background with original pill radius */}
         <svg
           className="absolute inset-0 w-full h-full pointer-events-none drop-shadow-[0_12px_28px_rgba(0,0,0,0.15)] dark:drop-shadow-[0_14px_32px_rgba(0,0,0,0.5)]"
           width={barWidth}
-          height={64}
-          viewBox={`0 0 ${barWidth} 64`}
+          height={68}
+          viewBox={`0 0 ${barWidth} 68`}
           fill="none"
         >
           <path
@@ -86,7 +86,7 @@ export const MobileBottomDock = React.memo(function MobileBottomDock({
         </svg>
 
         {/* Central Protruding Floating Action Button (FAB) nestled comfortably with clear breathing room */}
-        <div className="absolute left-1/2 -translate-x-1/2 -top-[18px] z-20 flex flex-col items-center">
+        <div className="absolute left-1/2 -translate-x-1/2 -top-[14px] z-20 flex flex-col items-center">
           <Link
             to={centerDockItem.to}
             onClick={() => {
@@ -105,7 +105,7 @@ export const MobileBottomDock = React.memo(function MobileBottomDock({
           </Link>
         </div>
 
-        {/* 5-Column Grid: Flanking items on left & right of the center curved notch */}
+        {/* 5-Column Grid: Flanking items on left & right of the center curved notch with consistent baseline */}
         <nav className="relative z-10 grid grid-cols-5 h-full items-center px-1">
           {/* Left 2 items */}
           {leftDockItems.map((item) => {
@@ -118,20 +118,25 @@ export const MobileBottomDock = React.memo(function MobileBottomDock({
                 onClick={() => {
                   if (open) onToggleMenu();
                 }}
-                className={`${focusRing} relative flex flex-col items-center justify-center py-1.5 px-0.5 text-center transition-all duration-200 active:scale-95 ${
-                  active ? "text-primary font-bold" : "text-muted-foreground hover:text-foreground"
-                }`}
+                className={`${focusRing} relative flex h-full flex-col items-center justify-end pb-2 text-center transition-all duration-200 active:scale-95`}
               >
                 <div
-                  className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
+                  className={`mb-1 flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
                     active ? "bg-brand-soft shadow-2xs" : ""
                   }`}
                 >
                   <IconComp className={`h-5 w-5 ${active ? "stroke-[2.25]" : "stroke-[1.75]"}`} />
                 </div>
-                <span className="mt-0.5 text-[10px] leading-tight tracking-tight">
+                <span
+                  className={`text-[10px] leading-none tracking-tight ${
+                    active
+                      ? "text-primary font-bold"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
                   {item.label}
                 </span>
+                {active && <span aria-hidden className="mt-1 h-1 w-2.5 rounded-full bg-primary" />}
               </Link>
             );
           })}
@@ -143,15 +148,18 @@ export const MobileBottomDock = React.memo(function MobileBottomDock({
               if (open) onToggleMenu();
             }}
             aria-label={centerDockItem.label}
-            className={`${focusRing} flex h-full flex-col items-center justify-end pb-2 text-center transition-all duration-200 active:scale-95`}
+            className={`${focusRing} relative flex h-full flex-col items-center justify-end pb-2 text-center transition-all duration-200 active:scale-95`}
           >
             <span
-              className={`max-w-[72px] truncate text-[9.5px] font-bold tracking-tight text-center leading-tight transition-colors ${
+              className={`max-w-[72px] truncate text-[10px] font-bold tracking-tight text-center leading-none transition-colors ${
                 centerActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {centerDockItem.label}
             </span>
+            {centerActive && (
+              <span aria-hidden className="mt-1 h-1 w-2.5 rounded-full bg-primary" />
+            )}
           </Link>
 
           {/* Right Item 1 (e.g. Karyawan) */}
@@ -165,20 +173,25 @@ export const MobileBottomDock = React.memo(function MobileBottomDock({
                 onClick={() => {
                   if (open) onToggleMenu();
                 }}
-                className={`${focusRing} relative flex flex-col items-center justify-center py-1.5 px-0.5 text-center transition-all duration-200 active:scale-95 ${
-                  active ? "text-primary font-bold" : "text-muted-foreground hover:text-foreground"
-                }`}
+                className={`${focusRing} relative flex h-full flex-col items-center justify-end pb-2 text-center transition-all duration-200 active:scale-95`}
               >
                 <div
-                  className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
+                  className={`mb-1 flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
                     active ? "bg-brand-soft shadow-2xs" : ""
                   }`}
                 >
                   <IconComp className={`h-5 w-5 ${active ? "stroke-[2.25]" : "stroke-[1.75]"}`} />
                 </div>
-                <span className="mt-0.5 text-[10px] leading-tight tracking-tight">
+                <span
+                  className={`text-[10px] leading-none tracking-tight ${
+                    active
+                      ? "text-primary font-bold"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
                   {item.label}
                 </span>
+                {active && <span aria-hidden className="mt-1 h-1 w-2.5 rounded-full bg-primary" />}
               </Link>
             );
           })}
@@ -189,14 +202,10 @@ export const MobileBottomDock = React.memo(function MobileBottomDock({
             onClick={onToggleMenu}
             aria-label={open ? "Tutup drawer menu" : "Buka semua menu"}
             aria-expanded={open}
-            className={`${focusRing} relative flex flex-col items-center justify-center py-1.5 px-0.5 text-center transition-all duration-200 active:scale-95 ${
-              open || isSecondaryMenuActive
-                ? "text-primary font-bold"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
+            className={`${focusRing} relative flex h-full flex-col items-center justify-end pb-2 text-center transition-all duration-200 active:scale-95`}
           >
             <div
-              className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
+              className={`mb-1 flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
                 open || isSecondaryMenuActive ? "bg-brand-soft shadow-2xs" : ""
               }`}
             >
@@ -208,9 +217,18 @@ export const MobileBottomDock = React.memo(function MobileBottomDock({
                 <Menu className="h-5 w-5 stroke-[1.75]" />
               )}
             </div>
-            <span className="mt-0.5 text-[10px] leading-tight tracking-tight">
+            <span
+              className={`text-[10px] leading-none tracking-tight ${
+                open || isSecondaryMenuActive
+                  ? "text-primary font-bold"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
               {open ? "Tutup" : "Menu"}
             </span>
+            {(open || isSecondaryMenuActive) && (
+              <span aria-hidden className="mt-1 h-1 w-2.5 rounded-full bg-primary" />
+            )}
           </button>
         </nav>
       </div>

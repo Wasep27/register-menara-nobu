@@ -60,7 +60,7 @@ export function exportToExcel({
       row.map((cell) => {
         if (cell === null || cell === undefined) return "";
         return cell;
-      })
+      }),
     );
   }
 
@@ -161,7 +161,7 @@ export function exportToPdf({
     startY: 40,
     head: [headers],
     body: rows.map((r) =>
-      r.map((c) => (c === null || c === undefined ? "-" : String(c).trim() || "-"))
+      r.map((c) => (c === null || c === undefined ? "-" : String(c).trim() || "-")),
     ),
     margin: { left: 14, right: 14, bottom: 20 },
     theme: "grid",
@@ -186,9 +186,6 @@ export function exportToPdf({
     tableLineWidth: 0.2,
     didDrawPage: (data) => {
       // Footer Nomor Halaman
-      const pageNumber = (doc as any).internal.getNumberOfPages
-        ? (doc as any).internal.getNumberOfPages()
-        : data.pageNumber;
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7.5);
       doc.setTextColor(148, 163, 184); // Slate 400
@@ -382,9 +379,14 @@ export function exportBadgePassPdf({ data, format = "lanyard" }: BadgePdfOptions
   doc.setFont("helvetica", "normal");
   doc.setFontSize(5.5);
   doc.setTextColor(100, 116, 139);
-  doc.text("Wajib dikalungkan selama berada di area Menara Nobu · Kembalikan saat check-out", width / 2, footerY, {
-    align: "center",
-  });
+  doc.text(
+    "Wajib dikalungkan selama berada di area Menara Nobu · Kembalikan saat check-out",
+    width / 2,
+    footerY,
+    {
+      align: "center",
+    },
+  );
   doc.text("Pos Keamanan & Resepsionis Gedung Ext. 101", width / 2, footerY + 2.8, {
     align: "center",
   });
@@ -532,12 +534,19 @@ export function exportDailyVisitLogPdf({
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7);
       doc.setTextColor(148, 163, 184);
-      doc.text(`Dokumen Resmi Keamanan Menara Nobu · Halaman ${data.pageNumber}`, 14, pageHeight - 5);
+      doc.text(
+        `Dokumen Resmi Keamanan Menara Nobu · Halaman ${data.pageNumber}`,
+        14,
+        pageHeight - 5,
+      );
     },
   });
 
   // Tanda Tangan Tiga Pihak (Sign-off Section) di bagian bawah
-  const lastY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 6 : pageHeight - 30;
+  const docWithAutoTable = doc as jsPDF & { lastAutoTable?: { finalY: number } };
+  const lastY = docWithAutoTable.lastAutoTable
+    ? docWithAutoTable.lastAutoTable.finalY + 6
+    : pageHeight - 30;
   const signY = Math.min(lastY, pageHeight - 28);
 
   doc.setFont("helvetica", "normal");
