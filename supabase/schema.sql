@@ -158,14 +158,21 @@ create or replace function public.submit_guest(_payload jsonb, _token uuid)
 returns uuid language plpgsql security definer set search_path = public as $$
 declare new_id uuid; opened timestamptz; gen_badge text;
 begin
-  if not exists (select 1 from employees where id=(_payload->>'employee_id')::uuid and is_active) then
-    raise exception 'Karyawan tidak valid'; end if;
+  if _payload->>'employee_id' is not null and trim(_payload->>'employee_id') <> '' and trim(_payload->>'employee_id') <> '__general__' and trim(_payload->>'employee_id') <> 'general' then
+    if not exists (select 1 from employees where id=(_payload->>'employee_id')::uuid and is_active) then
+      raise exception 'Karyawan tidak valid'; end if;
+  end if;
   if not exists (select 1 from visit_purposes where id=(_payload->>'visit_purpose_id')::uuid and is_active) then
     raise exception 'Tujuan tidak valid'; end if;
   opened := nullif(_payload->>'form_opened_at','')::timestamptz;
   insert into guests(name,institution,phone,employee_id,visit_purpose_id,notes,form_opened_at,fill_duration_seconds)
   values (trim(_payload->>'name'), trim(_payload->>'institution'), trim(_payload->>'phone'),
-    (_payload->>'employee_id')::uuid, (_payload->>'visit_purpose_id')::uuid,
+    case
+      when _payload->>'employee_id' is not null and trim(_payload->>'employee_id') <> '' and trim(_payload->>'employee_id') <> '__general__' and trim(_payload->>'employee_id') <> 'general'
+        then (_payload->>'employee_id')::uuid
+      else null
+    end,
+    (_payload->>'visit_purpose_id')::uuid,
     nullif(trim(coalesce(_payload->>'notes','')),''), opened,
     case
       when _payload->>'fill_duration_seconds' is not null and (_payload->>'fill_duration_seconds')::int > 0
@@ -186,8 +193,8 @@ end $$;
 grant execute on function public.upsert_draft(uuid,jsonb), public.get_draft(uuid), public.delete_draft(uuid), public.submit_guest(jsonb,uuid) to anon, authenticated;
 
 -- DATA CONTOH
-insert into public.visit_purposes(name) select x from unnest(array['Meeting','Interview','Pengiriman Dokumen','Kunjungan Bisnis','Lainnya']) x
-where not exists (select 1 from public.visit_purposes);
+insert into public.visit_purposes(name) select x from unnest(array['Meeting / Rapat','Interview / Rekrutmen','Pengiriman Dokumen / Kurir Paket','Keperluan Umum / Resepsionis Lobi','Layanan Tenant & Perbankan','Kunjungan Fasilitas Gedung','Lainnya']) x
+where not exists (select 1 from public.visit_purposes where name = x);
 insert into public.employees(name,department) select * from (values ('Budi Santoso','HRD'),('Siti Rahma','Keuangan'),('Andi Wijaya','IT'),('Dewi Lestari','Marketing')) v(n,d)
 where not exists (select 1 from public.employees);
 
@@ -364,8 +371,10 @@ declare
   sched timestamptz;
   gen_badge text;
 begin
-  if not exists (select 1 from employees where id=(_payload->>'employee_id')::uuid and is_active) then
-    raise exception 'Karyawan tidak valid'; end if;
+  if _payload->>'employee_id' is not null and trim(_payload->>'employee_id') <> '' and trim(_payload->>'employee_id') <> '__general__' and trim(_payload->>'employee_id') <> 'general' then
+    if not exists (select 1 from employees where id=(_payload->>'employee_id')::uuid and is_active) then
+      raise exception 'Karyawan tidak valid'; end if;
+  end if;
   if not exists (select 1 from visit_purposes where id=(_payload->>'visit_purpose_id')::uuid and is_active) then
     raise exception 'Tujuan tidak valid'; end if;
   opened := nullif(_payload->>'form_opened_at','')::timestamptz;
@@ -384,7 +393,11 @@ begin
     trim(_payload->>'name'),
     trim(_payload->>'institution'),
     trim(_payload->>'phone'),
-    (_payload->>'employee_id')::uuid,
+    case
+      when _payload->>'employee_id' is not null and trim(_payload->>'employee_id') <> '' and trim(_payload->>'employee_id') <> '__general__' and trim(_payload->>'employee_id') <> 'general'
+        then (_payload->>'employee_id')::uuid
+      else null
+    end,
     (_payload->>'visit_purpose_id')::uuid,
     nullif(trim(coalesce(_payload->>'notes','')),''),
     opened,

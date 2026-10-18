@@ -387,7 +387,7 @@ function AdminTechnicalGuide() {
             className="flex flex-col rounded-xl border border-border/80 bg-background p-3 transition-colors hover:border-brand"
           >
             <span className="font-bold text-foreground">Laporan & Ekspor</span>
-            <span className="mt-0.5 text-muted-foreground">Ekspor CSV Excel & cetak filter</span>
+            <span className="mt-0.5 text-muted-foreground">Ekspor Excel (.xlsx), PDF resmi & cetak</span>
           </Link>
           <Link
             to="/admin/karyawan"

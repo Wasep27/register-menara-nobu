@@ -17,11 +17,16 @@ import { Route as PanduanRouteImport } from './routes/panduan'
 import { Route as PrivasiRouteImport } from './routes/privasi'
 import { Route as RegistrasiRouteImport } from './routes/registrasi'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as ScanRouteImport } from './routes/scan'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminAktivitasRouteImport } from './routes/admin.aktivitas'
 import { Route as AdminEmailAdminRouteImport } from './routes/admin.email-admin'
+import { Route as AdminFeedbackRouteImport } from './routes/admin.feedback'
 import { Route as AdminKaryawanRouteImport } from './routes/admin.karyawan'
 import { Route as AdminLaporanRouteImport } from './routes/admin.laporan'
+import { Route as AdminPanduanRouteImport } from './routes/admin.panduan'
 import { Route as AdminPenggunaRouteImport } from './routes/admin.pengguna'
+import { Route as AdminScanRouteImport } from './routes/admin.scan'
 import { Route as AdminTamuRouteImport } from './routes/admin.tamu'
 import { Route as AdminTujuanRouteImport } from './routes/admin.tujuan'
 import { Route as AdminLoginRouteImport } from './routes/admin_.login'
@@ -66,14 +71,29 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ScanRoute = ScanRouteImport.update({
+  id: '/scan',
+  path: '/scan',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminAktivitasRoute = AdminAktivitasRouteImport.update({
+  id: '/aktivitas',
+  path: '/aktivitas',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminEmailAdminRoute = AdminEmailAdminRouteImport.update({
   id: '/email-admin',
   path: '/email-admin',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminFeedbackRoute = AdminFeedbackRouteImport.update({
+  id: '/feedback',
+  path: '/feedback',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminKaryawanRoute = AdminKaryawanRouteImport.update({
@@ -86,9 +106,19 @@ const AdminLaporanRoute = AdminLaporanRouteImport.update({
   path: '/laporan',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminPanduanRoute = AdminPanduanRouteImport.update({
+  id: '/panduan',
+  path: '/panduan',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminPenggunaRoute = AdminPenggunaRouteImport.update({
   id: '/pengguna',
   path: '/pengguna',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminScanRoute = AdminScanRouteImport.update({
+  id: '/scan',
+  path: '/scan',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminTamuRoute = AdminTamuRouteImport.update({
@@ -116,10 +146,15 @@ export interface FileRoutesByFullPath {
   '/privasi': typeof PrivasiRoute
   '/registrasi': typeof RegistrasiRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/scan': typeof ScanRoute
+  '/admin/aktivitas': typeof AdminAktivitasRoute
   '/admin/email-admin': typeof AdminEmailAdminRoute
+  '/admin/feedback': typeof AdminFeedbackRoute
   '/admin/karyawan': typeof AdminKaryawanRoute
   '/admin/laporan': typeof AdminLaporanRoute
+  '/admin/panduan': typeof AdminPanduanRoute
   '/admin/pengguna': typeof AdminPenggunaRoute
+  '/admin/scan': typeof AdminScanRoute
   '/admin/tamu': typeof AdminTamuRoute
   '/admin/tujuan': typeof AdminTujuanRoute
   '/admin/login': typeof AdminLoginRoute
@@ -133,10 +168,15 @@ export interface FileRoutesByTo {
   '/privasi': typeof PrivasiRoute
   '/registrasi': typeof RegistrasiRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/scan': typeof ScanRoute
+  '/admin/aktivitas': typeof AdminAktivitasRoute
   '/admin/email-admin': typeof AdminEmailAdminRoute
+  '/admin/feedback': typeof AdminFeedbackRoute
   '/admin/karyawan': typeof AdminKaryawanRoute
   '/admin/laporan': typeof AdminLaporanRoute
+  '/admin/panduan': typeof AdminPanduanRoute
   '/admin/pengguna': typeof AdminPenggunaRoute
+  '/admin/scan': typeof AdminScanRoute
   '/admin/tamu': typeof AdminTamuRoute
   '/admin/tujuan': typeof AdminTujuanRoute
   '/admin/login': typeof AdminLoginRoute
@@ -152,10 +192,15 @@ export interface FileRoutesById {
   '/privasi': typeof PrivasiRoute
   '/registrasi': typeof RegistrasiRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/scan': typeof ScanRoute
+  '/admin/aktivitas': typeof AdminAktivitasRoute
   '/admin/email-admin': typeof AdminEmailAdminRoute
+  '/admin/feedback': typeof AdminFeedbackRoute
   '/admin/karyawan': typeof AdminKaryawanRoute
   '/admin/laporan': typeof AdminLaporanRoute
+  '/admin/panduan': typeof AdminPanduanRoute
   '/admin/pengguna': typeof AdminPenggunaRoute
+  '/admin/scan': typeof AdminScanRoute
   '/admin/tamu': typeof AdminTamuRoute
   '/admin/tujuan': typeof AdminTujuanRoute
   '/admin_/login': typeof AdminLoginRoute
@@ -172,10 +217,15 @@ export interface FileRouteTypes {
     | '/privasi'
     | '/registrasi'
     | '/reset-password'
+    | '/scan'
+    | '/admin/aktivitas'
     | '/admin/email-admin'
+    | '/admin/feedback'
     | '/admin/karyawan'
     | '/admin/laporan'
+    | '/admin/panduan'
     | '/admin/pengguna'
+    | '/admin/scan'
     | '/admin/tamu'
     | '/admin/tujuan'
     | '/admin/login'
@@ -189,10 +239,15 @@ export interface FileRouteTypes {
     | '/privasi'
     | '/registrasi'
     | '/reset-password'
+    | '/scan'
+    | '/admin/aktivitas'
     | '/admin/email-admin'
+    | '/admin/feedback'
     | '/admin/karyawan'
     | '/admin/laporan'
+    | '/admin/panduan'
     | '/admin/pengguna'
+    | '/admin/scan'
     | '/admin/tamu'
     | '/admin/tujuan'
     | '/admin/login'
@@ -207,10 +262,15 @@ export interface FileRouteTypes {
     | '/privasi'
     | '/registrasi'
     | '/reset-password'
+    | '/scan'
+    | '/admin/aktivitas'
     | '/admin/email-admin'
+    | '/admin/feedback'
     | '/admin/karyawan'
     | '/admin/laporan'
+    | '/admin/panduan'
     | '/admin/pengguna'
+    | '/admin/scan'
     | '/admin/tamu'
     | '/admin/tujuan'
     | '/admin_/login'
@@ -226,6 +286,7 @@ export interface RootRouteChildren {
   PrivasiRoute: typeof PrivasiRoute
   RegistrasiRoute: typeof RegistrasiRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ScanRoute: typeof ScanRoute
   AdminLoginRoute: typeof AdminLoginRoute
 }
 
@@ -287,6 +348,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/scan': {
+      id: '/scan'
+      path: '/scan'
+      fullPath: '/scan'
+      preLoaderRoute: typeof ScanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/': {
       id: '/admin/'
       path: '/'
@@ -294,11 +362,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/aktivitas': {
+      id: '/admin/aktivitas'
+      path: '/aktivitas'
+      fullPath: '/admin/aktivitas'
+      preLoaderRoute: typeof AdminAktivitasRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/email-admin': {
       id: '/admin/email-admin'
       path: '/email-admin'
       fullPath: '/admin/email-admin'
       preLoaderRoute: typeof AdminEmailAdminRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/feedback': {
+      id: '/admin/feedback'
+      path: '/feedback'
+      fullPath: '/admin/feedback'
+      preLoaderRoute: typeof AdminFeedbackRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/karyawan': {
@@ -315,11 +397,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLaporanRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/panduan': {
+      id: '/admin/panduan'
+      path: '/panduan'
+      fullPath: '/admin/panduan'
+      preLoaderRoute: typeof AdminPanduanRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/pengguna': {
       id: '/admin/pengguna'
       path: '/pengguna'
       fullPath: '/admin/pengguna'
       preLoaderRoute: typeof AdminPenggunaRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/scan': {
+      id: '/admin/scan'
+      path: '/scan'
+      fullPath: '/admin/scan'
+      preLoaderRoute: typeof AdminScanRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/tamu': {
@@ -347,20 +443,28 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminAktivitasRoute: typeof AdminAktivitasRoute
   AdminEmailAdminRoute: typeof AdminEmailAdminRoute
+  AdminFeedbackRoute: typeof AdminFeedbackRoute
   AdminKaryawanRoute: typeof AdminKaryawanRoute
   AdminLaporanRoute: typeof AdminLaporanRoute
+  AdminPanduanRoute: typeof AdminPanduanRoute
   AdminPenggunaRoute: typeof AdminPenggunaRoute
+  AdminScanRoute: typeof AdminScanRoute
   AdminTamuRoute: typeof AdminTamuRoute
   AdminTujuanRoute: typeof AdminTujuanRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminAktivitasRoute: AdminAktivitasRoute,
   AdminEmailAdminRoute: AdminEmailAdminRoute,
+  AdminFeedbackRoute: AdminFeedbackRoute,
   AdminKaryawanRoute: AdminKaryawanRoute,
   AdminLaporanRoute: AdminLaporanRoute,
+  AdminPanduanRoute: AdminPanduanRoute,
   AdminPenggunaRoute: AdminPenggunaRoute,
+  AdminScanRoute: AdminScanRoute,
   AdminTamuRoute: AdminTamuRoute,
   AdminTujuanRoute: AdminTujuanRoute,
   AdminIndexRoute: AdminIndexRoute,
@@ -377,6 +481,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivasiRoute: PrivasiRoute,
   RegistrasiRoute: RegistrasiRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ScanRoute: ScanRoute,
   AdminLoginRoute: AdminLoginRoute,
 }
 export const routeTree = rootRouteImport

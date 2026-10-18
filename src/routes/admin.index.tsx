@@ -6,6 +6,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -13,14 +14,21 @@ import {
 } from "recharts";
 import {
   Activity,
+  AlertTriangle,
   BarChart3,
+  Building2,
   Calendar,
+  CheckCircle2,
   Clock,
+  Flame,
   IdCard,
+  Layers,
+  Lightbulb,
   Lock,
   MessageSquareHeart,
   QrCode,
   ShieldCheck,
+  Sparkles,
   TrendingUp,
   UserCheck,
   UserPlus,
@@ -118,7 +126,7 @@ function Dashboard() {
       supabase
         .from("guests")
         .select(
-          "id, name, institution, phone, check_in_time, fill_duration_seconds, badge_code, is_important, scheduled_at, employees(name), visit_purposes(name)",
+          "id, name, institution, phone, check_in_time, fill_duration_seconds, badge_code, is_important, scheduled_at, employees(name, department), visit_purposes(name)",
         )
         .gte("check_in_time", start.toISOString())
         .order("check_in_time", { ascending: false })
@@ -375,7 +383,9 @@ function Dashboard() {
                           </p>
                           <p className="text-muted-foreground text-xs mt-0.5">
                             Menemui:{" "}
-                            <strong className="text-foreground">{r.employees?.name ?? "-"}</strong>{" "}
+                            <strong className="text-foreground">
+                              {r.employees?.name || "Resepsionis Lobi (Umum)"}
+                            </strong>{" "}
                             · Keperluan: {r.visit_purposes?.name ?? "-"}
                             {r.badge_code && (
                               <span className="ml-2 font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
@@ -537,9 +547,15 @@ function Dashboard() {
                 />
               </div>
 
+              {/* Building Management Insights */}
+              <BuildingInsightsSection insights={stats.insights} />
+
               {/* Charts for Staff */}
               <div className="grid gap-6 lg:grid-cols-2">
-                <Panel title="Tren Kunjungan Harian Lobi">
+                <Panel
+                  title="Tren Kunjungan Harian Lobi"
+                  subtitle={`Volume kedatangan tamu per hari dalam ${days} hari terakhir`}
+                >
                   <ResponsiveContainer width="100%" height={220}>
                     <AreaChart data={stats.trend} margin={{ left: -20, right: 8 }}>
                       <defs>
@@ -564,7 +580,33 @@ function Dashboard() {
                   </ResponsiveContainer>
                 </Panel>
 
-                <Panel title="Kunjungan Berdasarkan Tujuan">
+                <Panel
+                  title="Distribusi Jam Sibuk Lobi (Peak Hours)"
+                  subtitle="Volume check-in per jam untuk antisipasi antrean meja lobi"
+                  badge={
+                    stats.busiest ? (
+                      <span className="flex items-center gap-1 text-[11px] font-bold text-amber-600 dark:text-amber-400">
+                        <Flame className="h-3.5 w-3.5" /> Puncak: {stats.busiest[0]}:00 WIB
+                      </span>
+                    ) : undefined
+                  }
+                >
+                  <PeakHoursChart data={stats.hourlyTraffic} busiest={stats.busiest} />
+                </Panel>
+              </div>
+
+              <div className="grid gap-6 lg:grid-cols-2">
+                <Panel
+                  title="Kunjungan per Departemen / Divisi"
+                  subtitle="Tujuan unit kerja penerima tamu di Menara Nobu"
+                >
+                  <DepartmentTrafficChart departments={stats.departments} days={days} />
+                </Panel>
+
+                <Panel
+                  title="Kunjungan Berdasarkan Tujuan"
+                  subtitle="Kategori keperluan tamu (meeting, interview, kurir, dll.)"
+                >
                   <HBar
                     data={stats.purpose}
                     color={PRIMARY}
@@ -613,8 +655,10 @@ function Dashboard() {
                         </p>
                         <p className="text-muted-foreground text-xs mt-0.5">
                           Menemui:{" "}
-                          <strong className="text-foreground">{r.employees?.name ?? "-"}</strong> ·
-                          Keperluan: {r.visit_purposes?.name ?? "-"}
+                          <strong className="text-foreground">
+                            {r.employees?.name || "Resepsionis Lobi (Umum)"}
+                          </strong>{" "}
+                          · Keperluan: {r.visit_purposes?.name ?? "-"}
                         </p>
                       </div>
 
@@ -741,33 +785,67 @@ function Dashboard() {
                 </div>
               )}
 
-              <Panel title="Kunjungan per hari">
-                <ResponsiveContainer width="100%" height={240}>
-                  <AreaChart data={stats.trend} margin={{ left: -20, right: 8 }}>
-                    <defs>
-                      <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={BRAND} stopOpacity={0.5} />
-                        <stop offset="100%" stopColor={BRAND} stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                    <XAxis dataKey="name" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
-                    <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                    <Tooltip />
-                    <Area
-                      type="monotone"
-                      dataKey="value"
-                      name="Tamu"
-                      stroke={PRIMARY}
-                      strokeWidth={2}
-                      fill="url(#g)"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </Panel>
+              {/* Actionable Building Management Insights */}
+              <BuildingInsightsSection insights={stats.insights} />
 
+              {/* Baris 1: Tren Harian & Distribusi Jam Sibuk Lobi (Peak Hours) */}
               <div className="grid gap-6 lg:grid-cols-2">
-                <Panel title="Berdasarkan tujuan">
+                <Panel
+                  title="Tren Kunjungan Harian Lobi"
+                  subtitle={`Total kedatangan tamu per hari dalam periode ${days} hari`}
+                >
+                  <ResponsiveContainer width="100%" height={240}>
+                    <AreaChart data={stats.trend} margin={{ left: -20, right: 8 }}>
+                      <defs>
+                        <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={BRAND} stopOpacity={0.5} />
+                          <stop offset="100%" stopColor={BRAND} stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                      <XAxis dataKey="name" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
+                      <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                      <Tooltip />
+                      <Area
+                        type="monotone"
+                        dataKey="value"
+                        name="Tamu"
+                        stroke={PRIMARY}
+                        strokeWidth={2}
+                        fill="url(#g)"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </Panel>
+
+                <Panel
+                  title="Distribusi Jam Sibuk Lobi (Peak Hours)"
+                  subtitle="Pola kedatangan tamu per jam operasional gedung (07:00 - 18:00 WIB)"
+                  badge={
+                    stats.busiest && stats.busiest[1] > 0 ? (
+                      <span className="flex items-center gap-1 text-[11px] font-bold text-amber-600 dark:text-amber-400">
+                        <Flame className="h-3.5 w-3.5" /> Puncak: {stats.busiest[0]}:00 WIB
+                      </span>
+                    ) : undefined
+                  }
+                >
+                  <PeakHoursChart data={stats.hourlyTraffic} busiest={stats.busiest} />
+                </Panel>
+              </div>
+
+              {/* Baris 2: Distribusi Departemen / Divisi & Kategori Tujuan */}
+              <div className="grid gap-6 lg:grid-cols-2">
+                <Panel
+                  title="Kunjungan per Departemen / Divisi"
+                  subtitle="Sebaran tamu berdasarkan unit kerja penerima di Menara Nobu"
+                >
+                  <DepartmentTrafficChart departments={stats.departments} days={days} />
+                </Panel>
+
+                <Panel
+                  title="Kunjungan Berdasarkan Tujuan"
+                  subtitle="Klasifikasi keperluan kunjungan tamu (rapat, interview, logistik, dll.)"
+                >
                   <HBar
                     data={stats.purpose}
                     color={PRIMARY}
@@ -777,17 +855,22 @@ function Dashboard() {
                     actionLabel="Lihat 30 hari"
                   />
                 </Panel>
-                <Panel title="Karyawan paling banyak dikunjungi">
-                  <HBar
-                    data={stats.emp}
-                    color={BRAND}
-                    emptyTitle="Belum ada data karyawan dikunjungi"
-                    emptyDesc="Grafik akan menampilkan karyawan penerima tamu paling sering dikunjungi."
-                    onAction={days !== 30 ? () => setDays(30) : undefined}
-                    actionLabel="Lihat 30 hari"
-                  />
-                </Panel>
               </div>
+
+              {/* Baris 3: Peringkat Karyawan / Host Paling Banyak Dikunjungi */}
+              <Panel
+                title="Karyawan Paling Sering Menerima Tamu"
+                subtitle="Daftar penerima tamu teraktif untuk koordinasi ruang tunggu dan notifikasi"
+              >
+                <HBar
+                  data={stats.emp}
+                  color={BRAND}
+                  emptyTitle="Belum ada data karyawan dikunjungi"
+                  emptyDesc="Grafik akan menampilkan karyawan penerima tamu paling sering dikunjungi."
+                  onAction={days !== 30 ? () => setDays(30) : undefined}
+                  actionLabel="Lihat 30 hari"
+                />
+              </Panel>
 
               {/* Aktivitas Terkini (Live Feed Preview) */}
               <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-soft">
@@ -834,7 +917,7 @@ function Dashboard() {
                           <p className="text-muted-foreground mt-0.5 text-xs">
                             Menemui:{" "}
                             <span className="font-semibold text-primary">
-                              {r.employees?.name ?? "-"}
+                              {r.employees?.name || "Resepsionis Lobi (Umum)"}
                             </span>{" "}
                             · Keperluan: {r.visit_purposes?.name ?? "-"}
                           </p>
@@ -990,11 +1073,282 @@ function HBar({
   );
 }
 
-function Panel({ title, children }: { title: string; children: React.ReactNode }) {
+function Panel({
+  title,
+  subtitle,
+  badge,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  badge?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="rounded-2xl bg-card p-5 shadow-soft">
-      <h2 className="mb-3 font-semibold text-foreground">{title}</h2>
+    <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-soft">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-3">
+        <div>
+          <h2 className="font-display text-sm sm:text-base font-bold text-foreground">{title}</h2>
+          {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
+        </div>
+        {badge && <div>{badge}</div>}
+      </div>
       {children}
+    </div>
+  );
+}
+
+function PeakHoursChart({
+  data,
+  busiest,
+}: {
+  data: { hour: string; count: number; isPeak: boolean }[];
+  busiest?: [string, number] | undefined;
+}) {
+  const hasData = data.some((d) => d.count > 0);
+
+  if (!hasData) {
+    return (
+      <div className="flex h-56 flex-col items-center justify-center text-center">
+        <Clock className="h-8 w-8 text-muted-foreground/40" />
+        <p className="mt-2 text-sm font-semibold text-foreground">Belum ada data jam kunjungan</p>
+        <p className="text-xs text-muted-foreground">
+          Grafik jam sibuk akan terbentuk saat tamu melakukan check-in lobi.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div className="flex items-center gap-3">
+          <span className="flex items-center gap-1.5 font-medium text-muted-foreground">
+            <span className="h-2.5 w-2.5 rounded-xs bg-sky-600 inline-block" />
+            Lalu Lintas Normal
+          </span>
+          <span className="flex items-center gap-1.5 font-medium text-amber-600 dark:text-amber-400">
+            <span className="h-2.5 w-2.5 rounded-xs bg-amber-500 inline-block" />
+            Puncak Jam Sibuk (Peak)
+          </span>
+        </div>
+        {busiest && busiest[1] > 0 && (
+          <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 font-bold text-amber-700 dark:text-amber-400">
+            Puncak: {busiest[0]}:00 ({busiest[1]} tamu)
+          </span>
+        )}
+      </div>
+      <ResponsiveContainer width="100%" height={230}>
+        <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+          <XAxis dataKey="hour" tick={{ fontSize: 11 }} />
+          <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+          <Tooltip
+            content={({ active, payload }) => {
+              if (active && payload && payload.length) {
+                const item = payload[0].payload;
+                return (
+                  <div className="rounded-xl border border-border bg-popover px-3 py-2 text-xs shadow-md">
+                    <p className="font-bold text-foreground">Pukul {item.hour} WIB</p>
+                    <p className="mt-0.5 text-primary font-semibold">{item.count} Tamu Check-in</p>
+                    {item.isPeak && (
+                      <span className="mt-1 inline-block rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-bold text-amber-600">
+                        🔥 Jam Tersibuk Lobi
+                      </span>
+                    )}
+                  </div>
+                );
+              }
+              return null;
+            }}
+          />
+          <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+            {data.map((entry, index) => (
+              <Cell
+                key={`cell-${index}`}
+                fill={entry.isPeak ? "#f59e0b" : "var(--primary)"}
+              />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function DepartmentTrafficChart({
+  departments,
+  days,
+}: {
+  departments: { name: string; count: number; percentage: number }[];
+  days: number;
+}) {
+  if (!departments || departments.length === 0) {
+    return (
+      <div className="flex h-56 flex-col items-center justify-center text-center">
+        <Building2 className="h-8 w-8 text-muted-foreground/40" />
+        <p className="mt-2 text-sm font-semibold text-foreground">Belum ada data departemen</p>
+        <p className="text-xs text-muted-foreground">
+          Kunjungan akan dikelompokkan berdasarkan divisi karyawan penerima tamu.
+        </p>
+      </div>
+    );
+  }
+
+  const chartData = departments.slice(0, 7).map((d) => ({
+    name: d.name.length > 20 ? `${d.name.slice(0, 18)}…` : d.name,
+    fullName: d.name,
+    value: d.count,
+    percentage: d.percentage,
+  }));
+
+  return (
+    <div className="space-y-3">
+      <ResponsiveContainer width="100%" height={Math.max(180, chartData.length * 36)}>
+        <BarChart
+          data={chartData}
+          layout="vertical"
+          margin={{ left: 10, right: 24, top: 0, bottom: 0 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
+          <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
+          <YAxis
+            type="category"
+            dataKey="name"
+            width={125}
+            tick={{ fontSize: 11, fontWeight: 500 }}
+          />
+          <Tooltip
+            content={({ active, payload }) => {
+              if (active && payload && payload.length) {
+                const item = payload[0].payload;
+                return (
+                  <div className="rounded-xl border border-border bg-popover px-3 py-2 text-xs shadow-md">
+                    <p className="font-bold text-foreground">{item.fullName}</p>
+                    <p className="mt-0.5 text-primary font-semibold">
+                      {item.value} Tamu ({item.percentage}% dari total)
+                    </p>
+                  </div>
+                );
+              }
+              return null;
+            }}
+          />
+          <Bar dataKey="value" radius={[0, 6, 6, 0]}>
+            {chartData.map((_, idx) => (
+              <Cell
+                key={`dept-${idx}`}
+                fill={idx === 0 ? "var(--primary)" : "var(--brand)"}
+              />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function BuildingInsightsSection({
+  insights,
+}: {
+  insights: {
+    id: string;
+    type: "peak" | "department" | "efficiency" | "flow";
+    badge: string;
+    title: string;
+    description: string;
+    recommendation: string;
+  }[];
+}) {
+  if (!insights || insights.length === 0) return null;
+
+  const getIcon = (type: string) => {
+    switch (type) {
+      case "peak":
+        return <Flame className="h-4 w-4 text-amber-500" />;
+      case "department":
+        return <Building2 className="h-4 w-4 text-primary" />;
+      case "flow":
+        return <Layers className="h-4 w-4 text-sky-500" />;
+      case "efficiency":
+        return <Sparkles className="h-4 w-4 text-emerald-500" />;
+      default:
+        return <Lightbulb className="h-4 w-4 text-amber-500" />;
+    }
+  };
+
+  const getBadgeClass = (type: string) => {
+    switch (type) {
+      case "peak":
+        return "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30";
+      case "department":
+        return "bg-primary/10 text-primary border-primary/20";
+      case "flow":
+        return "bg-sky-500/15 text-sky-700 dark:text-sky-400 border-sky-500/30";
+      case "efficiency":
+        return "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30";
+      default:
+        return "bg-brand-soft text-primary border-brand/20";
+    }
+  };
+
+  return (
+    <div className="space-y-3.5">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
+        <div className="flex items-center gap-2">
+          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-500/15 text-amber-600 shadow-xs">
+            <Lightbulb className="h-4 w-4" />
+          </span>
+          <div>
+            <h2 className="font-display text-sm sm:text-base font-bold text-foreground">
+              Insight & Rekomendasi Manajemen Gedung (Building Management)
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Rekomendasi operasional berbasis data riil pergerakan tamu di lobi Menara Nobu
+            </p>
+          </div>
+        </div>
+        <span className="self-start sm:self-auto rounded-full bg-brand-soft px-3 py-1 text-[11px] font-bold text-primary">
+          Smart Analytics
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        {insights.map((item) => (
+          <div
+            key={item.id}
+            className="flex flex-col justify-between rounded-2xl border border-border/80 bg-card p-4 shadow-soft transition-all hover:border-primary/40 hover:shadow-md"
+          >
+            <div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-muted/60">
+                  {getIcon(item.type)}
+                </span>
+                <span
+                  className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${getBadgeClass(item.type)}`}
+                >
+                  {item.badge}
+                </span>
+              </div>
+              <h3 className="mt-3 font-display text-sm font-bold text-foreground leading-snug">
+                {item.title}
+              </h3>
+              <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                {item.description}
+              </p>
+            </div>
+
+            <div className="mt-3.5 rounded-xl border border-primary/20 bg-brand-soft/50 p-2.5 text-xs text-foreground">
+              <p className="font-semibold text-primary text-[11px] flex items-center gap-1 mb-0.5">
+                <CheckCircle2 className="h-3.5 w-3.5 shrink-0" /> Rekomendasi Aksi:
+              </p>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                {item.recommendation}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

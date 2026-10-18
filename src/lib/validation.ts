@@ -22,7 +22,7 @@ export const guestSchema = z.object({
     .min(1, "Nomor telepon wajib diisi")
     .regex(/^(\+62|62|0)8[0-9 -]{7,15}$/, "Gunakan nomor ponsel Indonesia, contoh 0812 3456 7890"),
   visit_purpose_id: z.string().min(1, "Pilih tujuan kunjungan"),
-  employee_id: z.string().min(1, "Pilih nama yang dituju"),
+  employee_id: z.string().optional(),
   notes: z.string().max(500, "Catatan maksimal 500 karakter").optional(),
   scheduled_at: z
     .string()

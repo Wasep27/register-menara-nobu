@@ -13,12 +13,15 @@ import {
   QrCode,
   Edit3,
   Trash2,
+  FileSpreadsheet,
+  FileText,
+  Download,
 } from "lucide-react";
 import { supabase, type Employee, type Guest, type Purpose } from "@/lib/supabase";
 import { VisitorBadgeModal } from "@/components/VisitorBadgeModal";
 import { createVisitorBadgeFromGuest, type VisitorBadgeData } from "@/lib/badge-utils";
 import { useAdminRole } from "@/hooks/useAdminRole";
-import { exportToCsv } from "@/lib/csv-export";
+import { exportToExcel, exportToPdf, exportToCsv } from "@/lib/export-utils";
 import { formatWibDateTime } from "@/lib/date-utils";
 
 export const Route = createFileRoute("/admin/tamu")({ component: Guests });
@@ -105,20 +108,113 @@ function Guests() {
       qb = qb.lt("check_in_time", e.toISOString());
     }
     if (purpose) qb = qb.eq("visit_purpose_id", purpose);
-    if (emp) qb = qb.eq("employee_id", emp);
+    if (emp === "__general__") {
+      qb = qb.is("employee_id", null);
+    } else if (emp) {
+      qb = qb.eq("employee_id", emp);
+    }
     return qb.order("check_in_time", { ascending: asc });
   }, [debouncedQ, date, dateTo, purpose, emp, asc]);
 
-  const [exporting, setExporting] = useState(false);
-  const exportCsv = async () => {
-    setExporting(true);
+  const [exporting, setExporting] = useState<string | false>(false);
+
+  const fetchAllData = async (): Promise<Guest[]> => {
+    const all: Guest[] = [];
+    for (let from = 0; ; from += 1000) {
+      const { data, error } = await buildQuery().range(from, from + 999);
+      if (error) throw error;
+      all.push(...((data as Guest[]) ?? []));
+      if (!data || data.length < 1000) break;
+    }
+    return all;
+  };
+
+  const exportExcel = async () => {
+    if (count === 0) return;
+    setExporting("excel");
     try {
-      const all: Guest[] = [];
-      for (let from = 0; ; from += 1000) {
-        const { data } = await buildQuery().range(from, from + 999);
-        all.push(...((data as Guest[]) ?? []));
-        if (!data || data.length < 1000) break;
-      }
+      const all = await fetchAllData();
+      const todayStr = new Date().toISOString().slice(0, 10);
+      exportToExcel({
+        filename: `buku-tamu-menara-nobu-${todayStr}`,
+        title: "Daftar Buku Tamu Menara Nobu",
+        subtitle: "Gedung Perkantoran Menara Nobu · Pos Keamanan & Resepsionis",
+        sheetName: "Buku Tamu",
+        headers: [
+          "No",
+          "Waktu Masuk (WIB)",
+          "Nama Tamu",
+          "Instansi / Perusahaan",
+          "Nomor Telepon",
+          "Tujuan Kunjungan",
+          "Menemui / Staf",
+          "Catatan Kunjungan",
+          "Durasi Pengisian (detik)",
+        ],
+        rows: all.map((r, idx) => [
+          idx + 1,
+          formatWibDateTime(r.check_in_time),
+          r.name,
+          r.institution,
+          r.phone,
+          r.visit_purposes?.name || "-",
+          r.employees?.name || "Resepsionis Lobi (Umum)",
+          r.notes || "-",
+          r.fill_duration_seconds ?? "-",
+        ]),
+      });
+      toast.success("Data buku tamu berhasil diekspor ke Excel (.xlsx)");
+    } catch {
+      toast.error("Gagal mengekspor data ke Excel");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const exportPdf = async () => {
+    if (count === 0) return;
+    setExporting("pdf");
+    try {
+      const all = await fetchAllData();
+      const todayStr = new Date().toISOString().slice(0, 10);
+      exportToPdf({
+        filename: `buku-tamu-menara-nobu-${todayStr}`,
+        title: "Daftar Rekapitulasi Tamu Menara Nobu",
+        subtitle: "Pos Keamanan & Resepsionis Lobi Gedung Menara Nobu",
+        headers: [
+          "No",
+          "Waktu",
+          "Nama Tamu",
+          "Instansi",
+          "Telepon",
+          "Tujuan",
+          "Menemui",
+          "Catatan",
+        ],
+        rows: all.map((r, idx) => [
+          idx + 1,
+          formatWibDateTime(r.check_in_time, false),
+          r.name,
+          r.institution,
+          r.phone,
+          r.visit_purposes?.name || "-",
+          r.employees?.name || "Resepsionis Lobi (Umum)",
+          r.notes || "-",
+        ]),
+      });
+      toast.success("Dokumen PDF buku tamu berhasil diunduh");
+    } catch {
+      toast.error("Gagal mengekspor data ke PDF");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const exportCsv = async () => {
+    if (count === 0) return;
+    setExporting("csv");
+    try {
+      const all = await fetchAllData();
       exportToCsv({
         filename: `data-tamu-${new Date().toISOString().slice(0, 10)}`,
         headers: [
@@ -137,11 +233,12 @@ function Guests() {
           r.institution,
           r.phone,
           r.visit_purposes?.name || "-",
-          r.employees?.name || "-",
+          r.employees?.name || "Resepsionis Lobi (Umum)",
           r.notes || "",
           r.fill_duration_seconds ?? "",
         ]),
       });
+      toast.success("Data buku tamu berhasil diekspor ke CSV");
     } catch {
       toast.error("Gagal mengekspor data tamu");
     } finally {
@@ -184,7 +281,8 @@ function Guests() {
         institution: edit.institution,
         phone: edit.phone,
         notes: edit.notes,
-        employee_id: edit.employee_id,
+        employee_id:
+          edit.employee_id && edit.employee_id !== "__general__" ? edit.employee_id : null,
         visit_purpose_id: edit.visit_purpose_id,
       })
       .eq("id", edit.id);
@@ -278,7 +376,8 @@ function Guests() {
             setPage(0);
           }}
         >
-          <option value="">Semua karyawan</option>
+          <option value="">Semua tujuan / staf</option>
+          <option value="__general__">🏢 Resepsionis Lobi (Umum)</option>
           {emps.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}
@@ -301,21 +400,44 @@ function Guests() {
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">{count} kunjungan ditemukan</p>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Link
             to="/admin/scan"
-            className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-primary/30 bg-brand-soft px-4 text-xs sm:text-sm font-semibold text-primary transition-all hover:bg-primary hover:text-primary-foreground active:scale-95"
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-primary/30 bg-brand-soft px-3.5 sm:px-4 text-xs sm:text-sm font-semibold text-primary transition-all hover:bg-primary hover:text-primary-foreground active:scale-95"
             title="Buka pemindai barcode / QR pass tamu"
           >
             <QrCode className="h-4 w-4" />
-            <span>Pindai QR / Badge</span>
+            <span>Pindai QR</span>
           </Link>
           <button
-            disabled={exporting || count === 0}
-            onClick={exportCsv}
-            className="min-h-10 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition-all active:scale-95 disabled:opacity-50"
+            type="button"
+            disabled={Boolean(exporting) || count === 0}
+            onClick={exportExcel}
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 sm:px-4 text-xs sm:text-sm font-bold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95 disabled:opacity-50"
+            title="Unduh data buku tamu ke spreadsheet Excel (.xlsx)"
           >
-            {exporting ? "Menyiapkan…" : "Ekspor CSV"}
+            <FileSpreadsheet className="h-4 w-4" />
+            <span>{exporting === "excel" ? "Menyiapkan…" : "Excel (.xlsx)"}</span>
+          </button>
+          <button
+            type="button"
+            disabled={Boolean(exporting) || count === 0}
+            onClick={exportPdf}
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-rose-600 px-3.5 sm:px-4 text-xs sm:text-sm font-bold text-white shadow-sm transition-all hover:bg-rose-700 active:scale-95 disabled:opacity-50"
+            title="Unduh laporan PDF bergaris rapih dengan kop Menara Nobu"
+          >
+            <FileText className="h-4 w-4" />
+            <span>{exporting === "pdf" ? "Menyiapkan…" : "PDF"}</span>
+          </button>
+          <button
+            type="button"
+            disabled={Boolean(exporting) || count === 0}
+            onClick={exportCsv}
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-border bg-card px-3 text-xs sm:text-sm font-medium text-foreground transition-all hover:bg-muted active:scale-95 disabled:opacity-50"
+            title="Unduh format CSV alternatif"
+          >
+            <Download className="h-3.5 w-3.5 text-muted-foreground" />
+            <span>CSV</span>
           </button>
         </div>
       </div>
@@ -687,8 +809,9 @@ function Guests() {
                   <select
                     className={`${i} w-full`}
                     value={edit.employee_id ?? ""}
-                    onChange={(e) => setEdit({ ...edit, employee_id: e.target.value })}
+                    onChange={(e) => setEdit({ ...edit, employee_id: e.target.value || null })}
                   >
+                    <option value="">🏢 Resepsionis Lobi (Umum / Tanpa Staf)</option>
                     {emps.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.name}

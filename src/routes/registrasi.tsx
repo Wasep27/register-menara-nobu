@@ -8,7 +8,7 @@ import {
   RegistrationSuccess,
   type RegistrationSuccessData,
 } from "@/components/RegistrationSuccess";
-import { QrCode } from "lucide-react";
+import { QrCode, Building2, User, Package, Sparkles } from "lucide-react";
 import { formatBadgeCode } from "@/lib/barcode";
 import { getNowWibDateString, getNowWibTimeString } from "@/lib/date-utils";
 
@@ -66,6 +66,7 @@ function GuestForm() {
   const [done, setDone] = useState(false);
   const [successData, setSuccessData] = useState<RegistrationSuccessData | null>(null);
   const [empSearch, setEmpSearch] = useState("");
+  const [destinationType, setDestinationType] = useState<"employee" | "general">("employee");
   const dirty = useRef(false);
   const token = useRef<string>("");
   const formRef = useRef(form);
@@ -225,6 +226,25 @@ function GuestForm() {
       return;
     }
 
+    // Validasi pemilihan tujuan: jika mode employee aktif tapi belum memilih karyawan
+    const isGeneral =
+      destinationType === "general" ||
+      form.employee_id === "__general__" ||
+      !form.employee_id;
+
+    if (destinationType === "employee" && (!form.employee_id || form.employee_id === "__general__")) {
+      setErrors((e) => ({
+        ...e,
+        employee_id: "Pilih nama karyawan yang dituju atau alihkan ke opsi Tujuan Umum",
+      }));
+      setSubmitErr("Pilih nama karyawan yang dituju atau pilih opsi Tujuan Umum / Resepsionis.");
+      const first = document.querySelector<HTMLElement>('[name="employee_id"]');
+      first?.focus();
+      return;
+    }
+
+    const effectiveEmployeeId = isGeneral ? null : form.employee_id;
+
     // Durasi pengisian aktif wajar (antara 15 detik s/d 360 detik)
     // Mengatasi kalkulasi membengkak hingga puluhan/ratusan menit akibat draft auto-save
     const safeDuration = Math.max(15, Math.min(Math.round(activeSecondsRef.current || 45), 360));
@@ -235,6 +255,7 @@ function GuestForm() {
     const { data: newGuestId, error } = await supabase.rpc("submit_guest", {
       _payload: {
         ...r.data,
+        employee_id: effectiveEmployeeId,
         scheduled_at: r.data.scheduled_at ? new Date(r.data.scheduled_at).toISOString() : null,
         is_important: r.data.is_important === "1",
         form_opened_at: calculatedOpenedAt,
@@ -251,7 +272,8 @@ function GuestForm() {
       );
       return;
     }
-    const targetEmployee = employees.find((x) => x.id === r.data.employee_id);
+    const targetEmployee = employees.find((x) => x.id === effectiveEmployeeId);
+    const employeeDisplayName = targetEmployee?.name || (isGeneral ? "Resepsionis Lobi (Umum)" : undefined);
     const targetPurpose = purposes.find((x) => x.id === r.data.visit_purpose_id);
     const nowTime = getNowWibTimeString();
     const nowDate = getNowWibDateString();
@@ -262,7 +284,7 @@ function GuestForm() {
       name: r.data.name,
       institution: r.data.institution,
       phone: r.data.phone,
-      employeeName: targetEmployee?.name,
+      employeeName: employeeDisplayName,
       purposeName: targetPurpose?.name,
       scheduledAt: r.data.scheduled_at || undefined,
       checkInTime: nowTime,
@@ -281,6 +303,7 @@ function GuestForm() {
     setDone(false);
     setSuccessData(null);
     setForm(empty);
+    setDestinationType("employee");
     setStatus("idle");
     token.current = crypto.randomUUID();
     localStorage.setItem(LS_TOKEN, token.current);
@@ -335,6 +358,9 @@ function GuestForm() {
                 className="min-h-11 flex-1 rounded-lg bg-primary px-4 text-primary-foreground"
                 onClick={() => {
                   setForm({ ...empty, ...restore });
+                  if (restore.employee_id === "__general__" || !restore.employee_id) {
+                    setDestinationType(restore.employee_id === "__general__" ? "general" : "employee");
+                  }
                   hasInteracted.current = true;
                   lastActiveTime.current = Date.now();
                   setRestore(null);
@@ -411,30 +437,166 @@ function GuestForm() {
               ))}
             </select>
           </F>
-          <F required label="Nama yang dituju" err={errors.employee_id}>
-            <input
-              className={field}
-              placeholder="Cari nama…"
-              value={empSearch}
-              onChange={(e) => setEmpSearch(e.target.value)}
-            />
-            <select
-              className={fc("employee_id")}
-              name="employee_id"
-              aria-invalid={!!errors.employee_id}
-              value={form.employee_id}
-              onChange={(e) => update("employee_id", e.target.value)}
-              onBlur={() => validateField("employee_id")}
-            >
-              <option value="">— Pilih —</option>
-              {filteredEmp.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                  {p.department ? ` (${p.department})` : ""}
-                </option>
-              ))}
-            </select>
-          </F>
+          {/* PEMILIHAN TUJUAN / PIHAK YANG DITUJU */}
+          <div className="space-y-3 rounded-2xl border border-border/80 bg-muted/20 p-4 sm:p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+              <label className="text-sm font-semibold text-foreground">
+                Pihak / Kontak yang Dituju <span className="text-destructive">*</span>
+              </label>
+              <span className="text-[11px] text-muted-foreground">
+                {destinationType === "employee"
+                  ? "Bertemu staf/karyawan tertentu"
+                  : "Kunjungan umum ke gedung/lobi"}
+              </span>
+            </div>
+
+            {/* Pilihan Mode: Bertemu Karyawan vs Tujuan Umum */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setDestinationType("employee");
+                  if (form.employee_id === "__general__") {
+                    update("employee_id", "");
+                  }
+                }}
+                className={`flex items-start gap-3 rounded-xl border p-3 text-left transition-all ${
+                  destinationType === "employee"
+                    ? "border-primary bg-primary/10 text-foreground ring-2 ring-primary/25 shadow-2xs"
+                    : "border-border bg-card text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                }`}
+              >
+                <div
+                  className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+                    destinationType === "employee"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  <User className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-xs sm:text-sm font-bold text-foreground">
+                    Bertemu Karyawan / Host
+                  </p>
+                  <p className="text-[11px] text-muted-foreground leading-snug">
+                    Pilih nama staf atau unit kerja spesifik
+                  </p>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setDestinationType("general");
+                  update("employee_id", "__general__");
+                  if (errors.employee_id) setErrors((e) => ({ ...e, employee_id: "" }));
+                }}
+                className={`flex items-start gap-3 rounded-xl border p-3 text-left transition-all ${
+                  destinationType === "general"
+                    ? "border-primary bg-primary/10 text-foreground ring-2 ring-primary/25 shadow-2xs"
+                    : "border-border bg-card text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                }`}
+              >
+                <div
+                  className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+                    destinationType === "general"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  <Building2 className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-xs sm:text-sm font-bold text-foreground">
+                    Tujuan Umum / Resepsionis
+                  </p>
+                  <p className="text-[11px] text-muted-foreground leading-snug">
+                    Front desk, kurir paket, atau belum tahu kontak
+                  </p>
+                </div>
+              </button>
+            </div>
+
+            {/* Konten Berdasarkan Pilihan Mode */}
+            {destinationType === "employee" ? (
+              <div className="pt-1 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-foreground">Cari & Pilih Nama Karyawan</span>
+                  <span className="text-[11px] text-muted-foreground">Ketik untuk menyaring</span>
+                </div>
+                <input
+                  className={field}
+                  placeholder="Ketik nama karyawan atau bagian…"
+                  value={empSearch}
+                  onChange={(e) => setEmpSearch(e.target.value)}
+                />
+                <select
+                  className={fc("employee_id")}
+                  name="employee_id"
+                  aria-invalid={!!errors.employee_id}
+                  value={form.employee_id === "__general__" ? "" : form.employee_id}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "__general__") {
+                      setDestinationType("general");
+                      update("employee_id", "__general__");
+                    } else {
+                      update("employee_id", val);
+                    }
+                  }}
+                  onBlur={() => validateField("employee_id")}
+                >
+                  <option value="">— Pilih Karyawan yang Dituju —</option>
+                  <option value="__general__">
+                    🏢 Kunjungan Umum / Resepsionis Lobi (Tidak Ada Staf Tertentu)
+                  </option>
+                  {filteredEmp.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                      {p.department ? ` (${p.department})` : ""}
+                    </option>
+                  ))}
+                </select>
+                {errors.employee_id && (
+                  <p className="text-xs font-medium text-destructive mt-1">{errors.employee_id}</p>
+                )}
+              </div>
+            ) : (
+              <div className="mt-1 rounded-xl border border-primary/25 bg-brand-soft/70 p-3 sm:p-4 space-y-2.5 text-foreground">
+                <div className="flex items-start gap-2.5">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <Building2 className="h-4 w-4" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs sm:text-sm font-bold text-foreground">
+                      Destinasi Terdaftar: Resepsionis & Front Desk (Lantai Dasar)
+                    </p>
+                    <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed">
+                      Sesuai untuk tamu yang mengantar dokumen/paket (kurir), tamu survei gedung,
+                      layanan tenant perbankan, atau bila Anda belum memiliki nama staf yang dituju.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 pt-2 border-t border-primary/15 text-[11px]">
+                  <span className="flex items-center gap-1 font-semibold text-primary">
+                    <Sparkles className="h-3 w-3" /> Langsung diarahkan ke petugas resepsionis di lobi utama
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDestinationType("employee");
+                      update("employee_id", "");
+                    }}
+                    className="text-primary hover:underline font-bold"
+                  >
+                    Ganti ke Karyawan Tertentu
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
           <F
             label="Jadwal kunjungan (opsional — isi jika datang di lain waktu)"
             err={errors.scheduled_at}
@@ -459,7 +621,7 @@ function GuestForm() {
             <span className="text-sm text-foreground">Tandai sebagai kunjungan penting</span>
           </label>
           <F
-            label="Catatan (opsional)"
+            label="Catatan Keperluan (opsional)"
             err={errors.notes}
             hint={`${form.notes.length}/500 karakter`}
           >
@@ -469,6 +631,11 @@ function GuestForm() {
               aria-invalid={!!errors.notes}
               maxLength={500}
               rows={3}
+              placeholder={
+                destinationType === "general"
+                  ? "Sebutkan nama perusahaan/tenant, nomor lantai, atau paket yang dicari jika ada (contoh: Mengantar dokumen ke PT XYZ Lantai 8)..."
+                  : "Catatan tambahan atau keterangan singkat terkait janji temu (opsional)..."
+              }
               value={form.notes}
               onChange={(e) => update("notes", e.target.value)}
             />

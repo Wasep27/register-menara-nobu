@@ -60,7 +60,7 @@ export type Guest = {
   check_in_time: string;
   fill_duration_seconds: number | null;
   badge_code?: string | null;
-  employees?: { name: string } | null;
+  employees?: { name: string; department?: string | null } | null;
   visit_purposes?: { name: string } | null;
 };
 

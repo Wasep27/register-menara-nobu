@@ -7,12 +7,14 @@ import {
   CalendarX,
   Download,
   FileSpreadsheet,
+  FileText,
   Printer,
   Search,
   Sparkles,
 } from "lucide-react";
+import { toast } from "sonner";
 import { supabase, type Guest } from "@/lib/supabase";
-import { exportToCsv } from "@/lib/csv-export";
+import { exportToExcel, exportToPdf, exportToCsv } from "@/lib/export-utils";
 import { formatWibDateTime } from "@/lib/date-utils";
 
 export const Route = createFileRoute("/admin/laporan")({ component: Report });
@@ -87,7 +89,78 @@ function Report() {
     loadRange(firstDay, today);
   };
 
-  const csv = () => {
+  const handleExportExcel = () => {
+    if (!rows || rows.length === 0) {
+      toast.error("Tidak ada data kunjungan untuk diekspor");
+      return;
+    }
+    exportToExcel({
+      filename: `laporan-tamu-menara-nobu-${from}-${to}`,
+      title: "Laporan Rekapitulasi Kunjungan Tamu",
+      subtitle: "Gedung Perkantoran Menara Nobu · Pos Keamanan & Resepsionis",
+      period: `${from} s/d ${to}`,
+      sheetName: "Kunjungan Tamu",
+      headers: [
+        "No",
+        "Waktu Check-In (WIB)",
+        "Nama Tamu",
+        "Instansi / Perusahaan",
+        "Nomor Telepon",
+        "Tujuan Kunjungan",
+        "Menemui / Staf Dituju",
+        "Catatan Kunjungan",
+        "Durasi Pengisian (detik)",
+      ],
+      rows: rows.map((r, idx) => [
+        idx + 1,
+        formatWibDateTime(r.check_in_time),
+        r.name,
+        r.institution,
+        r.phone,
+        r.visit_purposes?.name || "-",
+        r.employees?.name || "Resepsionis Lobi (Umum)",
+        r.notes || "-",
+        r.fill_duration_seconds ?? "-",
+      ]),
+    });
+    toast.success("Laporan Excel (.xlsx) rapih berhasil diunduh");
+  };
+
+  const handleExportPdf = () => {
+    if (!rows || rows.length === 0) {
+      toast.error("Tidak ada data kunjungan untuk diekspor");
+      return;
+    }
+    exportToPdf({
+      filename: `laporan-tamu-menara-nobu-${from}-${to}`,
+      title: "Laporan Rekapitulasi Kunjungan Tamu",
+      subtitle: "Gedung Perkantoran Menara Nobu · Pos Keamanan & Resepsionis Lobi",
+      period: `${from} s/d ${to}`,
+      headers: [
+        "No",
+        "Waktu",
+        "Nama Tamu",
+        "Instansi",
+        "Telepon",
+        "Tujuan",
+        "Menemui",
+        "Catatan",
+      ],
+      rows: rows.map((r, idx) => [
+        idx + 1,
+        formatWibDateTime(r.check_in_time, false),
+        r.name,
+        r.institution,
+        r.phone,
+        r.visit_purposes?.name || "-",
+        r.employees?.name || "Resepsionis Lobi (Umum)",
+        r.notes || "-",
+      ]),
+    });
+    toast.success("Dokumen Laporan PDF resmi berhasil diunduh");
+  };
+
+  const handleExportCsv = () => {
     if (!rows || rows.length === 0) return;
     exportToCsv({
       filename: `laporan-tamu-${from}-${to}`,
@@ -107,11 +180,12 @@ function Report() {
         r.institution,
         r.phone,
         r.visit_purposes?.name || "-",
-        r.employees?.name || "-",
+        r.employees?.name || "Resepsionis Lobi (Umum)",
         r.notes || "",
         r.fill_duration_seconds ?? "",
       ]),
     });
+    toast.success("File CSV berhasil diunduh");
   };
   const i = "rounded-lg border border-input bg-card px-3 py-2 text-sm";
   return (
@@ -191,20 +265,42 @@ function Report() {
 
         {/* Tombol Ekspor & Cetak saat Data Ditampilkan */}
         {rows && (
-          <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-end">
+          <div className="mt-4 flex flex-wrap items-center justify-end gap-2 border-t border-border pt-4">
             <button
-              className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-border bg-background px-4 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-muted active:scale-95 sm:text-sm"
-              onClick={csv}
+              type="button"
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95 sm:text-sm"
+              onClick={handleExportExcel}
+              title="Unduh laporan dalam format spreadsheet Excel (.xlsx) rapih dengan kolom otomatis"
             >
-              <Download className="h-4 w-4 text-primary" />
-              Ekspor CSV
+              <FileSpreadsheet className="h-4 w-4" />
+              <span>Ekspor Excel (.xlsx)</span>
             </button>
             <button
-              className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-border bg-background px-4 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-muted active:scale-95 sm:text-sm"
-              onClick={() => window.print()}
+              type="button"
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-rose-700 active:scale-95 sm:text-sm"
+              onClick={handleExportPdf}
+              title="Unduh dokumen laporan PDF resmi Menara Nobu bergaris rapih"
             >
-              <Printer className="h-4 w-4 text-primary" />
-              Cetak / PDF
+              <FileText className="h-4 w-4" />
+              <span>Unduh PDF (.pdf)</span>
+            </button>
+            <button
+              type="button"
+              className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-border bg-background px-3.5 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-muted active:scale-95 sm:text-sm"
+              onClick={handleExportCsv}
+              title="Unduh data dalam format CSV teks"
+            >
+              <Download className="h-4 w-4 text-muted-foreground" />
+              <span>CSV</span>
+            </button>
+            <button
+              type="button"
+              className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-border bg-background px-3.5 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-muted active:scale-95 sm:text-sm"
+              onClick={() => window.print()}
+              title="Cetak langsung menggunakan dialog printer peramban"
+            >
+              <Printer className="h-4 w-4 text-muted-foreground" />
+              <span>Cetak</span>
             </button>
           </div>
         )}
@@ -253,11 +349,11 @@ function Report() {
               </div>
               <div className="rounded-xl border border-border/60 bg-muted/30 p-2.5 text-center">
                 <p className="font-display text-xs font-bold text-foreground">Ekspor Excel</p>
-                <p className="mt-0.5 text-[10px] text-muted-foreground">Unduh format CSV</p>
+                <p className="mt-0.5 text-[10px] text-muted-foreground">Format rapih .xlsx</p>
               </div>
               <div className="rounded-xl border border-border/60 bg-muted/30 p-2.5 text-center">
-                <p className="font-display text-xs font-bold text-foreground">Cetak / PDF</p>
-                <p className="mt-0.5 text-[10px] text-muted-foreground">Format siap print</p>
+                <p className="font-display text-xs font-bold text-foreground">Dokumen PDF</p>
+                <p className="mt-0.5 text-[10px] text-muted-foreground">Kop resmi & tabel</p>
               </div>
             </div>
 
@@ -361,7 +457,9 @@ function Report() {
                     <p className="mt-1 truncate text-sm text-muted-foreground">{r.institution}</p>
                     <p className="mt-2 text-xs text-muted-foreground">
                       {formatWibDateTime(r.check_in_time, false)}
-                      {r.employees?.name ? ` · bertemu ${r.employees.name}` : ""}
+                      {r.employees?.name
+                        ? ` · bertemu ${r.employees.name}`
+                        : " · Resepsionis Lobi (Umum)"}
                     </p>
                   </li>
                 ))}
@@ -392,7 +490,9 @@ function Report() {
                             {r.visit_purposes?.name ?? "-"}
                           </span>
                         </td>
-                        <td className="p-3 text-muted-foreground">{r.employees?.name ?? "-"}</td>
+                        <td className="p-3 text-muted-foreground">
+                          {r.employees?.name || "Resepsionis Lobi (Umum)"}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

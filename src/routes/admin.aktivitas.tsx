@@ -28,11 +28,12 @@ import {
   ChevronsLeft,
   ChevronsRight,
   X,
+  FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { supabase, type ActivityLog, type Guest, type Employee } from "@/lib/supabase";
-import { exportToCsv } from "@/lib/csv-export";
+import { exportToExcel, exportToPdf, exportToCsv } from "@/lib/export-utils";
 import { formatWibDateTime } from "@/lib/date-utils";
 import {
   buildSyntheticLogs,
@@ -326,6 +327,71 @@ export function AdminActivityLogPage() {
     return calculateActivityStats(logs);
   }, [logs]);
 
+  const exportLogExcel = () => {
+    if (filteredLogs.length === 0) {
+      toast.error("Tidak ada aktivitas untuk diekspor");
+      return;
+    }
+    const todayStr = new Date().toISOString().slice(0, 10);
+    exportToExcel({
+      filename: `log-aktivitas-menara-nobu-${todayStr}`,
+      title: "Log Audit Aktivitas & Jejak Sistem",
+      subtitle: "Gedung Perkantoran Menara Nobu · Portal Resepsionis & Keamanan",
+      sheetName: "Log Aktivitas",
+      headers: [
+        "No",
+        "Waktu Kejadian (WIB)",
+        "Kategori",
+        "Aksi",
+        "Judul Aktivitas",
+        "Pelaku / Akun",
+        "Rincian Teknis",
+      ],
+      rows: filteredLogs.map((l, idx) => [
+        idx + 1,
+        formatWibDateTime(l.created_at),
+        l.category.toUpperCase(),
+        l.action,
+        l.title,
+        l.actor_email || l.actor_type,
+        l.details && Object.keys(l.details).length > 0
+          ? JSON.stringify(l.details)
+          : "-",
+      ]),
+    });
+    toast.success("Log aktivitas berhasil diekspor ke Excel (.xlsx)");
+  };
+
+  const exportLogPdf = () => {
+    if (filteredLogs.length === 0) {
+      toast.error("Tidak ada aktivitas untuk diekspor");
+      return;
+    }
+    const todayStr = new Date().toISOString().slice(0, 10);
+    exportToPdf({
+      filename: `log-aktivitas-menara-nobu-${todayStr}`,
+      title: "Laporan Log Audit Aktivitas Sistem",
+      subtitle: "Gedung Perkantoran Menara Nobu · Rekap Jejak Audit",
+      headers: [
+        "No",
+        "Waktu (WIB)",
+        "Kategori",
+        "Aksi",
+        "Judul Aktivitas",
+        "Pelaku / Akun",
+      ],
+      rows: filteredLogs.map((l, idx) => [
+        idx + 1,
+        formatWibDateTime(l.created_at, false),
+        l.category,
+        l.action,
+        l.title,
+        l.actor_email || l.actor_type,
+      ]),
+    });
+    toast.success("Dokumen PDF log aktivitas berhasil diunduh");
+  };
+
   // Export CSV menggunakan centralized exportToCsv
   const exportLogCsv = () => {
     if (filteredLogs.length === 0) {
@@ -351,7 +417,7 @@ export function AdminActivityLogPage() {
         JSON.stringify(l.details),
       ]),
     });
-    toast.success("Log aktivitas berhasil diekspor");
+    toast.success("Log aktivitas berhasil diekspor ke CSV");
   };
 
   const handleClearLogs = async () => {
@@ -551,11 +617,31 @@ export function AdminActivityLogPage() {
             <span>Segarkan</span>
           </button>
           <button
+            type="button"
+            onClick={exportLogExcel}
+            className="flex-1 sm:flex-initial inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 sm:px-4 text-xs font-bold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95 whitespace-nowrap"
+            title="Unduh log aktivitas ke format Excel (.xlsx)"
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            <span>Excel (.xlsx)</span>
+          </button>
+          <button
+            type="button"
+            onClick={exportLogPdf}
+            className="flex-1 sm:flex-initial inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-rose-600 px-3.5 sm:px-4 text-xs font-bold text-white shadow-sm transition-all hover:bg-rose-700 active:scale-95 whitespace-nowrap"
+            title="Unduh dokumen PDF log aktivitas resmi"
+          >
+            <FileText className="h-4 w-4" />
+            <span>PDF</span>
+          </button>
+          <button
+            type="button"
             onClick={exportLogCsv}
-            className="flex-1 sm:flex-initial inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3.5 sm:px-4 text-xs font-semibold text-foreground shadow-sm transition-all hover:bg-muted active:scale-95 whitespace-nowrap"
+            className="flex-1 sm:flex-initial inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 text-xs font-medium text-foreground shadow-sm transition-all hover:bg-muted active:scale-95 whitespace-nowrap"
+            title="Unduh format CSV alternatif"
           >
             <Download className="h-3.5 w-3.5 text-muted-foreground" />
-            <span>Ekspor CSV</span>
+            <span>CSV</span>
           </button>
           {isAdmin && logs.length > 0 && (
             <button

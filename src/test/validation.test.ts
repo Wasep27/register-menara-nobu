@@ -14,6 +14,8 @@ const guest = {
 
 describe("validasi", () => {
   it("tamu valid diterima", () => expect(guestSchema.safeParse(guest).success).toBe(true));
+  it("tamu kunjungan umum tanpa karyawan tetap valid", () =>
+    expect(guestSchema.safeParse({ ...guest, employee_id: "" }).success).toBe(true));
   it("nama tamu wajib", () =>
     expect(guestSchema.safeParse({ ...guest, name: " " }).success).toBe(false));
   it("telepon harus nomor ponsel", () =>

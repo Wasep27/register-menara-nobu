@@ -19,12 +19,14 @@ import {
   LayoutGrid,
   Table as TableIcon,
   Quote,
+  FileSpreadsheet,
+  FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { supabase, type GuestFeedback } from "@/lib/supabase";
 import { formatWibDateTime } from "@/lib/date-utils";
-import { exportToCsv } from "@/lib/csv-export";
+import { exportToExcel, exportToPdf, exportToCsv } from "@/lib/export-utils";
 import { useAdminRole } from "@/hooks/useAdminRole";
 
 export const Route = createFileRoute("/admin/feedback")({
@@ -258,6 +260,73 @@ export function AdminFeedbackPage() {
     return pages;
   }, [validCurrentPage, totalPages]);
 
+  const handleExportExcel = () => {
+    if (filteredRows.length === 0) {
+      toast.error("Tidak ada data feedback untuk diekspor");
+      return;
+    }
+    const todayStr = new Date().toISOString().slice(0, 10);
+    exportToExcel({
+      filename: `feedback-tamu-nobu-${todayStr}`,
+      title: "Laporan Feedback & Kepuasan Tamu (CSAT)",
+      subtitle: "Gedung Perkantoran Menara Nobu · Evaluasi Resepsionis & Buku Tamu",
+      sheetName: "CSAT Feedback",
+      headers: [
+        "No",
+        "Waktu Pengisian (WIB)",
+        "Nama Tamu",
+        "Instansi / Perusahaan",
+        "Penilaian (Bintang)",
+        "Aspek Layanan",
+        "Komentar / Saran Tamu",
+        "Durasi Pengisian (detik)",
+      ],
+      rows: filteredRows.map((r, idx) => [
+        idx + 1,
+        formatWibDateTime(r.created_at, false),
+        r.guest_name || "Tamu Anonim",
+        r.institution || "-",
+        `${r.rating} / 5 Bintang`,
+        (r.tags || []).join(", ") || "-",
+        r.comment || "-",
+        r.fill_duration_seconds ? `${r.fill_duration_seconds}` : "-",
+      ]),
+    });
+    toast.success("Data feedback berhasil diekspor ke Excel (.xlsx)");
+  };
+
+  const handleExportPdf = () => {
+    if (filteredRows.length === 0) {
+      toast.error("Tidak ada data feedback untuk diekspor");
+      return;
+    }
+    const todayStr = new Date().toISOString().slice(0, 10);
+    exportToPdf({
+      filename: `feedback-tamu-nobu-${todayStr}`,
+      title: "Laporan Kepuasan Tamu & Penilaian Layanan",
+      subtitle: "Gedung Perkantoran Menara Nobu · Survei Kepuasan Tamu",
+      headers: [
+        "No",
+        "Waktu (WIB)",
+        "Nama Tamu",
+        "Instansi",
+        "Rating",
+        "Aspek Layanan",
+        "Komentar & Saran",
+      ],
+      rows: filteredRows.map((r, idx) => [
+        idx + 1,
+        formatWibDateTime(r.created_at, false),
+        r.guest_name || "Tamu Anonim",
+        r.institution || "-",
+        `${r.rating}/5 ★`,
+        (r.tags || []).join(", ") || "-",
+        r.comment || "-",
+      ]),
+    });
+    toast.success("Dokumen PDF feedback berhasil diunduh");
+  };
+
   // Export CSV function
   const handleExportCsv = () => {
     if (filteredRows.length === 0) {
@@ -307,12 +376,34 @@ export function AdminFeedbackPage() {
 
         <div className="flex flex-wrap items-center gap-2">
           <button
+            type="button"
+            onClick={handleExportExcel}
+            disabled={filteredRows.length === 0}
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 sm:px-4 text-xs font-bold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95 disabled:opacity-60"
+            title="Unduh data feedback ke Excel (.xlsx)"
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            <span>Excel (.xlsx)</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleExportPdf}
+            disabled={filteredRows.length === 0}
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-rose-600 px-3.5 sm:px-4 text-xs font-bold text-white shadow-sm transition-all hover:bg-rose-700 active:scale-95 disabled:opacity-60"
+            title="Unduh dokumen PDF laporan feedback"
+          >
+            <FileText className="h-4 w-4" />
+            <span>PDF</span>
+          </button>
+          <button
+            type="button"
             onClick={handleExportCsv}
             disabled={filteredRows.length === 0}
-            className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-border bg-card px-4 text-xs font-semibold text-foreground shadow-sm transition-all hover:bg-muted active:scale-95 disabled:opacity-60"
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-border bg-card px-3 text-xs font-medium text-foreground shadow-sm transition-all hover:bg-muted active:scale-95 disabled:opacity-60"
+            title="Unduh format CSV"
           >
             <Download className="h-3.5 w-3.5 text-muted-foreground" />
-            Ekspor CSV
+            <span>CSV</span>
           </button>
           <button
             onClick={load}
