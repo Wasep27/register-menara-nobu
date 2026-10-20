@@ -68,13 +68,39 @@ vercel.json        Pengaturan deploy Vercel
 
 ---
 
-## Menjalankan di komputer
+## Menjalankan di Komputer Lokal
+
+### ⚡ Cara Cepat 1-Klik (Khusus Pengguna Windows)
+
+Cukup **klik ganda (double-click)** file:
+👉 **`jalankan-aplikasi.bat`** (atau **`start-dev.bat`**)
+
+Script akan otomatis:
+
+1. Mendeteksi apakah di sistem Anda ada **Bun** atau **Node.js/npm**.
+2. Menyalin `.env.example` ke `.env` secara otomatis.
+3. Memasang dependensi (`node_modules`).
+4. Menjalankan server lokal di **`http://localhost:3000`** dan langsung membukanya di browser!
+
+_(Untuk pengguna macOS/Linux: jalankan `./jalankan-aplikasi.sh`)_
+
+---
+
+### 💻 Cara Manual (Bun / npm)
+
+Proyek ini memiliki `bun.lock` (bawaan Bun) dan juga 100% kompatibel dengan Node.js/npm:
 
 ```bash
+# Opsi 1: Menggunakan Bun (Sangat Cepat - Rekomendasi):
+bun install
+bun run dev
+
+# Opsi 2: Menggunakan npm (Standar Node.js):
 npm install
-cp .env.example .env   # atau buat file .env, lihat di bawah
-npm run dev            # http://localhost:3000
-npm test               # menjalankan tes
+npm run dev
+
+# Menjalankan pengujian (35 tests):
+npm test
 ```
 
 Variabel lingkungan (`.env`):
@@ -85,6 +111,17 @@ VITE_SUPABASE_ANON_KEY=<anon / publishable key>
 ```
 
 > Jangan pernah memakai `service_role` key di aplikasi ini.
+
+---
+
+## 📱 Progressive Web App (PWA)
+
+Aplikasi telah dioptimalkan dengan standar PWA modern:
+
+- **Installable**: Tombol instalasi langsung di aplikasi (Desktop Chrome/Edge, Android, dan panduan iOS Safari).
+- **Offline Support**: Layar fallback `/offline.html` dan penyimpanan draf lokal saat jaringan terputus.
+- **Service Worker**: Cache aset statis dan navigasi andal via `/sw.js`.
+- **Ikon PWA Lengkap**: 192x192, 512x512, serta ikon maskable Android dengan safe margin.
 
 ---
 

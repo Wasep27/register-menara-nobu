@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#07936E" />
+    <title>Mode Offline — Buku Tamu Menara Nobu</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      }
+      body {
+        background-color: #0c1512;
+        color: #e6f4ea;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        text-align: center;
+      }
+      .card {
+        background: rgba(18, 38, 31, 0.85);
+        border: 1px solid rgba(16, 213, 160, 0.25);
+        border-radius: 24px;
+        padding: 40px 28px;
+        max-width: 440px;
+        width: 100%;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(12px);
+      }
+      .icon-box {
+        width: 72px;
+        height: 72px;
+        margin: 0 auto 20px;
+        border-radius: 20px;
+        background: linear-gradient(135deg, #07936e, #046249);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 8px 24px rgba(7, 147, 110, 0.4);
+      }
+      .icon-box svg {
+        width: 36px;
+        height: 36px;
+        stroke: #ffffff;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      h1 {
+        font-size: 22px;
+        font-weight: 700;
+        color: #ffffff;
+        margin-bottom: 12px;
+      }
+      p {
+        font-size: 14px;
+        line-height: 1.6;
+        color: #a3c9bc;
+        margin-bottom: 28px;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        padding: 14px 20px;
+        border-radius: 12px;
+        font-size: 15px;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: none;
+      }
+      .btn-primary {
+        background: #10d5a0;
+        color: #064e3b;
+        margin-bottom: 12px;
+      }
+      .btn-primary:hover {
+        background: #0ec090;
+        transform: translateY(-1px);
+      }
+      .btn-secondary {
+        background: rgba(255, 255, 255, 0.08);
+        color: #e6f4ea;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+      }
+      .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.14);
+      }
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        background: rgba(245, 158, 11, 0.2);
+        border: 1px solid rgba(245, 158, 11, 0.35);
+        border-radius: 999px;
+        font-size: 12px;
+        color: #fbbf24;
+        margin-bottom: 16px;
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #fbbf24;
+        animation: pulse 1.8s infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.4;
+          transform: scale(0.85);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="icon-box">
+        <svg viewBox="0 0 24 24">
+          <line x1="1" y1="1" x2="23" y2="23"></line>
+          <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
+          <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
+          <path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path>
+          <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
+          <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+          <line x1="12" y1="20" x2="12.01" y2="20"></line>
+        </svg>
+      </div>
+      <div class="status-badge">
+        <span class="dot"></span>
+        Tidak Ada Koneksi Internet
+      </div>
+      <h1>Mode Offline</h1>
+      <p>
+        Anda sedang tidak terhubung ke jaringan internet. Jika Anda sedang mengisi formulir tamu di
+        aplikasi, draf isian Anda tetap tersimpan otomatis di perangkat ini dan dapat dilanjutkan
+        saat online kembali.
+      </p>
+      <button class="btn btn-primary" onclick="window.location.reload()">
+        Coba Muat Ulang Halaman
+      </button>
+      <a href="/" class="btn btn-secondary"> Kembali ke Beranda Cache </a>
+    </div>
+  </body>
+</html>

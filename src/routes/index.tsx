@@ -23,6 +23,7 @@ const gedung = { url: gedungUrl };
 import lobby from "@/assets/lobby.jpg";
 import resepsionis from "@/assets/resepsionis.jpg";
 import { HeroCarousel } from "@/components/HeroCarousel";
+import { PWAInstallButton } from "@/components/PWAInstallButton";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -127,7 +128,10 @@ function Landing() {
     <div className="min-h-screen overflow-x-clip bg-background">
       <SiteNav items={nav} />
       <main id="konten" tabIndex={-1} className="outline-none">
-        <section className="mx-auto grid max-w-6xl items-center gap-10 px-4 pb-16 pt-6 md:grid-cols-2 md:pt-12">
+        <div className="mx-auto max-w-6xl px-4 pt-4">
+          <PWAInstallButton variant="banner" />
+        </div>
+        <section className="mx-auto grid max-w-6xl items-center gap-10 px-4 pb-16 pt-4 md:grid-cols-2 md:pt-10">
           <div className="fade-up">
             <span className="inline-block rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold uppercase tracking-widest text-primary">
               Buku Tamu Digital

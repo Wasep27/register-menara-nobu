@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { Avatar } from "@/components/Avatar";
+import { PWAInstallButton } from "@/components/PWAInstallButton";
 import type { NavItem } from "./navTypes";
 import { ROUTE_METADATA } from "./routeMetadata";
 
@@ -309,6 +310,11 @@ export const NavDrawerModal = React.memo(function NavDrawerModal({
               </Link>
             ) : null}
           </div>
+        </div>
+
+        {/* PWA In-App Install Banner */}
+        <div className="px-3.5 pt-3">
+          <PWAInstallButton variant="banner" />
         </div>
 
         {/* Scrollable Categories & Navigation items */}

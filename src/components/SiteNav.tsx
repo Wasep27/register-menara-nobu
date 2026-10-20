@@ -17,6 +17,7 @@ import {
   BookOpen,
   Plus,
 } from "lucide-react";
+import { PWAInstallButton } from "@/components/PWAInstallButton";
 
 export type { NavItem, SiteNavProps };
 
@@ -293,6 +294,7 @@ export function SiteNav({
 
           {/* Desktop Right Actions: Admin and Primary Registration CTA */}
           <div className="hidden items-center gap-2 lg:gap-2.5 md:flex">
+            <PWAInstallButton variant="badge" />
             {right ? (
               right
             ) : !isDashboardMode ? (

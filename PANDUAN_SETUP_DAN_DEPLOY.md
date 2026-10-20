@@ -4,96 +4,126 @@
 
 Dokumentasi ini memuat panduan lengkap dari awal untuk:
 
-1. **Prasyarat & software** yang harus terpasang di komputer/device lokal.
-2. **Langkah instalasi & menjalankan aplikasi** di lingkungan lokal (_development_).
-3. **Langkah integrasi database & autentikasi** menggunakan **Supabase**.
-4. **Langkah deployment** aplikasi ke **Vercel** (server-side rendering & static assets).
+1. **Cara Cepat (1-Klik untuk Pengguna Awam)**: Menjalankan aplikasi langsung dengan file `.bat` di Windows.
+2. **Klarifikasi Runtime: Bun vs Node.js/npm**: Penjelasan kompatibilitas `bun.lock` dan `npm`.
+3. **Prasyarat & software** yang harus terpasang di komputer/device lokal.
+4. **Langkah manual instalasi & menjalankan aplikasi** di lingkungan lokal (_development_).
+5. **Fitur Progressive Web App (PWA) & Mode Offline**.
+6. **Langkah integrasi database & autentikasi** menggunakan **Supabase**.
+7. **Langkah deployment** aplikasi ke **Vercel** (server-side rendering & static assets).
 
 ---
 
-## 1. Prasyarat Perangkat Lunak di Komputer Lokal
+## ⚡ 1. Cara Cepat untuk Pengguna Awam (1-Klik via File `.bat` di Windows)
 
-Sebelum memulai, pastikan perangkat lokal Anda telah terpasang:
+Bagi pengguna awam di sistem operasi **Windows**, Anda **tidak perlu membuka terminal atau mengetik perintah rumit satu per satu**:
 
-| Perangkat Lunak | Versi Rekomendasi             | Keterangan & Tautan Unduh                                                                   |
-| :-------------- | :---------------------------- | :------------------------------------------------------------------------------------------ |
-| **Node.js**     | `v20.x` atau `v22.x` LTS      | Runtime JavaScript utama. Unduh di [nodejs.org](https://nodejs.org).                        |
-| **npm**         | `v10.x` atau lebih baru       | Paket manajer resmi (otomatis terpasang bersama Node.js).                                   |
-| **Git**         | Versi terbaru                 | Untuk kloning dan sinkronisasi kode ke GitHub. Unduh di [git-scm.com](https://git-scm.com). |
-| **Code Editor** | VS Code / Cursor              | Editor kode yang disarankan.                                                                |
-| **Web Browser** | Chrome, Edge, Safari, Firefox | Mendukung WebRTC / akses kamera untuk fitur pemindai QR code.                               |
+1. Cukup **klik ganda (double-click)** pada file:
+   👉 **`jalankan-aplikasi.bat`** (atau **`start-dev.bat`**)
+2. File script ini akan **bekerja otomatis**:
+   - Mendeteksi apakah di komputer Anda terpasang **Bun** atau **Node.js/npm**.
+   - Menyalin file `.env.example` menjadi `.env` jika belum ada.
+   - Memasang seluruh pustaka/dependencies (`node_modules`) secara otomatis.
+   - Menjalankan server lokal di **`http://localhost:3000`**.
+   - Otomatis membuka peramban web browser default (Google Chrome / Edge) ke alamat aplikasi.
+3. Untuk menghentikan aplikasi, cukup tutup jendela Command Prompt atau tekan `Ctrl + C`.
+
+> **Pengguna macOS / Linux:**  
+> Anda juga dapat menjalankan script cepat yang setara:
+>
+> ```bash
+> ./jalankan-aplikasi.sh
+> ```
+
+---
+
+## 💡 2. Penjelasan Runtime: Bun vs Node.js / npm
+
+**Pertanyaan umum:** _Apakah repositori ini menggunakan Bun atau npm?_
+
+- **Repositori ini secara native mendukung Bun (`bun.lock`)**:  
+  Di dalam root direktori terdapat file `bun.lock`. Jika Anda memasang **Bun**, proses instalasi dependensi (`bun install`) berlangsung super kilat (sekitar 2–5 detik) dan konsumsi memorinya sangat efisien.
+- **Repositori ini juga 100% kompatibel dengan Node.js & npm**:  
+  Konfigurasi `package.json` dan Vite standar tetap dapat dijalankan menggunakan Node.js LTS (`v20.x` / `v22.x`) dan `npm` tanpa masalah. Seluruh 35 pengujian unit tes (`npm test`) berjalan 100% lulus.
+- **Rekomendasi**:
+  - Jika Anda menginginkan kecepatan maksimal: pasang **Bun** ([bun.sh](https://bun.sh)).
+  - Jika Anda sudah memiliki Node.js di komputer: Anda bisa langsung menggunakan **npm** tanpa perlu memasang apa-apa lagi.
+
+---
+
+## 3. Prasyarat Perangkat Lunak di Komputer Lokal
+
+Jika ingin menjalankan secara manual, pastikan salah satu runtime berikut telah terpasang:
+
+| Perangkat Lunak                | Versi Rekomendasi               | Keterangan & Tautan Unduh                                                                   |
+| :----------------------------- | :------------------------------ | :------------------------------------------------------------------------------------------ |
+| **Bun** (Pilihan Utama)        | `v1.1+` atau `v1.2+`            | Runtime JavaScript kilat. Unduh di [bun.sh](https://bun.sh).                                |
+| **Node.js & npm** (Alternatif) | `Node v20/v22 LTS` + `npm v10+` | Runtime JS umum & paket manajer resmi. Unduh di [nodejs.org](https://nodejs.org).           |
+| **Git**                        | Versi terbaru                   | Untuk kloning dan sinkronisasi kode ke GitHub. Unduh di [git-scm.com](https://git-scm.com). |
+| **Web Browser**                | Chrome, Edge, Safari, Firefox   | Mendukung WebRTC / kamera untuk scanner QR pass dan fitur PWA.                              |
 
 Periksa instalasi melalui terminal / command prompt:
 
 ```bash
+# Jika menggunakan Bun:
+bun -v
+
+# Atau jika menggunakan Node / npm:
 node -v
 npm -v
-git --version
 ```
 
 ---
 
-## 2. Instalasi Awal & Menjalankan di Lingkungan Lokal
+## 4. Instalasi Manual & Menjalankan di Lingkungan Lokal
 
-### Langkah 2.1: Kloning Repository
+### Langkah 4.1: Kloning Repository
 
-Buka terminal dan unduh kode sumber (ganti `<username-anda>` dan `<nama-repo-anda>` sesuai repository GitHub Anda):
+Buka terminal dan unduh kode sumber:
 
 ```bash
-# Contoh perintah klon dari repository GitHub milik Anda:
 git clone https://github.com/<username-github-anda>/<nama-repository-anda>.git
 cd <nama-repository-anda>
 ```
 
-> **Catatan jika Anda baru pertama kali membuat repository di GitHub:**  
-> Jika Anda memiliki salinan kode lokal dan ingin mengunggahnya ke akun GitHub pribadi/organisasi Anda:
->
-> 1. Buat repository baru di [github.com/new](https://github.com/new) (misal: `buku-tamu-nobu`).
-> 2. Di terminal lokal proyek Anda, jalankan:
->    ```bash
->    git init
->    git add .
->    git commit -m "feat: inisialisasi sistem registrasi tamu digital"
->    git branch -M main
->    git remote add origin https://github.com/<username-github-anda>/<nama-repo-anda>.git
->    git push -u origin main
->    ```
-> 3. Jika repository sudah ada dan ingin memperbarui remote URL:
->    ```bash
->    git remote set-url origin https://github.com/<username-github-anda>/<nama-repo-anda>.git
->    git push -u origin main
->    ```
-
-### Langkah 2.2: Pasang Dependencies
-
-Jalankan perintah instalasi paket:
-
-```bash
-npm install
-```
-
-### Langkah 2.3: Siapkan File Konfigurasi Lingkungan (`.env`)
+### Langkah 4.2: Siapkan File Konfigurasi Lingkungan (`.env`)
 
 Salin file template `.env.example` menjadi `.env`:
 
 ```bash
+# Windows Command Prompt:
+copy .env.example .env
+
+# Bash / macOS / Linux:
 cp .env.example .env
 ```
 
-Buka file `.env` di text editor dan sesuaikan kredensial Supabase Anda:
+Sesuaikan isi `.env` dengan kredensial Supabase Anda:
 
 ```env
 VITE_SUPABASE_URL=https://uugqkbwpjlprtxnjdpcm.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
-_(Lihat Bagian 3 di bawah untuk cara mendapatkan URL dan Anon Key dari project Supabase milik Anda sendiri)._
+### Langkah 4.3: Pasang Dependencies
 
-### Langkah 2.4: Jalankan Development Server
-
-Mulai server lokal:
+Pilih sesuai runtime yang Anda gunakan:
 
 ```bash
+# Menggunakan Bun (Sangat cepat):
+bun install
+
+# ATAU menggunakan npm:
+npm install
+```
+
+### Langkah 4.4: Jalankan Development Server
+
+```bash
+# Menggunakan Bun:
+bun run dev
+
+# ATAU menggunakan npm:
 npm run dev
 ```
 
@@ -104,11 +134,53 @@ Aplikasi akan aktif di **`http://localhost:3000`**. Buka tautan tersebut di pera
 - **Menjalankan pengujian otomatis**:
   ```bash
   npm test
+  # atau: bun run test
   ```
 - **Memeriksa kualitas kode (Linting)**:
   ```bash
   npm run lint
+  # atau: bun run lint
   ```
+- **Format kode otomatis**:
+  ```bash
+  npm run format
+  # atau: bun run format
+  ```
+- **Membangun versi produksi lokal**:
+  ```bash
+  npm run build
+  # atau: bun run build
+  ```
+
+---
+
+## 📱 5. Fitur Progressive Web App (PWA) & Mode Offline
+
+Aplikasi ini telah dioptimalkan secara penuh sebagai **Progressive Web App (PWA)** standar modern:
+
+1. **Manifest Web App (`/manifest.webmanifest`)**:
+   - Memiliki nama aplikasi `"Buku Tamu Digital Menara Nobu"` dan nama pendek `"Tamu Nobu"` (<= 12 karakter).
+   - Mode tampilan `"standalone"` (tanpa bilah URL browser, pengalaman seperti aplikasi native).
+   - Ikon beresolusi tinggi lengkap: `192x192`, `512x512`, dan **maskable icon** dengan safe margin 15% untuk Android.
+   - Pintasan langsung (_shortcuts_) ke menu: Registrasi Tamu, Scan QR Pass, dan Portal Karyawan.
+2. **Service Worker (`/sw.js`)**:
+   - Mendukung penyimpanan cache aset statis (CSS, JS, logo, font).
+   - Strategi navigasi cerdas (_Network First with Offline Fallback_).
+   - Layar khusus saat offline: `/offline.html` ramah pengguna.
+3. **Tombol Pasang Aplikasi (In-App Install)**:
+   - Terintegrasi di bilah navigasi atas (Desktop) dan laci menu (Mobile).
+   - Mendukung instalasi 1-klik di Google Chrome, Microsoft Edge, dan Android.
+   - Menyediakan panduan visual interaktif untuk pengguna **iOS Safari** (tombol Share → _Add to Home Screen_).
+4. **Indikator Offline**:
+   - Menampilkan notifikasi halus jika koneksi internet terputus, mengonfirmasi bahwa data draf formulir yang sedang diisi tetap aman tersimpan di penyimpanan lokal browser.
+     npm test
+
+````
+- **Memeriksa kualitas kode (Linting)**:
+```bash
+npm run lint
+````
+
 - **Format kode otomatis**:
   ```bash
   npm run format

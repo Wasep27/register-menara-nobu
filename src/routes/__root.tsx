@@ -3,6 +3,7 @@ import logo from "@/assets/logo.png";
 import gedungUrl from "@/assets/gedung-nobu.jpg";
 const gedung = { url: gedungUrl };
 import { CookieBanner } from "@/components/CookieBanner";
+import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -99,9 +100,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: "Buku Tamu Menara Nobu" },
       { name: "description", content: "Registrasi tamu digital Menara Nobu" },
+      { name: "application-name", content: "Tamu Nobu" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "default" },
+      { name: "apple-mobile-web-app-title", content: "Tamu Nobu" },
+      { name: "theme-color", content: "#07936E" },
       { name: "author", content: "Lovable" },
       { property: "og:site_name", content: "Menara Nobu" },
       { property: "og:title", content: "Buku Tamu Menara Nobu" },
@@ -118,15 +125,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:description", content: "Registrasi tamu digital Menara Nobu" },
       { name: "twitter:image", content: "/og-image.png" },
       { name: "twitter:image:alt", content: "Buku Tamu Menara Nobu" },
-      { name: "theme-color", content: "#07936E" },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
       },
+      { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "icon", href: "/favicon.png", type: "image/png" },
-      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
@@ -177,6 +184,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
+      <OfflineIndicator />
       <CookieBanner />
       <Toaster position="top-center" richColors closeButton />
     </QueryClientProvider>
