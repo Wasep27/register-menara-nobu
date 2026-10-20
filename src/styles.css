@@ -337,3 +337,38 @@ h1 {
 html {
   scroll-behavior: smooth;
 }
+
+/* ==========================================================================
+   Desktop UX: Ensure all interactive buttons, links, and controls show pointer
+   ========================================================================== */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]):not(:disabled),
+input[type="button"]:not(:disabled),
+input[type="submit"]:not(:disabled),
+input[type="reset"]:not(:disabled),
+a:not([aria-disabled="true"]),
+summary,
+select:not(:disabled),
+input[type="checkbox"]:not(:disabled),
+input[type="radio"]:not(:disabled),
+label[for],
+[data-radix-collection-item]:not([data-disabled]),
+[role="menuitem"]:not([data-disabled]),
+[role="option"]:not([data-disabled]),
+[role="tab"]:not([data-disabled]),
+[data-state="checked"],
+[data-state="unchecked"],
+.rdp-button_reset:not([disabled]),
+[class*="rdp-button"]:not([disabled]) {
+  cursor: pointer;
+}
+
+button:disabled,
+[role="button"][aria-disabled="true"],
+[role="button"]:disabled,
+input:disabled,
+select:disabled,
+[data-disabled],
+[aria-disabled="true"] {
+  cursor: not-allowed !important;
+}
