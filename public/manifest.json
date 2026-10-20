@@ -6,12 +6,14 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "orientation": "portrait-primary",
   "background_color": "#0F1715",
   "theme_color": "#07936E",
   "lang": "id",
   "dir": "ltr",
   "categories": ["business", "productivity", "utilities"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/pwa-192x192.png",
@@ -42,6 +44,45 @@
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Registrasi Tamu",
+      "short_name": "Registrasi",
+      "description": "Isi form kunjungan tamu gedung Menara Nobu",
+      "url": "/registrasi",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Scan QR Pass Tamu",
+      "short_name": "Scan Pass",
+      "description": "Pindai badge atau QR pass kedatangan tamu",
+      "url": "/scan",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Portal Karyawan",
+      "short_name": "Karyawan",
+      "description": "Pantau jadwal dan notifikasi kedatangan tamu",
+      "url": "/karyawan",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "540x960",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Tampilan Formulir Registrasi di Ponsel"
+    },
+    {
+      "src": "/screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Beranda Sistem Buku Tamu Digital Menara Nobu"
     }
   ]
 }

@@ -1,13 +1,14 @@
 /**
  * Service Worker untuk PWA Buku Tamu Digital Menara Nobu
- * Mendukung caching offline, pembaruan otomatis, dan fallback halaman offline
+ * Versi: v2 (Optimasi Offline Caching, Resilient Precache, & Google Fonts)
  */
 
-const CACHE_NAME = "nobu-guestbook-pwa-v1";
+const CACHE_NAME = "nobu-guestbook-pwa-v2";
 const OFFLINE_FALLBACK_URL = "/offline.html";
 
 const PRECACHE_ASSETS = [
   "/",
+  "/offline.html",
   "/manifest.webmanifest",
   "/manifest.json",
   "/favicon.png",
@@ -15,42 +16,64 @@ const PRECACHE_ASSETS = [
   "/pwa-192x192.png",
   "/pwa-512x512.png",
   "/pwa-maskable-512x512.png",
-  "/offline.html",
+  "/screenshot-mobile.png",
+  "/screenshot-desktop.png",
+  "/pwa-icon.svg",
 ];
 
-// Install: Precache file-file penting
+// 1. Install: Precache file-file inti dengan toleransi jaringan (resilient caching)
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(CACHE_NAME)
-      .then((cache) => cache.addAll(PRECACHE_ASSETS))
+      .then(async (cache) => {
+        // Gunakan Promise.allSettled agar jika 1 file gagal, Service Worker tetap aktif terpasang
+        await Promise.allSettled(
+          PRECACHE_ASSETS.map(async (assetUrl) => {
+            try {
+              const response = await fetch(assetUrl, { cache: "no-cache" });
+              if (response.ok) {
+                await cache.put(assetUrl, response);
+              }
+            } catch (err) {
+              console.warn("[SW] Gagal memuat aset precache:", assetUrl, err);
+            }
+          }),
+        );
+      })
       .then(() => self.skipWaiting()),
   );
 });
 
-// Activate: Bersihkan cache versi lama
+// 2. Activate: Bersihkan versi cache terdahulu dan ambil kendali klien langsung
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
       .then((cacheNames) =>
         Promise.all(
-          cacheNames.filter((name) => name !== CACHE_NAME).map((name) => caches.delete(name)),
+          cacheNames
+            .filter((name) => name !== CACHE_NAME)
+            .map((name) => {
+              console.log("[SW] Menghapus cache usang:", name);
+              return caches.delete(name);
+            }),
         ),
       )
       .then(() => self.clients.claim()),
   );
 });
 
-// Fetch: Tangani routing dan fallback offline
+// 3. Fetch: Strategi caching cerdas
 self.addEventListener("fetch", (event) => {
   const { request } = event;
 
-  // Lewatkan request non-GET dan request ke API backend Supabase
+  // Hanya proses request GET http(s)
   if (request.method !== "GET") return;
   const url = new URL(request.url);
+  if (!url.protocol.startsWith("http")) return;
 
-  // Jangan cache request ke Supabase API atau WebSockets
+  // Lewatkan komunikasi Supabase, WebSockets, dan endpoint dinamis
   if (
     url.hostname.includes("supabase.co") ||
     url.pathname.startsWith("/api") ||
@@ -59,62 +82,95 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Strategi 1: Navigasi Halaman HTML (Network First -> Cache Fallback -> Offline Page)
+  // A. Navigasi Halaman HTML: Network First -> Cache -> Offline Fallback
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
-        .then((response) => {
-          if (response.ok) {
-            const responseClone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.ok) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           }
-          return response;
+          return networkResponse;
         })
         .catch(async () => {
-          const cachedResponse = await caches.match(request);
-          if (cachedResponse) return cachedResponse;
-          const offlinePage = await caches.match(OFFLINE_FALLBACK_URL);
-          return offlinePage || new Response("Offline", { status: 503, statusText: "Offline" });
+          // Cari halaman yang pernah dibuka sebelumnya di cache
+          const cachedPage = await caches.match(request);
+          if (cachedPage) return cachedPage;
+
+          // Jika belum pernah dikunjungi, tampilkan halaman offline ramah pengguna
+          const offlineFallback = await caches.match(OFFLINE_FALLBACK_URL);
+          return (
+            offlineFallback ||
+            new Response("Koneksi terputus. Buka kembali saat online.", {
+              status: 503,
+              headers: { "Content-Type": "text/plain; charset=utf-8" },
+            })
+          );
         }),
     );
     return;
   }
 
-  // Strategi 2: Static Assets (Styles, Scripts, Images, Fonts) - Stale-While-Revalidate
+  // B. Google Fonts & Webfonts: Cache First (agar tampilan font tetap elegan saat offline)
   if (
-    request.destination === "style" ||
-    request.destination === "script" ||
-    request.destination === "image" ||
+    url.hostname === "fonts.googleapis.com" ||
+    url.hostname === "fonts.gstatic.com" ||
     request.destination === "font" ||
-    url.pathname.startsWith("/assets/") ||
-    url.pathname.endsWith(".png") ||
-    url.pathname.endsWith(".jpg") ||
-    url.pathname.endsWith(".svg") ||
     url.pathname.endsWith(".woff2")
   ) {
     event.respondWith(
-      caches.match(request).then((cachedResponse) => {
-        const fetchPromise = fetch(request)
-          .then((networkResponse) => {
-            if (networkResponse && networkResponse.ok) {
-              const responseToCache = networkResponse.clone();
-              caches.open(CACHE_NAME).then((cache) => cache.put(request, responseToCache));
-            }
-            return networkResponse;
-          })
-          .catch(() => cachedResponse);
-
-        return cachedResponse || fetchPromise;
+      caches.match(request).then((cachedFont) => {
+        if (cachedFont) return cachedFont;
+        return fetch(request).then((networkResponse) => {
+          if (networkResponse && networkResponse.ok) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          }
+          return networkResponse;
+        });
       }),
     );
     return;
   }
 
-  // Default: Network with Cache fallback
+  // C. Aset Statis (CSS, JS, Gambar, Ikon): Stale-While-Revalidate
+  if (
+    request.destination === "style" ||
+    request.destination === "script" ||
+    request.destination === "image" ||
+    url.pathname.startsWith("/assets/") ||
+    url.pathname.endsWith(".png") ||
+    url.pathname.endsWith(".jpg") ||
+    url.pathname.endsWith(".jpeg") ||
+    url.pathname.endsWith(".svg") ||
+    url.pathname.endsWith(".ico") ||
+    url.pathname.endsWith(".webmanifest") ||
+    url.pathname.endsWith(".json")
+  ) {
+    event.respondWith(
+      caches.match(request).then((cachedAsset) => {
+        const fetchPromise = fetch(request)
+          .then((networkResponse) => {
+            if (networkResponse && networkResponse.ok) {
+              const clone = networkResponse.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+            }
+            return networkResponse;
+          })
+          .catch(() => cachedAsset);
+
+        return cachedAsset || fetchPromise;
+      }),
+    );
+    return;
+  }
+
+  // D. Default: Coba jaringan dengan fallback cache
   event.respondWith(fetch(request).catch(() => caches.match(request)));
 });
 
-// Listener untuk pesan pembaruan (misal: tombol Perbarui Versi di UI)
+// Listener pesan untuk pembaruan manual via UI
 self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "SKIP_WAITING") {
     self.skipWaiting();

@@ -320,8 +320,9 @@ export function SiteNav({
             ) : null}
           </div>
 
-          {/* Mobile Right: Full radius circular Avatar button */}
+          {/* Mobile Right: PWA Install pill + Full radius circular Avatar button */}
           <div className="flex items-center gap-1.5 md:hidden">
+            <PWAInstallButton variant="badge" className="text-[11px] px-2.5 py-1" />
             <button
               ref={btnRef}
               type="button"
