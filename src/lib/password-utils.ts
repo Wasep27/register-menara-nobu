@@ -1,5 +1,14 @@
+/**
+ * Utilitas Evaluasi Kekuatan & Generator Kata Sandi Aman (`src/lib/password-utils.ts`).
+ *
+ * Digunakan pada dialog reset/buat akun admin, halaman profil petugas, dan rute reset password
+ * agar seluruh sandi memenuhi standar keamanan minimal 8 karakter dengan 4 kelas karakter.
+ */
+
+/** Tingkatan klasifikasi kekuatan kata sandi. */
 export type PasswordStrengthLevel = "weak" | "medium" | "strong";
 
+/** Status pemenuhan satu kriteria keamanan kata sandi. */
 export interface PasswordCriterion {
   id: "length" | "uppercase" | "lowercase" | "number" | "symbol";
   label: string;
@@ -7,8 +16,10 @@ export interface PasswordCriterion {
   message: string;
 }
 
+/** Hasil evaluasi lengkap kekuatan kata sandi beserta kelas styling badge & progress bar. */
 export interface PasswordStrength {
-  score: number; // 0 to 4
+  /** Skor kumulatif dari 0 (kosong/lemah) sampai 4 (memenuhi seluruh kriteria). */
+  score: number;
   level: PasswordStrengthLevel;
   label: string;
   colorClass: string;
@@ -20,6 +31,7 @@ export interface PasswordStrength {
   hasLower: boolean;
   hasNumber: boolean;
   hasSymbol: boolean;
+  /** Bernilai `true` hanya jika panjang >= 8 serta seluruh 4 kelas karakter terpenuhi. */
   isComplete: boolean;
   criteria: PasswordCriterion[];
   missingCriteria: string[];
@@ -29,9 +41,9 @@ export interface PasswordStrength {
 /**
  * Mengevaluasi kekuatan password dengan indikator visual dan pesan validasi spesifik.
  * Level:
- * - weak (merah): < 8 karakter atau hanya 1 jenis karakter
- * - medium (kuning/oranye): 8+ karakter dengan 2-3 jenis karakter
- * - strong (hijau): 8+ karakter dengan kombinasi lengkap (huruf besar, kecil, angka, dan simbol)
+ * - `weak` (merah): < 8 karakter atau hanya 1 jenis karakter
+ * - `medium` (kuning/oranye): 8+ karakter dengan 2-3 jenis karakter
+ * - `strong` (hijau): 8+ karakter dengan kombinasi lengkap (huruf besar, kecil, angka, dan simbol)
  */
 export function evaluatePassword(password: string): PasswordStrength {
   const hasMinLength = password.length >= 8;
@@ -157,8 +169,10 @@ export function evaluatePassword(password: string): PasswordStrength {
 }
 
 /**
- * Menghasilkan password acak berkekuatan tinggi (14 karakter)
- * Menggabungkan huruf besar, huruf kecil, angka, dan simbol aman.
+ * Menghasilkan password acak berkekuatan tinggi (default 14 karakter).
+ *
+ * Best practice UX: mengecualikan karakter yang sering membingungkan secara visual (`I`, `O`, `l`, `0`, `1`)
+ * dan menjamin minimal 1 karakter dari setiap kelas sebelum diacak merata menggunakan algoritma Fisher-Yates.
  */
 export function generateStrongPassword(length = 14): string {
   const uppers = "ABCDEFGHJKLMNPQRSTUVWXYZ";
@@ -167,7 +181,7 @@ export function generateStrongPassword(length = 14): string {
   const symbols = "!@#$%^&*_-+=";
   const all = uppers + lowers + numbers + symbols;
 
-  // Pastikan masing-masing kategori ada setidaknya 1 karakter
+  // Pastikan masing-masing kategori ada setidaknya 1 karakter wajib
   const res = [
     uppers[Math.floor(Math.random() * uppers.length)],
     lowers[Math.floor(Math.random() * lowers.length)],
@@ -179,7 +193,7 @@ export function generateStrongPassword(length = 14): string {
     res.push(all[Math.floor(Math.random() * all.length)]);
   }
 
-  // Acak posisi karakter dengan Fisher-Yates
+  // Acak posisi karakter dengan Fisher-Yates shuffle agar posisi kelas tidak terprediksi
   for (let i = res.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [res[i], res[j]] = [res[j], res[i]];

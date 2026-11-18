@@ -1,14 +1,26 @@
-// @lovable.dev/vite-tanstack-config already includes the following — do NOT add them manually
-// or the app will break with duplicate plugins:
-//   - TanStack devtools (dev-only, first), tanstackStart, viteReact, tailwindcss, tsConfigPaths,
-//     nitro (build-only using cloudflare as a default target), VITE_* env injection, @ path alias,
-//     React/TanStack dedupe, error logger plugins, and sandbox detection (port/host/strictPort).
-// You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
+/**
+ * Konfigurasi Vite & TanStack Start untuk Aplikasi Buku Tamu Digital Menara Nobu.
+ *
+ * Catatan penting:
+ * Preset `@lovable.dev/vite-tanstack-config` sudah menyertakan plugin bawaan berikut secara otomatis,
+ * sehingga JANGAN menambahkannya lagi secara manual agar tidak terjadi duplikasi plugin:
+ * - TanStack devtools (khusus dev), tanstackStart, viteReact, tailwindcss, tsConfigPaths
+ * - nitro (untuk build SSR), injeksi env `VITE_*`, alias path `@`, dedupe React/TanStack, serta pengaturan sandbox.
+ */
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import fs from "node:fs";
 import path from "node:path";
 import type { Plugin } from "vite";
 
+/**
+ * Plugin fallback untuk menangani perubahan hash `rolldown-runtime-*.js` di folder cache Vite.
+ *
+ * Mengapa diperlukan:
+ * Saat Vite melakukan pre-bundling ulang di lingkungan dev/preview, permintaan modul yang masih
+ * mengacu pada hash `rolldown-runtime` versi sebelumnya bisa menghasilkan 404 jika berkas lama
+ * sudah terganti. Plugin ini melayani berkas runtime aktif dari `node_modules/.vite/deps`
+ * baik melalui middleware HTTP dev server maupun hook `load()` bundler.
+ */
 function rolldownRuntimeFallbackPlugin(): Plugin {
   return {
     name: "rolldown-runtime-fallback",
@@ -57,6 +69,7 @@ function rolldownRuntimeFallbackPlugin(): Plugin {
 export default defineConfig({
   vite: {
     server: {
+      // Dengarkan seluruh interface jaringan agar preview/container dapat mengakses port 3000.
       host: "0.0.0.0",
       port: 3000,
       allowedHosts: true,
@@ -64,8 +77,8 @@ export default defineConfig({
   },
   plugins: [rolldownRuntimeFallbackPlugin()],
   tanstackStart: {
-    // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-    // nitro/vite builds from this
+    // Arahkan entry server & client TanStack Start ke modul kustom kita (`src/server.ts` & `src/client.tsx`)
+    // agar pembungkus error SSR dan hydration berjalan konsisten di mode dev maupun build Nitro.
     server: { entry: "server" },
     client: { entry: "client" },
   },

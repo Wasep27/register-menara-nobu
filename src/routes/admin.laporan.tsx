@@ -1,3 +1,8 @@
+/**
+ * @module routes/admin.laporan
+ * @description Halaman laporan rekapitulasi kunjungan tamu berkala (`/admin/laporan`).
+ * Mendukung filter rentang tanggal, preset periode cepat, cetak peramban, dan ekspor Excel/PDF/CSV.
+ */
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import {
@@ -19,6 +24,9 @@ import { formatWibDateTime } from "@/lib/date-utils";
 
 export const Route = createFileRoute("/admin/laporan")({ component: Report });
 
+/**
+ * Komponen utama halaman Laporan Rekapitulasi & Ekspor Kunjungan Tamu.
+ */
 function Report() {
   const today = new Date().toISOString().slice(0, 10);
   const [from, setFrom] = useState(today);
@@ -49,6 +57,9 @@ function Report() {
     }
   };
 
+  /**
+   * Memuat data tamu dari Supabase berdasarkan rentang tanggal inklusif [from, to].
+   */
   const loadRange = async (f: string, t: string) => {
     if (!f || !t) {
       setDateError("Harap tentukan tanggal awal dan tanggal akhir.");
@@ -62,6 +73,7 @@ function Report() {
     setLoading(true);
     setFrom(f);
     setTo(t);
+    // Tambahkan +1 hari pada batas akhir untuk kueri eksklusif (< t+1 00:00) agar seluruh hari terakhir tercakup
     const e = new Date(t);
     e.setDate(e.getDate() + 1);
     const { data } = await supabase
@@ -76,6 +88,7 @@ function Report() {
 
   const load = () => loadRange(from, to);
 
+  /** Menerapkan pintasan rentang N hari terakhir hingga hari ini. */
   const applyPreset = (days: number) => {
     const start = new Date();
     start.setDate(start.getDate() - (days - 1));
@@ -83,12 +96,14 @@ function Report() {
     loadRange(f, today);
   };
 
+  /** Memuat data kunjungan sejak tanggal 1 bulan berjalan hingga hari ini. */
   const applyCurrentMonth = () => {
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
     loadRange(firstDay, today);
   };
 
+  /** Mengekspor data hasil kueri saat ini ke format Microsoft Excel (.xlsx). */
   const handleExportExcel = async () => {
     if (!rows || rows.length === 0) {
       toast.error("Tidak ada data kunjungan untuk diekspor");
@@ -137,6 +152,7 @@ function Report() {
     }
   };
 
+  /** Mengekspor data hasil kueri saat ini menjadi dokumen PDF resmi Menara Nobu. */
   const handleExportPdf = () => {
     if (!rows || rows.length === 0) {
       toast.error("Tidak ada data kunjungan untuk diekspor");
@@ -162,6 +178,7 @@ function Report() {
     toast.success("Dokumen Laporan PDF resmi Menara Nobu berhasil diunduh");
   };
 
+  /** Mengekspor data hasil kueri saat ini menjadi berkas CSV terstruktur. */
   const handleExportCsv = () => {
     if (!rows || rows.length === 0) return;
     exportToCsv({

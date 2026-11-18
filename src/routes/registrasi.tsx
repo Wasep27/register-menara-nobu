@@ -1,3 +1,10 @@
+/**
+ * @module routes/registrasi
+ * @description Halaman formulir pendaftaran tamu publik (`/registrasi`).
+ * Mendukung penyimpanan draf otomatis di `localStorage` (debounce 500ms) dan sinkronisasi
+ * berkala ke database via RPC (`upsert_draft`) dengan exponential backoff saat koneksi pulih,
+ * pelacakan durasi pengisian aktif yang akurat, serta layar konfirmasi QR Pass (`RegistrationSuccess`).
+ */
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import type { z } from "zod";
@@ -54,6 +61,7 @@ const empty: Form = {
   scheduled_at: "",
   is_important: "",
 };
+// Kunci penyimpanan lokal untuk ketahanan draf luring & token sesi pengisian formulir
 const LS_DRAFT = "nobu_draft";
 const LS_TOKEN = "nobu_token";
 const LS_OPENED = "nobu_opened";
@@ -61,6 +69,10 @@ const LS_ACTIVE_SEC = "nobu_active_sec";
 
 type Status = "idle" | "saving" | "saved" | "offline" | "error";
 
+/**
+ * Komponen utama formulir buku tamu dengan auto-save offline-first, filter host karyawan/umum,
+ * serta pengiriman aman melalui fungsi RPC PostgreSQL (`submit_guest`).
+ */
 function GuestForm() {
   const [form, setForm] = useState<Form>(empty);
   const [errors, setErrors] = useState<Partial<Record<keyof Form, string>>>({});
@@ -141,7 +153,7 @@ function GuestForm() {
     };
   }, []);
 
-  // simpan lokal (debounce 500ms)
+  // Simpan draf secara lokal dengan debounce 500ms agar pengetikan tetap mulus
   useEffect(() => {
     if (!dirty.current) return;
     setStatus("saving");
@@ -157,7 +169,7 @@ function GuestForm() {
     return () => clearTimeout(t);
   }, [form]);
 
-  // sinkron server tiap 30 detik
+  // Sinkronisasi draf ke server tiap 30 detik dengan exponential backoff (maks 30 detik) jika gagal
   const syncPending = useRef(false);
   useEffect(() => {
     let retry = 0;

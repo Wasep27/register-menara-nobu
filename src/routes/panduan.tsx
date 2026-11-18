@@ -1,3 +1,8 @@
+/**
+ * @module routes/panduan
+ * @description Halaman panduan operasional publik (`/panduan`) bagi pengunjung, resepsionis/keamanan,
+ * dan karyawan penerima tamu di Menara Nobu, termasuk ringkasan tata tertib gedung.
+ */
 import { createFileRoute } from "@tanstack/react-router";
 import {
   BookOpen,
@@ -38,6 +43,7 @@ export const Route = createFileRoute("/panduan")({
   component: Guide,
 });
 
+/** Merender pusat panduan langkah demi langkah untuk seluruh peran pengguna buku tamu Menara Nobu. */
 function Guide() {
   const cardStyle = "rounded-2xl bg-card p-5 sm:p-7 shadow-soft border border-border/80";
 

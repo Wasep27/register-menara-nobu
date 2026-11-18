@@ -1,3 +1,9 @@
+/**
+ * @module routes/admin.tamu
+ * @description Halaman Buku Tamu Digital lengkap untuk panel Admin (`/admin/tamu`).
+ * Mendukung pencarian multi-kolom ber-debounce, filter tanggal/tujuan/karyawan, paginasi 20 baris,
+ * penyuntingan & penghapusan data tamu, modal badge pass, serta ekspor Excel, PDF, Log Keamanan Harian, dan CSV.
+ */
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -33,6 +39,9 @@ import { formatWibDateTime } from "@/lib/date-utils";
 export const Route = createFileRoute("/admin/tamu")({ component: Guests });
 const PAGE = 20;
 
+/**
+ * Komponen utama pengelolaan Buku Tamu dengan kontrol akses RBAC (`admin`, `staff`, `security`).
+ */
 function Guests() {
   const { isAdmin, isSecurity, isStaff } = useAdminRole();
   const [rows, setRows] = useState<Guest[]>([]);
@@ -42,7 +51,7 @@ function Guests() {
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
 
-  // Debounce search input to avoid firing database requests on every keystroke
+  // Debounce 280ms input pencarian agar tidak membanjiri permintaan kueri saat mengetik cepat
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQ(q);
@@ -61,7 +70,7 @@ function Guests() {
   const [edit, setEdit] = useState<Guest | null>(null);
   const [badgeGuest, setBadgeGuest] = useState<VisitorBadgeData | null>(null);
 
-  // Lock body scroll safely without losing scroll position on mobile for edit modal
+  // Kunci scroll body secara aman tanpa kehilangan posisi gulir di perangkat seluler saat modal edit terbuka
   useEffect(() => {
     if (!edit) return;
     const scrollY = window.scrollY || window.pageYOffset;
@@ -101,20 +110,26 @@ function Guests() {
       .then(({ data }) => setPurps((data as Purpose[]) ?? []));
   }, []);
 
+  /**
+   * Menyusun objek kueri PostgREST secara dinamis berdasarkan seluruh filter aktif.
+   */
   const buildQuery = useCallback(() => {
     let qb = supabase
       .from("guests")
       .select("*, employees(name), visit_purposes(name)", { count: "exact" });
+    // Bersihkan karakter operator PostgREST (,()%*) sebelum menyusun filter .or() ilike
     const term = debouncedQ.replace(/[,()%*]/g, " ").trim();
     if (term) qb = qb.or(`name.ilike.%${term}%,institution.ilike.%${term}%,phone.ilike.%${term}%`);
     if (date) qb = qb.gte("check_in_time", new Date(`${date}T00:00:00`).toISOString());
     if (dateTo || date) {
+      // Gunakan batas eksklusif (+1 hari) agar seluruh kunjungan pada hari terakhir tercakup penuh
       const e = new Date(`${dateTo || date}T00:00:00`);
       e.setDate(e.getDate() + 1);
       qb = qb.lt("check_in_time", e.toISOString());
     }
     if (purpose) qb = qb.eq("visit_purpose_id", purpose);
     if (emp === "__general__") {
+      // Filter khusus tamu yang memilih tujuan umum Resepsionis Lobi (`employee_id IS NULL`)
       qb = qb.is("employee_id", null);
     } else if (emp) {
       qb = qb.eq("employee_id", emp);
@@ -124,6 +139,10 @@ function Guests() {
 
   const [exporting, setExporting] = useState<string | false>(false);
 
+  /**
+   * Mengambil seluruh baris hasil filter secara bertahap (batch 1000 baris) untuk melewati
+   * batas default max-rows PostgREST saat mengekspor data berjumlah besar.
+   */
   const fetchAllData = async (): Promise<Guest[]> => {
     const all: Guest[] = [];
     for (let from = 0; ; from += 1000) {
@@ -282,6 +301,7 @@ function Guests() {
   }, [load]);
 
   const [toDelete, setToDelete] = useState<Guest | null>(null);
+  /** Menghapus permanen rekaman tamu terpilih (hanya tersedia bagi peran `admin`). */
   const del = async () => {
     if (!toDelete) return;
     const { error } = await supabase.from("guests").delete().eq("id", toDelete.id);
@@ -292,6 +312,8 @@ function Guests() {
     toast.success(`Data tamu ${toDelete.name} dihapus`);
     load();
   };
+
+  /** Menyimpan hasil suntingan biodata maupun tujuan karyawan tamu ke Supabase. */
   const save = async () => {
     if (!edit) return;
     if (edit.name.trim().length < 2) {

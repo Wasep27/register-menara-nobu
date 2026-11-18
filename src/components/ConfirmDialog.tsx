@@ -10,6 +10,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+/** Properti dialog konfirmasi tindakan destruktif/penting berbasis AlertDialog. */
 type Props = {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -20,6 +21,10 @@ type Props = {
   onConfirm: () => Promise<void> | void;
 };
 
+/**
+ * Dialog konfirmasi terpusat yang mendukung callback asinkron (`Promise`)
+ * dan mengunci penutupan modal selama proses konfirmasi sedang berjalan (`busy`).
+ */
 export function ConfirmDialog({
   open,
   onOpenChange,
@@ -47,6 +52,7 @@ export function ConfirmDialog({
                 : ""
             }
             onClick={async (e) => {
+              // Cegah AlertDialogAction menutup dialog sebelum operasi async `onConfirm` selesai
               e.preventDefault();
               setBusy(true);
               try {

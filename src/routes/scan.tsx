@@ -1,3 +1,10 @@
+/**
+ * @module routes/scan
+ * @description Halaman gerbang keamanan publik (`/scan`).
+ * Menerapkan prinsip *Least Privilege* sesuai UU Pelindungan Data Pribadi: mengarahkan petugas yang
+ * sudah terautentikasi langsung ke `/admin/scan`, dan menampilkan pemberitahuan pembatasan akses
+ * kepada pengunjung umum agar pemindai pass tidak disalahgunakan secara anonim.
+ */
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { SiteNav } from "@/components/SiteNav";
@@ -54,6 +61,7 @@ const navItems = [
   { to: "/admin/login", label: "Admin" },
 ];
 
+/** Memeriksa sesi petugas untuk pengalihan otomatis ke `/admin/scan` atau menampilkan halaman pembatasan akses publik. */
 function ScanRedirectPage() {
   const navigate = useNavigate();
   const [checkingAuth, setCheckingAuth] = useState(true);

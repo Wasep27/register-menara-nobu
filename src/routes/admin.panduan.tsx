@@ -1,3 +1,8 @@
+/**
+ * @module routes/admin.panduan
+ * @description Halaman dokumentasi teknis internal & konsol diagnostik sistem untuk IT/Administrator (`/admin/panduan`).
+ * Memuat uji koneksi live ke tabel Supabase, fungsi RPC, indeks query, serta referensi kueri SQL pemeliharaan.
+ */
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import {
@@ -41,6 +46,9 @@ export const Route = createFileRoute("/admin/panduan")({
 type Check = { label: string; ok: boolean | null; note: string };
 type SqlTab = "status" | "housekeeping" | "monitoring" | "indexes";
 
+/**
+ * Komponen utama Dokumentasi Teknis & Uji Diagnostik Sistem Menara Nobu.
+ */
 function AdminTechnicalGuide() {
   const [checks, setChecks] = useState<Check[]>([]);
   const [running, setRunning] = useState(false);
@@ -71,6 +79,10 @@ function AdminTechnicalGuide() {
     }
   };
 
+  /**
+   * Menjalankan rangkaian uji kesehatan sistem secara real-time:
+   * verifikasi variabel lingkungan, akses tabel master, fungsi RPC draft & rate-limit, serta latensi indeks.
+   */
   const runDiagnostics = async () => {
     setRunning(true);
     const out: Check[] = [];

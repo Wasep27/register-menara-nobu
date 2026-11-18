@@ -1,3 +1,8 @@
+/**
+ * @module routes/admin.email-admin
+ * @description Halaman pengelolaan daftar putih (allowlist) email administrator (`/admin/email-admin`).
+ * Email yang terdaftar otomatis diberikan peran admin melalui trigger database saat registrasi/aktivasi akun.
+ */
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { createFileRoute } from "@tanstack/react-router";
@@ -11,6 +16,9 @@ export const Route = createFileRoute("/admin/email-admin")({
 
 type Row = { email: string; created_at: string };
 
+/**
+ * Komponen manajemen daftar email administrator beserta validasi Zod dan pencegahan hapus akun sendiri.
+ */
 function AdminEmails() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,6 +36,7 @@ function AdminEmails() {
     supabase.auth.getUser().then(({ data }) => setMe(data.user?.email?.toLowerCase() ?? ""));
   }, [load]);
 
+  /** Memvalidasi format email dengan Zod lalu menyisipkannya ke tabel `admin_emails`. */
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
     setMsg("");
@@ -36,6 +45,7 @@ function AdminEmails() {
     const { error } = await supabase.from("admin_emails").insert({ email: r.data });
     if (error)
       return setMsg(
+        // Kode SQLSTATE 23505 menandakan pelanggaran constraint unik (email sudah ada)
         error.code === "23505"
           ? "Email sudah terdaftar."
           : "Gagal menyimpan. Pastikan skrip database terbaru sudah dijalankan.",
@@ -105,6 +115,7 @@ function AdminEmails() {
                   <span className="ml-2 text-xs text-muted-foreground">(Anda)</span>
                 )}
               </span>
+              {/* Cegah admin menghapus emailnya sendiri agar tidak terkunci dari sistem */}
               {r.email !== me && (
                 <button
                   className="min-h-11 px-2 text-destructive transition-colors hover:underline"

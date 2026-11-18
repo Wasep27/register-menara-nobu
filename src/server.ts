@@ -1,3 +1,10 @@
+/**
+ * Entry Point Server SSR (`src/server.ts`).
+ *
+ * Modul ini membungkus handler server TanStack Start agar setiap kegagalan fatal SSR
+ * (termasuk error yang ditelan oleh runtime h3/Nitro menjadi JSON `HTTPError`) tetap tercatat
+ * di log server dan menampilkan halaman fallback HTML 500 yang aman bagi pengguna.
+ */
 import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
@@ -9,6 +16,7 @@ type ServerEntry = {
 
 let serverEntryPromise: Promise<ServerEntry> | undefined;
 
+/** Memuat handler server TanStack Start secara lazy dan men-cache promise-nya antar request. */
 async function getServerEntry(): Promise<ServerEntry> {
   if (!serverEntryPromise) {
     serverEntryPromise = import("@tanstack/react-start/server-entry").then(
@@ -18,8 +26,13 @@ async function getServerEntry(): Promise<ServerEntry> {
   return serverEntryPromise;
 }
 
-// h3 swallows in-handler throws into a normal 500 Response with body
-// {"unhandled":true,"message":"HTTPError"} — try/catch alone never fires for those.
+/**
+ * Menormalkan respons error fatal dari runtime h3.
+ *
+ * Catatan teknis: h3 sering mengubah exception di dalam handler menjadi HTTP 500 JSON
+ * `{"unhandled":true,"message":"HTTPError"}`, sehingga blok `try/catch` biasa tidak menangkapnya.
+ * Fungsi ini memeriksa payload tersebut dan menggantinya dengan halaman HTML fallback yang rapi.
+ */
 async function normalizeCatastrophicSsrResponse(response: Response): Promise<Response> {
   if (response.status < 500) return response;
   const contentType = response.headers.get("content-type") ?? "";
@@ -35,6 +48,7 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   });
 }
 
+/** Mengecek apakah body JSON merupakan format error internal yang ditelan oleh h3. */
 function isH3SwallowedErrorBody(body: string): boolean {
   try {
     const payload = JSON.parse(body) as { unhandled?: unknown; message?: unknown };

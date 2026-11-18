@@ -1,3 +1,10 @@
+/**
+ * Sidebar Navigasi Portal Admin Desktop (`src/components/AdminSidebar.tsx`).
+ *
+ * Fitur utama:
+ * - Menyesuaikan kelompok menu secara dinamis berdasarkan peran RBAC (`admin`, `security`, `staff`).
+ * - Mendukung mode ciut/lebar (*collapsible*) dengan persistensi `localStorage` dan pintasan `[` atau `Ctrl/Cmd+B`.
+ */
 import { Link, useLocation } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
@@ -22,6 +29,7 @@ import { Avatar } from "@/components/Avatar";
 
 import type { AppRole } from "@/lib/supabase";
 
+/** Properti komponen `AdminSidebar`. */
 export interface AdminSidebarProps {
   userName?: string;
   userAvatar?: string | null;
@@ -208,6 +216,9 @@ const STAFF_NAV_GROUPS: NavGroup[] = [
   },
 ];
 
+/**
+ * Merender sidebar navigasi desktop portal admin/petugas sesuai hak akses peran pengguna.
+ */
 export function AdminSidebar({
   userName,
   userAvatar,
@@ -216,6 +227,7 @@ export function AdminSidebar({
   userRoles = ["admin"],
 }: AdminSidebarProps) {
   const pathname = useLocation().pathname;
+  // Prioritas hierarki peran: `admin` mengungguli `security` & `staff`; `security` mengungguli `staff`
   const isAdmin = userRoles.includes("admin");
   const isSecurityOnly = userRoles.includes("security") && !isAdmin;
   const isStaffOnly = userRoles.includes("staff") && !isAdmin && !userRoles.includes("security");
@@ -235,13 +247,13 @@ export function AdminSidebar({
       try {
         localStorage.setItem("nobu_sidebar_collapsed", String(next));
       } catch {
-        // ignore
+        // abaikan jika localStorage diblokir mode private
       }
       return next;
     });
   };
 
-  // Shortcut '[' atau 'Ctrl+B' untuk toggle sidebar
+  // Pintasan keyboard '[' atau 'Ctrl/Cmd+B' untuk menciutkan/memperluas sidebar (kecuali saat mengetik di input)
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;

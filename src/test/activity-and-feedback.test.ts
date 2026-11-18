@@ -1,3 +1,8 @@
+/**
+ * @module test/activity-and-feedback.test
+ * @description Pengujian unit untuk pemfilteran log aktivitas, kalkulasi statistik log, pembuatan log sintetis,
+ * serta pengamanan sel CSV (`escapeCsvCell`) terhadap celah formula injection.
+ */
 import { describe, it, expect } from "vitest";
 import {
   filterActivityLogs,

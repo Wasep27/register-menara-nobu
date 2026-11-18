@@ -1,3 +1,8 @@
+/**
+ * @module routes/admin.profil
+ * @description Halaman pengelolaan profil mandiri akun petugas/administrator (`/admin/profil`).
+ * Mendukung pembaruan nama lengkap, unggah & crop avatar otomatis, serta pembaruan kata sandi kuat.
+ */
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState, useMemo } from "react";
 import {
@@ -46,6 +51,9 @@ export const Route = createFileRoute("/admin/profil")({
   component: ProfilePage,
 });
 
+/**
+ * Komponen utama halaman Profil Akun Saya dengan kompresi avatar sisi klien dan generator sandi.
+ */
 function ProfilePage() {
   const { userRoles, userName, userAvatar, userEmail, refreshProfile } = useAdminRole();
   const [userId, setUserId] = useState<string>("");
@@ -116,7 +124,7 @@ function ProfilePage() {
     if (userEmail) setEmail((prev) => prev || userEmail);
   }, [userName, userAvatar, userEmail]);
 
-  // Handle upload & kompresi foto avatar
+  /** Memvalidasi berkas foto, lalu memotong bujur sangkar 256px & mengompresinya sebelum pratinjau. */
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -145,6 +153,9 @@ function ProfilePage() {
     toast.info("Foto profil dihapus (akan kembali ke inisial nama).");
   };
 
+  /**
+   * Menyimpan perubahan profil ke tabel `profiles` dan memproses pergantian sandi Supabase Auth bila dibuka.
+   */
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName.trim()) {
@@ -169,7 +180,7 @@ function ProfilePage() {
         return;
       }
 
-      // Jika ganti password
+      // Validasi dan perbarui kata sandi hanya jika seksi ubah sandi aktif serta kolom sandi baru terisi
       if (showPasswordSection && newPassword) {
         if (newPassword.length < 8) {
           toast.error("Password baru minimal 8 karakter sesuai standar keamanan.");

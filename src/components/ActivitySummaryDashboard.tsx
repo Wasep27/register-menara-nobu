@@ -1,13 +1,27 @@
+/**
+ * @module ActivitySummaryDashboard
+ * @description Panel kartu ringkasan KPI registrasi tamu dan log audit sistem pada halaman `/admin/aktivitas`.
+ */
 import { Activity, Clock, Layers, UserCheck, Users } from "lucide-react";
 
+/** Properti statistik untuk komponen `ActivitySummaryDashboard`. */
 export interface ActivitySummaryDashboardProps {
+  /** Jumlah tamu yang mendaftar hari ini (WIB). */
   todayGuestCount: number;
+  /** Total akumulasi seluruh registrasi tamu di database. */
   totalGuestCount: number;
+  /** Jumlah event log aktivitas sistem pada hari ini. */
   todayActivityCount: number;
+  /** Total seluruh catatan log aktivitas tersimpan. */
   totalActivityCount: number;
+  /** Menampilkan placeholder shimmer saat data masih dimuat. */
   loading?: boolean;
 }
 
+/**
+ * Merender 4 kartu metrik ringkas (Tamu Hari Ini, Total Tamu, Aktivitas Hari Ini, Total Log)
+ * dengan state loading shimmer yang aman terhadap pergeseran tata letak (CLS).
+ */
 export function ActivitySummaryDashboard({
   todayGuestCount,
   totalGuestCount,

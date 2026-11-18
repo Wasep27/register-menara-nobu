@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 
+/** Footer situs publik dengan tautan FAQ, Kebijakan Privasi, dan Kebijakan Cookie (memberi ruang bawah aman untuk bottom dock mobile). */
 export function SiteFooter() {
   const cls =
     "rounded-md px-1 hover:text-primary outline-none focus-visible:ring-2 focus-visible:ring-primary";

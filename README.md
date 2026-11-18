@@ -37,16 +37,66 @@ Aplikasi registrasi tamu digital untuk gedung **Menara Nobu (Bank Nobu)**. Tamu 
 
 ## Teknologi
 
-| Bagian   | Teknologi                                                   |
-| -------- | ----------------------------------------------------------- |
-| Tampilan | React 19, TanStack Start / Router, Vite 7                   |
-| Gaya     | Tailwind CSS v4, shadcn/ui, font Nunito + Plus Jakarta Sans |
-| Grafik   | Recharts                                                    |
-| Validasi | Zod (`src/lib/validation.ts`)                               |
-| Backend  | Supabase (database, login, realtime, pg_cron)               |
-| Hosting  | Vercel                                                      |
+Aplikasi dibangun dengan tumpukan teknologi modern berbasis TypeScript dari ujung frontend hingga lapisan database:
 
-Warna brand: hijau `#10D5A0` (aksen) dan `#07936E` (tombol / teks).
+### 1. Frontend, Routing & Runtime Build
+
+| Teknologi | Versi / Modul | Peran dalam Aplikasi |
+| --- | --- | --- |
+| **React** | `^19.2.0` | Pustaka utama antarmuka pengguna berbasis komponen fungsional & hooks. |
+| **TypeScript** | `^5.8.3` | Pengetikan statis penuh untuk keamanan data formulir, RPC Supabase, dan analitik. |
+| **TanStack Start** | `1.168.60` | Framework SSR full-stack di atas Vite untuk rendering awal halaman dan error boundary. |
+| **TanStack Router** | `1.170.41` | File-based routing tipe-aman (`src/routes/`), generator `routeTree.gen.ts`, dan `<head>` SEO per rute. |
+| **TanStack React Query** | `^5.101.1` | Infrastruktur manajemen query & caching data sisi klien. |
+| **Vite + Rolldown** | `8.1.5` (`rolldown 1.2.1`) | Bundler super cepat dengan `@lovable.dev/vite-tanstack-config` & fallback runtime plugin di `vite.config.ts`. |
+| **Nitro** | `3.0.260603-beta` | Engine server SSR dengan preset `vercel` (`vercel.json`) agar refresh rute langsung tidak 404. |
+
+### 2. UI, Desain & Animasi
+
+| Teknologi | Versi / Modul | Peran dalam Aplikasi |
+| --- | --- | --- |
+| **Tailwind CSS** | `^4.2.1` (`@tailwindcss/vite`) | Utilitas styling modern dengan token tema `@theme` & animasi `tw-animate-css`. |
+| **shadcn/ui & Radix UI** | `@radix-ui/react-*` | Komponen UI aksesibel (Dialog, AlertDialog, Select, Tabs, Tooltip, Sheet, dll.) dengan `clsx`, `tailwind-merge`, dan `class-variance-authority`. |
+| **Lucide React** | `^0.575.0` | Paket ikon vektor ringan di seluruh navigasi, formulir, dan dashboard. |
+| **Framer Motion** | `^14.3.0` | Transisi halus halaman dan animasi komponen interaktif. |
+| **Embla Carousel** | `^8.6.0` | Carousel foto gedung & lobi Menara Nobu di halaman beranda. |
+| **Sonner** | `^2.0.7` | Notifikasi toast non-intrusif untuk umpan balik aksi pengguna & petugas. |
+| **Tipografi** | Google Fonts | `Nunito` & `Plus Jakarta Sans` (aksen merek hijau `#10D5A0` & `#07936E`). |
+
+### 3. Formulir, Validasi & Penanganan Waktu
+
+| Teknologi | Versi / Modul | Peran dalam Aplikasi |
+| --- | --- | --- |
+| **Zod** | `^3.25.76` | Skema validasi ketat input tamu, nomor HP Indonesia, email, jadwal kunjungan, dan sanitasi query (`src/lib/validation.ts`). |
+| **React Hook Form** | `^7.71.2` + `@hookform/resolvers` | Pengelolaan state formulir efisien dan terhubung dengan skema Zod. |
+| **date-fns & Intl WIB** | `^4.1.0` | Pemformatan tanggal/jam lokal Indonesia Barat (`Asia/Jakarta` WIB) secara konsisten (`src/lib/date-utils.ts`). |
+
+### 4. Analitik, Pemindaian QR/Barcode & Ekspor Dokumen
+
+| Teknologi | Versi / Modul | Peran dalam Aplikasi |
+| --- | --- | --- |
+| **Recharts** | `^2.15.4` | Visualisasi tren harian, jam tersibuk (*peak hours*), sebaran divisi, dan kategori tujuan kunjungan. |
+| **jsQR + Web MediaDevices** | `jsqr ^1.4.0` | Pemindai QR Code kamera real-time (*throttled* 110ms) + dukungan USB *barcode scanner* & Web Audio API beep (`QrCodeScanner.tsx`). |
+| **Generator Barcode & Badge** | `src/lib/barcode.ts`, `badge-download.ts` | Generator mandiri barcode 1D **Code 39**, matriks **QR ISO**, dan ekspor PNG resolusi Retina 2x via HTML5 Canvas. |
+| **ExcelJS & SheetJS** | `exceljs ^4.4.0`, `xlsx ^0.18.5` | Ekspor Excel `.xlsx` multi-sheet berkop logo Nobu, kartu KPI, *in-cell bar chart*, zebra striping, auto-filter, dan freeze panes (`src/lib/export-utils.ts`). |
+| **jsPDF & AutoTable** | `jspdf ^4.2.1`, `jspdf-autotable ^5.0.9` | Pembuatan PDF resmi korporat A4 Landscape, Lembar Log Harian Satpam, dan cetak Visitor Pass Lanyard/Compact. |
+| **CSV Aman** | `src/lib/csv-export.ts` | Ekspor CSV ber-UTF-8 BOM dengan perlindungan anti *CSV Formula Injection* (`=`, `+`, `-`, `@`). |
+
+### 5. Backend, Database & Keamanan
+
+| Teknologi | Peran & Best Practice |
+| --- | --- |
+| **Supabase (`@supabase/supabase-js ^2.118.0`)** | PostgreSQL, **PKCE Auth** (`flowType: "pkce"`, `storageKey: "nobu-auth"`), **Row-Level Security (RLS)**, fungsi RPC `SECURITY DEFINER`, **Realtime** (`postgres_changes`), dan **`pg_cron`** untuk pengingat otomatis. |
+| **Arsitektur Keamanan Sisi Klien** | Seluruh akses berjalan lewat *anon/publishable client* (`src/lib/supabase.ts`) tanpa `service_role` key di frontend; tamu anonim hanya menulis data lewat RPC tervalidasi tanpa hak baca tabel tamu; peran RBAC (`admin`, `security`, `staff`) dipisah di tabel `user_roles`. |
+
+### 6. PWA, Pengujian & Kualitas Kode
+
+| Teknologi | Versi / Modul | Peran dalam Aplikasi |
+| --- | --- | --- |
+| **PWA & Offline Draft** | `/public/sw.js`, `manifest.webmanifest` | Service Worker untuk caching aset statis, fallback `/offline.html`, serta antrean draf registrasi offline dengan *exponential backoff*. |
+| **Vitest & Testing Library** | `vitest ^4.1.10`, `@testing-library/react ^16.0.0`, `jsdom` | Unit test & integration test untuk validasi, analitik, ekspor dokumen, password strength, dan routing. |
+| **ESLint & Prettier** | `eslint ^9.32.0`, `prettier ^3.7.3` | Penegakan standar sintaks TypeScript, React Hooks rules, dan format kode otomatis. |
+| **Bun / Node.js** | `bun.lock` & `npm` | Manajemen dependensi dan eksekusi skrip pengembangan/build. |
 
 ---
 
@@ -54,16 +104,18 @@ Warna brand: hijau `#10D5A0` (aksen) dan `#07936E` (tombol / teks).
 
 ```text
 src/
-  routes/          Halaman (index, registrasi, karyawan, admin.*, privasi, cookies, ...)
-  components/      Navbar, footer, carousel, banner cookie, dialog konfirmasi, CRUD admin
-  lib/supabase.ts  Koneksi Supabase dan pengaturan sesi login
-  lib/validation.ts Aturan validasi formulir
-  assets/          Logo dan foto
-  test/            Tes otomatis (vitest)
+  routes/          Halaman berbasis berkas TanStack Router (index, registrasi, karyawan, admin.*, ...)
+  components/      Komponen aplikasi (navigasi, carousel, scanner QR/barcode, cetak badge, CRUD master)
+  hooks/           Custom hooks (useAdminRole RBAC, useOnlineStatus jaringan, usePWAInstall)
+  lib/             Utilitas inti (koneksi Supabase, validasi Zod, analitik, ekspor Excel/PDF/CSV, keamanan sandi)
+  assets/          Logo resmi Menara Nobu (termasuk Base64 untuk dokumen cetak) dan foto lobi
+  test/            Suite pengujian otomatis (vitest)
+public/
+  sw.js            Service Worker PWA untuk cache aset dan fallback halaman offline
 supabase/
-  schema.sql       Seluruh tabel, fungsi, trigger, dan aturan akses (aman dijalankan ulang)
-  verify.sql       Pemeriksaan kesiapan database (hanya membaca)
-vercel.json        Pengaturan deploy Vercel
+  schema.sql       Seluruh tabel, fungsi RPC SECURITY DEFINER, trigger, RLS, dan jadwal pg_cron
+  verify.sql       Skrip pemeriksaan kesiapan database (read-only)
+vercel.json        Konfigurasi deploy Vercel dengan preset Nitro SSR
 ```
 
 ---

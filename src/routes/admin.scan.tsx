@@ -1,3 +1,8 @@
+/**
+ * @module routes/admin.scan
+ * @description Halaman pemindai barcode & QR pass khusus petugas keamanan/resepsionis lobi (`/admin/scan`).
+ * Memverifikasi identitas fisik tamu, menjalankan fungsi RPC berizin terbatas, dan mencatat riwayat sesi shift.
+ */
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { QrCodeScanner } from "@/components/QrCodeScanner";
@@ -21,6 +26,7 @@ export const Route = createFileRoute("/admin/scan")({
   component: AdminScanPage,
 });
 
+/** Entri riwayat pass yang dipindai selama sesi shift aktif di pos keamanan. */
 interface ScannedHistoryItem {
   id: string;
   name: string;
@@ -30,13 +36,17 @@ interface ScannedHistoryItem {
   status: string;
 }
 
+/**
+ * Komponen halaman pemindai barcode terautentikasi untuk petugas keamanan dan resepsionis.
+ */
 function AdminScanPage() {
   const [history, setHistory] = useState<ScannedHistoryItem[]>([]);
 
+  /** Menambahkan hasil verifikasi pass ke daftar riwayat sesi (maksimal 10 item terbaru). */
   const handleScanSuccess = (res: GuestStatusResult) => {
     if (!res.badge_code) return;
     setHistory((prev) => {
-      // Cegah duplikat beruntun
+      // Cegah duplikat beruntun apabila kamera membaca barcode yang sama beberapa frame berturut-turut
       if (prev.length > 0 && prev[0]?.badgeCode === res.badge_code) return prev;
       const newItem: ScannedHistoryItem = {
         id: Math.random().toString(36).substring(2, 9),
@@ -46,6 +56,7 @@ function AdminScanPage() {
         time: getNowWibTimeString(),
         status: res.status || "TERVERIFIKASI",
       };
+      // Pertahankan maksimal 10 riwayat terakhir agar panel sisi kanan tetap ringkas
       return [newItem, ...prev.slice(0, 9)];
     });
   };

@@ -1,3 +1,7 @@
+/**
+ * Menghasilkan markup HTML statis mandiri (tanpa dependensi CSS/JS eksternal) untuk halaman
+ * error 500 fallback saat kegagalan SSR terjadi di `server.ts` atau `start.ts`.
+ */
 export function renderErrorPage(): string {
   return `<!doctype html>
 <html lang="en">

@@ -5,17 +5,13 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Design system definition.
+ * Definisi Sistem Desain (Tailwind CSS v4 + shadcn/ui).
  *
- * The @theme inline block maps CSS custom properties to Tailwind utility
- * classes (e.g. --color-primary -> bg-primary, text-primary).
+ * Blok @theme inline memetakan variabel CSS kustom ke kelas utilitas Tailwind
+ * (mis. --color-primary -> bg-primary, text-primary).
  *
- * The :root and .dark blocks define the actual color values using oklch.
- * All colors MUST use oklch format.
- *
- * To add a new semantic color:
- * 1. Add the variable to :root (light value) and .dark (dark value)
- * 2. Register it in @theme inline as --color-<name>: var(--<name>)
+ * Blok :root dan .dark mendefinisikan nilai warna dalam format oklch.
+ * Seluruh warna token dasar menggunakan format oklch sebelum ditimpa palet merek di bawah.
  */
 
 @theme inline {
@@ -143,6 +139,7 @@
   }
 }
 
+/* Palet merek khas Menara Nobu (nuansa Emerald/Teal & tipografi Plus Jakarta Sans / Nunito) */
 :root {
   --background: #f4fbf8;
   --foreground: #10241e;
@@ -180,6 +177,8 @@ button,
 h1 {
   font-weight: 800;
 }
+
+/* Utilitas bayangan lembut dan animasi antarmuka (fade-up, shimmer, glow, float, laser scan) */
 @utility shadow-soft {
   box-shadow: var(--shadow-soft);
 }
@@ -257,12 +256,15 @@ h1 {
     opacity: 0.25;
   }
 }
+/* Hormati preferensi aksesibilitas pengguna yang menonaktifkan animasi berlebih */
 @media (prefers-reduced-motion: reduce) {
   * {
     animation: none !important;
     transition: none !important;
   }
 }
+
+/* Aturan cetak (@media print): sembunyikan navigasi, pertahankan warna badge, dan rapikan tabel laporan */
 @media print {
   nav,
   header.app-header,
@@ -290,7 +292,7 @@ h1 {
     margin: 10mm auto !important;
   }
 
-  /* Dedicated print layout for Daily Visit Logs & Reports */
+  /* Tata letak khusus cetak untuk Laporan & Log Kunjungan Harian */
   .sm\:hidden {
     display: none !important;
   }
@@ -339,7 +341,7 @@ html {
 }
 
 /* ==========================================================================
-   Desktop UX: Ensure all interactive buttons, links, and controls show pointer
+   UX Desktop: Pastikan seluruh elemen interaktif aktif menampilkan kursor pointer
    ========================================================================== */
 button:not(:disabled),
 [role="button"]:not([aria-disabled="true"]):not(:disabled),

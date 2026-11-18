@@ -1,5 +1,13 @@
+/**
+ * Utilitas Manajemen Profil & Avatar Petugas (`src/lib/profile-utils.ts`).
+ *
+ * Menangani validasi ukuran/tipe gambar, kompresi & center-crop ke 256x256px lewat Canvas,
+ * serta sinkronisasi multi-lapisan profil agar UI sidebar/modal tetap responsif meskipun
+ * skema RPC opsional belum terpasang.
+ */
 import { supabase } from "@/lib/supabase";
 
+/** Representasi profil pengguna pada tabel `public.profiles`. */
 export interface UserProfileData {
   id: string;
   email: string;

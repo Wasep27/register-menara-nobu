@@ -1,3 +1,8 @@
+/**
+ * @module NavDrawerModal
+ * @description Modal drawer menu lengkap untuk navigasi seluler maupun pintasan menu sekunder,
+ * dilengkapi kartu profil cepat, banner instalasi PWA, focus trapping keyboard, dan pengelompokan kategori.
+ */
 import { Link } from "@tanstack/react-router";
 import React, { useEffect, useRef } from "react";
 import {
@@ -33,6 +38,9 @@ interface NavDrawerModalProps {
   triggerBtnRef?: React.RefObject<HTMLButtonElement | null> | undefined;
 }
 
+/**
+ * Komponen modal drawer navigasi seluruh aplikasi dengan dukungan aksesibilitas WAI-ARIA.
+ */
 export const NavDrawerModal = React.memo(function NavDrawerModal({
   open,
   onClose,
@@ -51,7 +59,9 @@ export const NavDrawerModal = React.memo(function NavDrawerModal({
   const panelRef = useRef<HTMLDivElement>(null);
   const wasOpen = useRef(false);
 
-  // Keyboard navigation & accessibility focus trapping
+  // Navigasi keyboard & focus trapping aksesibilitas:
+  // Menahan Tab/Shift+Tab tetap berputar di dalam dialog, menutup pada Escape,
+  // serta mengembalikan fokus ke tombol pemicu setelah drawer ditutup.
   useEffect(() => {
     if (open) {
       wasOpen.current = true;
@@ -85,7 +95,7 @@ export const NavDrawerModal = React.memo(function NavDrawerModal({
     return undefined;
   }, [open, onClose, triggerBtnRef]);
 
-  // Lock body scroll when modal is active
+  // Mengunci scroll halaman latar belakang saat drawer aktif
   useEffect(() => {
     if (open) {
       document.body.style.overflow = "hidden";
@@ -96,7 +106,7 @@ export const NavDrawerModal = React.memo(function NavDrawerModal({
     return undefined;
   }, [open]);
 
-  // Modern native app card item for mobile sheet
+  // Merender kartu item navigasi individual beserta ikon dan deskripsi rutenya
   const renderMobileDrawerItem = (l: NavItem, i: number) => {
     const meta = ROUTE_METADATA[l.to];
     const IconComponent = l.icon || meta?.icon || Compass;

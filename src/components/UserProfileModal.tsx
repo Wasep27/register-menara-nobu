@@ -1,3 +1,8 @@
+/**
+ * @module UserProfileModal
+ * @description Dialog modal untuk memperbarui profil akun pengguna aktif (nama lengkap,
+ * foto avatar terkompresi <40KB, informasi peran RBAC, dan ganti kata sandi mandiri).
+ */
 import { useState, useRef, useEffect, useMemo } from "react";
 import {
   Camera,
@@ -33,6 +38,7 @@ import {
 } from "@/components/ui/dialog";
 import { validateAvatarFile, compressAndCropAvatar, saveOwnProfile } from "@/lib/profile-utils";
 
+/** Properti dialog `UserProfileModal`. */
 export interface UserProfileModalProps {
   open: boolean;
   onClose: () => void;
@@ -41,9 +47,13 @@ export interface UserProfileModalProps {
   initialAvatar?: string | null;
   userEmail?: string;
   userRoles?: AppRole[];
+  /** Callback setelah profil tersimpan agar state header/sidebar langsung sinkron. */
   onProfileUpdated?: (newName: string, newAvatar: string | null) => void;
 }
 
+/**
+ * Modal pengelolaan profil pribadi pengguna (Admin, Staff, Security, atau Karyawan).
+ */
 export function UserProfileModal({
   open,
   onClose,

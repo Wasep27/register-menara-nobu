@@ -1,3 +1,9 @@
+/**
+ * @module VisitorBadgeModal
+ * @description Modal pratinjau kartu akses/lanyard dan stiker pengunjung resmi Menara Nobu.
+ * Dirender melalui React Portal (`document.body`), dilengkapi penguncian scroll ramah iOS/mobile,
+ * isolasi CSS `@media print`, serta opsi ekspor ke PDF dan PNG.
+ */
 import React, { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -29,6 +35,9 @@ interface VisitorBadgeModalProps {
   data: VisitorBadgeData;
 }
 
+/**
+ * Dialog cetak dan unduh kartu tanda pengenal tamu dalam format Lanyard atau Stiker Ringkas.
+ */
 export const VisitorBadgeModal = React.memo(function VisitorBadgeModal({
   open,
   onClose,
@@ -88,7 +97,7 @@ export const VisitorBadgeModal = React.memo(function VisitorBadgeModal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, onClose]);
 
-  // Lock body scroll safely without losing scroll position on mobile
+  // Kunci scroll latar belakang dengan `position: fixed` agar posisi scroll mobile/iOS tidak melompat
   useEffect(() => {
     if (!open) return;
     const scrollY = window.scrollY || window.pageYOffset;
@@ -98,7 +107,7 @@ export const VisitorBadgeModal = React.memo(function VisitorBadgeModal({
     const originalOverflow = document.body.style.overflow;
     const originalPaddingRight = document.body.style.paddingRight;
 
-    // Check if scrollbar exists to prevent layout shift
+    // Kompensasi lebar scrollbar desktop agar tata letak tidak bergeser (layout shift)
     const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
     if (scrollbarWidth > 0) {
       document.body.style.paddingRight = `${scrollbarWidth}px`;

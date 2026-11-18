@@ -1,3 +1,10 @@
+/**
+ * @module RouteAdminLayout
+ * @description Layout induk terlindungi untuk seluruh rute `/admin/*`.
+ * Bertanggung jawab memvalidasi token autentikasi via `supabase.auth.getUser()` ke server,
+ * memuat peran RBAC (`admin`, `security`, `staff`) untuk pembatasan rute, menjalankan timer
+ * auto-logout 30 menit idle, serta menyediakan `AdminRoleContext` dan modal profil mandiri.
+ */
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -60,6 +67,7 @@ const PAGE_TITLES: Record<string, string> = {
 import { AdminRoleContext, type AdminRoleContextType } from "@/hooks/useAdminRole";
 import { UserProfileModal } from "@/components/UserProfileModal";
 
+/** Daftar putih rute yang diizinkan untuk peran Security (pos keamanan) dan Staff (front desk). */
 const SECURITY_ALLOWED_ROUTES = [
   "/admin",
   "/admin/scan",
@@ -78,6 +86,9 @@ const STAFF_ALLOWED_ROUTES = [
   "/admin/profil",
 ];
 
+/**
+ * Komponen layout pembungkus panel admin & pos jaga dengan proteksi sesi serta RBAC.
+ */
 function AdminLayout() {
   const loc = useLocation();
   const nav = useNavigate();

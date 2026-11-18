@@ -1,3 +1,9 @@
+/**
+ * @module routes/admin.pengguna
+ * @description Halaman pengelolaan akun petugas & kontrol akses berbasis peran RBAC (`/admin/pengguna`).
+ * Memungkinkan admin membuat akun baru via RPC, sinkronisasi provider identitas, reset kata sandi kuat,
+ * mengubah nama profil, menghapus akun lain, dan toggle peran `admin`, `security`, atau `staff`.
+ */
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase, type AppRole } from "@/lib/supabase";
@@ -88,6 +94,9 @@ const AVAILABLE_ROLES: { role: AppRole; label: string; desc: string; badgeClass:
   },
 ];
 
+/**
+ * Komponen utama manajemen Pengguna & Hak Akses RBAC untuk Administrator.
+ */
 function UsersPage() {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [err, setErr] = useState("");
@@ -121,6 +130,7 @@ function UsersPage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [repairLoading, setRepairLoading] = useState(false);
 
+  /** Memuat seluruh akun beserta daftar perannya via RPC `list_users_with_roles`. */
   const fetchUsers = () => {
     supabase.rpc("list_users_with_roles").then(({ data, error }) => {
       if (error)
@@ -129,6 +139,10 @@ function UsersPage() {
     });
   };
 
+  /**
+   * Menyinkronkan catatan `auth.identities` bagi akun yang dibuat langsung di database
+   * agar provider `email` aktif dan dapat login via Supabase Auth.
+   */
   const handleRepairIdentities = async () => {
     setRepairLoading(true);
     try {
@@ -163,6 +177,7 @@ function UsersPage() {
     });
   }, []);
 
+  /** Memberi atau mencabut peran RBAC pada akun tertentu melalui RPC `set_user_role`. */
   const handleToggleRole = async (userId: string, role: AppRole, currentlyAssigned: boolean) => {
     const actionKey = `${userId}-${role}`;
     setLoadingRole(actionKey);
@@ -188,6 +203,10 @@ function UsersPage() {
     }
   };
 
+  /**
+   * Membuat akun petugas baru langsung dari dashboard admin via RPC `admin_create_user`,
+   * lalu memanggil `admin_repair_identities` agar identitas email siap dipakai login segera.
+   */
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!createEmail.trim()) {
@@ -276,6 +295,7 @@ function UsersPage() {
     }
   };
 
+  /** Memvalidasi kompleksitas sandi baru lalu mereset sandi akun target via RPC `admin_reset_user_password`. */
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!resetTarget) return;
@@ -320,6 +340,7 @@ function UsersPage() {
     }
   };
 
+  /** Menghapus permanen akun target via RPC `admin_delete_user` (tombol nonaktif untuk akun sendiri). */
   const handleDeleteUser = async () => {
     if (!deleteTarget) return;
     setDeleteLoading(true);

@@ -1,20 +1,29 @@
-// Captures the original Error out-of-band so server.ts can recover the stack
-// when h3 has already swallowed the throw into a generic 500 Response.
+/**
+ * Utilitas Penangkapan & Deskripsi Error SSR Out-of-Band (`src/lib/error-capture.ts`).
+ *
+ * Mengapa modul ini diperlukan:
+ * Runtime server `h3` menelan exception di dalam handler menjadi respons HTTP 500 JSON generik
+ * `{"status":500,"unhandled":true,"message":"HTTPError"}` tanpa stack trace. Modul ini
+ * membungkus `console.error` dan global error listener untuk menyimpan objek Error asli
+ * selama 5 detik sehingga `src/server.ts` dapat memulihkan detail error ke log server.
+ */
 
 let lastCapturedError: { error: unknown; at: number } | undefined;
 const TTL_MS = 5_000;
 
+/** Mencatat error terakhir beserta timestamp-nya ke buffer sementara di memori. */
 function record(error: unknown) {
   lastCapturedError = { error, at: Date.now() };
 }
 
-// h3's HTTPError serializes to {"status":500,"unhandled":true,"message":"HTTPError"} —
-// no stack, no cause — so a plain console.error(error) reaches the log pipeline with
-// the failure detail stripped. Expand Error-like args into a string that keeps the
-// message, stack, and the full cause chain.
+// Batasi kedalaman rantai `cause` dan panjang teks log agar tidak memicu memory/log overflow
 const CAUSE_DEPTH_LIMIT = 5;
 const DESCRIPTION_LENGTH_LIMIT = 8_000;
 
+/**
+ * Mengurai error (beserta rantai `cause` hingga 5 tingkat dan kode status HTTP) menjadi
+ * string deskriptif yang tetap terbaca meskipun melewati pipeline logging yang menyerialisasi objek.
+ */
 export function describeError(error: unknown): string {
   const parts: string[] = [];
   let current: unknown = error;
@@ -31,12 +40,14 @@ export function describeError(error: unknown): string {
   return parts.join("\n").slice(0, DESCRIPTION_LENGTH_LIMIT);
 }
 
+/** Mengekstrak properti `status` atau `statusCode` numerik jika ada pada objek Error. */
 function describeStatus(error: Error): string {
   const { status, statusCode } = error as { status?: unknown; statusCode?: unknown };
   const value = status ?? statusCode;
   return typeof value === "number" ? ` (status ${value})` : "";
 }
 
+/** Mengubah nilai non-Error menjadi string JSON secara aman terhadap circular reference. */
 function safeStringify(value: unknown): string {
   try {
     return JSON.stringify(value) ?? String(value);
@@ -49,9 +60,8 @@ function isErrorLike(value: unknown): value is Error {
   return value instanceof Error;
 }
 
-// Wrap console.error so errors logged by any layer — including h3's internal
-// unhandled-error logging, which this file cannot hook directly — are both
-// recorded for consumeLastCapturedError and expanded before serialization.
+// Bungkus `console.error` agar setiap Error dari lapisan mana pun (termasuk logging internal h3)
+// otomatis terekam ke `lastCapturedError` sekaligus diperluas stack/cause-nya sebelum dicetak.
 const originalConsoleError = console.error.bind(console);
 console.error = (...args: unknown[]) => {
   const expanded = args.map((arg) => {
@@ -69,6 +79,10 @@ if (typeof globalThis.addEventListener === "function") {
   );
 }
 
+/**
+ * Mengambil lalu menghapus error terakhir yang tertangkap (jika belum melewati TTL 5 detik).
+ * Digunakan oleh `src/server.ts` saat menormalkan respons 500 `HTTPError` milik h3.
+ */
 export function consumeLastCapturedError(): unknown {
   if (!lastCapturedError) return undefined;
   if (Date.now() - lastCapturedError.at > TTL_MS) {

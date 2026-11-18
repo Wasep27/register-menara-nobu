@@ -22,20 +22,26 @@ const NOBU_AVATAR_PALETTES = [
   { bg: "linear-gradient(135deg, #1f4e43, #123029)", border: "rgba(16, 213, 160, 0.3)" },
 ];
 
-/** Avatar dengan dukungan foto profil kustom (URL/Base64) dan fallback inisial bergradien Nobu. */
+/**
+ * Avatar pengguna dengan dukungan foto profil kustom (URL/DataURL Base64)
+ * dan fallback inisial 2 huruf bergradien warna korporat Menara Nobu.
+ */
 export function Avatar({
   name,
   src,
   size = "md",
   className = "",
 }: {
+  /** Nama pengguna untuk inisial fallback dan hash warna deterministik. */
   name: string;
+  /** URL/DataURL foto profil; jika null atau gagal dimuat, otomatis jatuh ke inisial. */
   src?: string | null;
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   className?: string;
 }) {
   const [imgError, setImgError] = useState(false);
 
+  // Reset status error setiap kali `src` diperbarui agar gambar baru langsung dicoba dimuat ulang
   useEffect(() => {
     setImgError(false);
   }, [src]);

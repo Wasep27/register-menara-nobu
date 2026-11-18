@@ -1,3 +1,8 @@
+/**
+ * @module routes/admin.feedback
+ * @description Halaman analitik Customer Satisfaction (CSAT) & manajemen ulasan tamu (`/admin/feedback`).
+ * Menampilkan skor rata-rata, distribusi bintang, tag aspek favorit, mode tampilan kartu/tabel, serta ekspor.
+ */
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -42,6 +47,9 @@ export const Route = createFileRoute("/admin/feedback")({
   component: AdminFeedbackPage,
 });
 
+/**
+ * Komponen utama halaman Feedback & Kepuasan Tamu untuk panel Admin.
+ */
 export function AdminFeedbackPage() {
   const { isAdmin } = useAdminRole();
   const [rows, setRows] = useState<GuestFeedback[]>([]);
@@ -50,12 +58,16 @@ export function AdminFeedbackPage() {
   const [filterRating, setFilterRating] = useState<number>(0);
   const [toDelete, setToDelete] = useState<GuestFeedback | null>(null);
 
-  // View Mode & Pagination State
+  // Mode tampilan (kartu/tabel) dan state paginasi sisi klien
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(12);
   const listTopRef = useRef<HTMLDivElement | null>(null);
 
+  /**
+   * Memuat data feedback dari Supabase, dengan fallback ke `localStorage`
+   * apabila tabel belum termigrasi atau akses tertahan oleh kebijakan RLS.
+   */
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -66,7 +78,7 @@ export function AdminFeedbackPage() {
         .limit(500);
 
       if (error) {
-        // Fallback to local storage if table is not yet migrated or RLS restricted
+        // Fallback ke penyimpanan lokal bila tabel database belum siap atau terkena restriksi RLS
         const local = JSON.parse(localStorage.getItem("nobu_guest_feedback") || "[]");
         const formattedLocal: GuestFeedback[] = local.map(
           (item: Record<string, unknown>, idx: number) => ({
@@ -132,10 +144,11 @@ export function AdminFeedbackPage() {
     }
   };
 
+  /** Menghapus ulasan dari database (jika berformat UUID) sekaligus sinkronisasi hapus di localStorage. */
   const handleDelete = async () => {
     if (!toDelete) return;
 
-    // Check if id is UUID (from database)
+    // ID dengan tanda hubung menandakan UUID asli dari PostgreSQL Supabase (bukan indeks fallback lokal)
     const isDb = toDelete.id.includes("-");
     if (isDb) {
       const { error } = await supabase.from("guest_feedback").delete().eq("id", toDelete.id);
@@ -145,7 +158,7 @@ export function AdminFeedbackPage() {
       }
     }
 
-    // Also remove from localStorage if present
+    // Hapus juga salinan lokal bila data tersebut sebelumnya tersimpan di fallback localStorage
     try {
       const local = JSON.parse(localStorage.getItem("nobu_guest_feedback") || "[]");
       const updated = local.filter(
@@ -154,7 +167,7 @@ export function AdminFeedbackPage() {
       );
       localStorage.setItem("nobu_guest_feedback", JSON.stringify(updated));
     } catch {
-      // ignore
+      // Abaikan kegagalan parsing storage lokal
     }
 
     toast.success("Feedback berhasil dihapus");
@@ -162,7 +175,7 @@ export function AdminFeedbackPage() {
     load();
   };
 
-  // Metrics calculation
+  // Agregasi metrik CSAT (rata-rata rating, persentase puas 4-5 bintang, tag terpopuler, durasi isi)
   const metrics = useMemo(() => {
     if (rows.length === 0) {
       return {

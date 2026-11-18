@@ -1,3 +1,9 @@
+/**
+ * @module routes/admin.aktivitas
+ * @description Halaman Log Audit Aktivitas & Pelacakan Real-Time Menara Nobu (`/admin/aktivitas`).
+ * Mendengarkan perubahan Postgres secara real-time (`activity_logs`, `guests`, `guest_feedback`),
+ * menyusun log sintetis bila tabel audit kosong/belum siap, dan mendukung tampilan timeline/tabel serta ekspor.
+ */
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -56,6 +62,9 @@ export const Route = createFileRoute("/admin/aktivitas")({
   component: AdminActivityLogPage,
 });
 
+/**
+ * Komponen utama halaman Log Audit & Aktivitas Real-Time untuk panel Admin.
+ */
 export function AdminActivityLogPage() {
   const { isAdmin } = useAdminRole();
   const [logs, setLogs] = useState<ActivityLog[]>([]);
@@ -72,12 +81,12 @@ export function AdminActivityLogPage() {
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
   const [toClearLogs, setToClearLogs] = useState(false);
 
-  // Pagination State & Scrolling Anchor
+  // State paginasi sisi klien & referensi anchor gulir otomatis ke atas daftar
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(15);
   const listTopRef = useRef<HTMLDivElement | null>(null);
 
-  // Auto reset to page 1 on filter or search changes
+  // Kembalikan ke halaman 1 setiap kali filter waktu, kategori, pencarian, atau ukuran halaman berubah
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedCategory, timeFilter, startDate, endDate, searchQuery, pageSize]);
@@ -89,7 +98,10 @@ export function AdminActivityLogPage() {
     }
   };
 
-  // Load activities from DB with graceful synthetic fallback
+  /**
+   * Memuat riwayat aktivitas dari tabel `activity_logs` dengan fallback sintetis dari tabel
+   * `guests`, `guest_feedback`, dan `employees` agar feed audit tetap informatif pada instalasi baru.
+   */
   const loadActivities = useCallback(async () => {
     setLoading(true);
     try {
@@ -212,7 +224,7 @@ export function AdminActivityLogPage() {
     loadActivities();
   }, [loadActivities]);
 
-  // Real-time listener on activity_logs and guests table
+  // Langganan kanal Supabase Realtime untuk INSERT pada `activity_logs`, `guests`, dan `guest_feedback`
   useEffect(() => {
     const channel = supabase
       .channel("admin-realtime-activity")
@@ -419,6 +431,7 @@ export function AdminActivityLogPage() {
     toast.success("Log aktivitas berhasil diekspor ke CSV");
   };
 
+  /** Membersihkan seluruh baris pada tabel `activity_logs` melalui filter ketidaksetaraan UUID nol. */
   const handleClearLogs = async () => {
     try {
       await supabase
@@ -435,6 +448,7 @@ export function AdminActivityLogPage() {
     }
   };
 
+  /** Mengembalikan label, gaya badge Tailwind, dan ikon kategori aktivitas untuk tampilan UI. */
   const getCategoryBadge = (category: string) => {
     switch (category) {
       case "registration":
@@ -470,6 +484,7 @@ export function AdminActivityLogPage() {
     }
   };
 
+  /** Menentukan status visual (Check-in, Check-out, Pre-registered, dll.) berdasarkan aksi, judul, dan detail log. */
   const getActivityStatusBadge = (log: ActivityLog) => {
     const actionUpper = (log.action || "").toUpperCase();
     const titleLower = (log.title || "").toLowerCase();

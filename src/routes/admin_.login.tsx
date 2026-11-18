@@ -1,3 +1,10 @@
+/**
+ * @module RouteAdminLogin
+ * @description Halaman login petugas gedung (Admin, Security, Staff) pada rute `/admin/login`
+ * (menggunakan konvensi `admin_.login.tsx` agar tidak memakai layout sidebar `/admin`).
+ * Dilengkapi penguncian brute-force sisi server (`login_lock_seconds` / `record_login_attempt`)
+ * serta pesan reset password netral untuk mencegah enumerasi akun email.
+ */
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
@@ -23,6 +30,7 @@ export const Route = createFileRoute("/admin_/login")({
   component: Login,
 });
 
+/** Formulir login petugas dengan verifikasi sesi awal, rate-limiting percobaan gagal, dan lupa password. */
 function Login() {
   const nav = useNavigate();
   const [email, setEmail] = useState("");
@@ -32,7 +40,7 @@ function Login() {
   const [info, setInfo] = useState("");
   const [checking, setChecking] = useState(true);
 
-  // Jika sudah login, langsung alihkan ke dashboard agar tidak bingung
+  // Jika sudah memiliki sesi valid, langsung alihkan ke dashboard agar tidak bingung
   useEffect(() => {
     let active = true;
     supabase.auth.getUser().then(({ data }) => {
@@ -53,6 +61,7 @@ function Login() {
       return setErr("Format email tidak valid, contoh admin@nobu.id");
     if (!password) return setErr("Password wajib diisi.");
     setLoading(true);
+    // Periksa status kunci brute-force (maks 5 gagal dalam 15 menit -> kunci 15 menit)
     const { data: lock } = await supabase.rpc("login_lock_seconds", { _email: email });
     if (typeof lock === "number" && lock > 0) {
       setLoading(false);
@@ -61,6 +70,7 @@ function Login() {
       );
     }
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    // Catat hasil percobaan login ke tabel `login_attempts` di server untuk audit & rate-limit
     await supabase.rpc("record_login_attempt", { _email: email.trim(), _success: !error });
     setLoading(false);
     if (error) {
@@ -90,6 +100,7 @@ function Login() {
     await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
+    // Selalu tampilkan pesan netral agar penyerang tidak dapat mendeteksi apakah email terdaftar (anti-enumerasi)
     setInfo("Jika email terdaftar, tautan untuk mengatur ulang password sudah dikirim.");
   };
   if (checking)

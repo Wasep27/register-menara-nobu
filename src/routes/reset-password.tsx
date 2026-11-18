@@ -1,3 +1,9 @@
+/**
+ * @module RouteResetPassword
+ * @description Halaman pemulihan dan penggantian kata sandi (`/reset-password`).
+ * Memvalidasi event `PASSWORD_RECOVERY` atau sesi aktif dari tautan email Supabase Auth,
+ * menerapkan standar kompleksitas kata sandi 4 kriteria, serta melakukan `signOut()` pasca-ubah sandi.
+ */
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -36,6 +42,7 @@ export const Route = createFileRoute("/reset-password")({
   component: ResetPasswordPage,
 });
 
+/** Komponen pemulihan kata sandi dengan generator sandi kuat dan indikator kompleksitas. */
 function ResetPasswordPage() {
   const navigate = useNavigate();
   const [ready, setReady] = useState(false);
@@ -46,6 +53,7 @@ function ResetPasswordPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
+  // Deteksi sesi pemulihan dari fragment/token URL Supabase Auth sebelum membuka form sandi baru
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") {

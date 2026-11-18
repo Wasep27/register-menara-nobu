@@ -1,3 +1,8 @@
+/**
+ * @module test/validation.test
+ * @description Pengujian unit untuk skema validasi Zod (`guestSchema`, `employeeSchema`, `purposeSchema`),
+ * meliputi format telepon seluler, larangan jadwal masa lalu, tujuan umum tanpa host, dan validasi email.
+ */
 import { describe, it, expect } from "vitest";
 import { guestSchema, employeeSchema, purposeSchema } from "@/lib/validation";
 

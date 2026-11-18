@@ -1,3 +1,8 @@
+/**
+ * @module RegistrationSuccess
+ * @description Layar konfirmasi pasca-registrasi tamu yang menampilkan QR/Barcode pass digital,
+ * opsi cetak/PDF badge lanyard, formulir umpan balik kepuasan (CSAT), dan timer reset kios 30 detik.
+ */
 import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -28,6 +33,7 @@ import { downloadBadgeAsPng } from "@/lib/badge-download";
 import { getNowWibDateString, getNowWibTimeString } from "@/lib/date-utils";
 import { toast } from "sonner";
 
+/** Data ringkasan kunjungan yang ditampilkan setelah tamu berhasil mendaftar. */
 export type RegistrationSuccessData = {
   id?: string | undefined;
   name: string;
@@ -39,6 +45,7 @@ export type RegistrationSuccessData = {
   checkInTime: string;
   checkInDate?: string | undefined;
   badgeNumber?: string | undefined;
+  /** Durasi pengisian formulir (detik) untuk metrik analitik kecepatan registrasi. */
   fillDurationSeconds?: number | undefined;
 };
 
@@ -47,8 +54,12 @@ interface RegistrationSuccessProps {
   onReset: () => void;
 }
 
+/**
+ * Halaman sukses registrasi tamu dengan pass digital, pengumpulan ulasan CSAT,
+ * serta hitung mundur otomatis kembali ke formulir kosong demi privasi di kios lobi.
+ */
 export function RegistrationSuccess({ data, onReset }: RegistrationSuccessProps) {
-  // Feedback state
+  // State formulir evaluasi kepuasan tamu (CSAT)
   const [rating, setRating] = useState<number>(5);
   const [hoverRating, setHoverRating] = useState<number | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>(["⚡ Sangat Cepat", "📝 Form Jelas"]);
@@ -59,7 +70,7 @@ export function RegistrationSuccess({ data, onReset }: RegistrationSuccessProps)
   const [copiedCode, setCopiedCode] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
 
-  // Countdown timer for auto-reset (starts at 30 seconds, pauses if user interacts)
+  // Hitung mundur reset otomatis 30 detik (langsung dijeda bila tamu berinteraksi)
   const [countdown, setCountdown] = useState(30);
   const [isPaused, setIsPaused] = useState(false);
 
@@ -162,12 +173,12 @@ export function RegistrationSuccess({ data, onReset }: RegistrationSuccessProps)
         submitted_at: new Date().toISOString(),
       };
 
-      // Store in localStorage history
+      // Simpan riwayat lokal ke localStorage (maks 50 entri) sekaligus kirim ke RPC Supabase
       const existing = JSON.parse(localStorage.getItem("nobu_guest_feedback") || "[]");
       existing.unshift(feedbackPayload);
       localStorage.setItem("nobu_guest_feedback", JSON.stringify(existing.slice(0, 50)));
 
-      // Call database RPC
+      // Kirim ke backend via RPC aman (tanpa mengekspos tabel secara publik)
       void submitGuestFeedback({
         guest_name: data.name,
         institution: data.institution,
@@ -177,7 +188,7 @@ export function RegistrationSuccess({ data, onReset }: RegistrationSuccessProps)
         fill_duration_seconds: data.fillDurationSeconds || 0,
       });
     } catch {
-      // ignore
+      // Abaikan kegagalan localStorage pada mode private browsing
     }
 
     setTimeout(() => {

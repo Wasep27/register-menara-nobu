@@ -1,3 +1,8 @@
+/**
+ * @module VisitorQrCodePass
+ * @description Komponen kartu akses digital tamu yang mendukung peralihan QR Code 2D dan
+ * Barcode Code 39 1D, pengunduhan PNG, salin kode, serta mode layar penuh untuk pemindaian di lobi.
+ */
 import React, { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -18,10 +23,14 @@ import { downloadBadgeAsPng } from "@/lib/badge-download";
 import { getNowWibDateString, getNowWibTimeString } from "@/lib/date-utils";
 import { toast } from "sonner";
 
+/** Properti komponen kartu QR pass digital tamu `VisitorQrCodePass`. */
 export interface VisitorQrCodePassProps {
   id?: string | undefined;
+  /** Nama lengkap pengunjung. */
   name: string;
+  /** Nama instansi atau perusahaan asal tamu. */
   institution: string;
+  /** Nomor pass unik (format `VTR-YYMMDD-XXXX`). */
   badgeCode: string;
   checkInTime?: string | undefined;
   checkInDate?: string | undefined;
@@ -32,7 +41,7 @@ export interface VisitorQrCodePassProps {
 }
 
 /**
- * Komponen Khusus Penghasil QR Code & ID Registrasi Tamu
+ * Komponen Khusus Penghasil QR Code & ID Registrasi Tamu.
  * Dioptimalkan untuk pemindaian cepat di ponsel oleh staf lobi, resepsionis, atau turnstile gate.
  */
 export function VisitorQrCodePass({

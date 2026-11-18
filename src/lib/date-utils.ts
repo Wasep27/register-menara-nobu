@@ -1,8 +1,14 @@
 /**
- * Format tanggal dan waktu standar Indonesia Barat (WIB).
- * Menghindari duplikasi pemanggilan Intl.DateTimeFormat dan toLocaleDateString/Time across components.
+ * Utilitas Pemformatan Tanggal & Waktu Standar Indonesia Barat (`Asia/Jakarta` / WIB).
+ *
+ * Memusatkan seluruh konversi zona waktu agar SSR dan perangkat klien di zona waktu berbeda
+ * tetap menampilkan jam/tanggal lobi Menara Nobu secara seragam dalam WIB.
  */
 
+/**
+ * Mengurai input tanggal (`Date`, ISO string, atau timestamp) secara aman.
+ * Mengembalikan `null` jika input kosong atau tidak menghasilkan tanggal valid (`NaN`).
+ */
 export function parseValidDate(input: Date | string | number | null | undefined): Date | null {
   if (!input) return null;
   const d = new Date(input);
@@ -10,7 +16,7 @@ export function parseValidDate(input: Date | string | number | null | undefined)
 }
 
 /**
- * Ucapan salam standar waktu Indonesia (WIB).
+ * Menghasilkan ucapan salam sesuai jam waktu lokal (Pagi < 11, Siang < 15, Sore < 19, Malam >= 19).
  */
 export function getGreeting(): string {
   const h = new Date().getHours();
@@ -21,7 +27,7 @@ export function getGreeting(): string {
 }
 
 /**
- * Format jam dan menit standar: "14:30" (opsional detik: "14:30:45")
+ * Format jam dan menit standar WIB: `"14:30"` (atau `"14:30:45"` bila `includeSeconds = true`).
  */
 export function formatWibTime(
   input: Date | string | number | null | undefined,

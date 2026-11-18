@@ -1,3 +1,8 @@
+/**
+ * @module test/dashboard-analytics.test
+ * @description Pengujian unit kalkulasi analitik dashboard: deteksi jam sibuk lobi (`hourlyTraffic`),
+ * agregasi departemen penerima tamu, penyusunan insight manajemen gedung, serta selisih persentase periode.
+ */
 import { describe, it, expect } from "vitest";
 import { calculateDashboardStats, calculatePeriodDiff } from "@/lib/dashboard-analytics";
 import type { Guest } from "@/lib/supabase";

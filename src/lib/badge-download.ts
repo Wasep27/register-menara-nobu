@@ -1,6 +1,13 @@
+/**
+ * Ekspor Kartu Tamu PNG Beresolusi Tinggi (`src/lib/badge-download.ts`).
+ *
+ * Merender kartu akses tamu secara langsung di HTML5 Canvas dengan skala Retina 2x
+ * (`ctx.scale(2, 2)`), menggabungkan logo resmi Menara Nobu, QR 2D, dan barcode 1D Code 39.
+ */
 import { encodeCode39, generateQrMatrix } from "@/lib/barcode";
 import logoUrl from "@/assets/logo.png";
 
+/** Data masukan yang diperlukan untuk mencetak kartu tamu dalam format gambar PNG. */
 export interface BadgeDownloadPayload {
   name: string;
   institution: string;
@@ -9,6 +16,7 @@ export interface BadgeDownloadPayload {
   checkInDate: string;
   purposeName?: string | undefined;
   employeeName?: string | undefined;
+  /** `"lanyard"` (vertikal ID holder) atau `"compact"` (stiker horizontal resepsionis). */
   format?: "lanyard" | "compact" | undefined;
 }
 

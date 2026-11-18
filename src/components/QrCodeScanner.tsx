@@ -1,3 +1,9 @@
+/**
+ * @module QrCodeScanner
+ * @description Komponen pemindai QR Code dan Barcode tamu berbasis kamera (`jsQR`), unggah berkas foto,
+ * serta input manual kode pass. Dilengkapi optimasi frame throttling agar hemat CPU/baterai dan
+ * integrasi langsung dengan RPC verifikasi serta check-in cepat pos keamanan.
+ */
 import React, { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import jsQR from "jsqr";
 import {
@@ -29,13 +35,22 @@ import { downloadBadgeAsPng } from "@/lib/badge-download";
 import { getNowWibDateString, getNowWibTimeString } from "@/lib/date-utils";
 import { toast } from "sonner";
 
+/** Properti komponen pemindai QR `QrCodeScanner`. */
 export interface QrCodeScannerProps {
+  /** Callback dipanggil setelah kode pass berhasil ditemukan dan diverifikasi. */
   onSuccess?: (result: GuestStatusResult) => void;
+  /** Callback menutup pemindai saat dipakai sebagai modal. */
   onClose?: () => void;
+  /** Menyesuaikan tata letak ketika dirender di dalam dialog modal. */
   isModal?: boolean;
+  /** Konteks pengguna pemindai (`security`, `admin`, atau `kiosk` lobi). */
   roleMode?: "security" | "admin" | "kiosk";
 }
 
+/**
+ * Pemindai QR/Pass tamu real-time dengan dukungan kamera depan/belakang, lampu senter,
+ * pembacaan file gambar, dan konfirmasi check-in cepat.
+ */
 export function QrCodeScanner({
   onSuccess,
   onClose,
@@ -64,7 +79,7 @@ export function QrCodeScanner({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const lastScanTimeRef = useRef<number>(0);
 
-  // Audio feedback when barcode or QR is recognized
+  // Umpan balik bunyi bip singkat saat kode QR berhasil terbaca
   const playBeep = () => {
     try {
       const AudioCtx =
@@ -83,11 +98,11 @@ export function QrCodeScanner({
       osc.start(ctx.currentTime);
       osc.stop(ctx.currentTime + 0.15);
     } catch {
-      // AudioContext unavailable or blocked
+      // Abaikan bila Web Audio API diblokir browser tanpa interaksi user
     }
   };
 
-  // Stop active camera media stream
+  // Hentikan stream MediaTrack kamera dan loop animasi saat berpindah/tutup
   const stopCamera = useCallback(() => {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
@@ -104,7 +119,7 @@ export function QrCodeScanner({
     setHasTorch(false);
   }, []);
 
-  // Parse scanned raw string
+  // Ekstrak kode pass dari format payload `MENARA-NOBU:KODE:NAMA:INSTANSI`, query URL `?code=`, atau teks mentah
   const parseRawQrCode = (
     raw: string,
   ): { code: string; name?: string | undefined; institution?: string | undefined } => {
@@ -123,13 +138,13 @@ export function QrCodeScanner({
         const c = url.searchParams.get("code");
         if (c) return { code: c };
       } catch {
-        /* ignore */
+        /* abaikan format URL tidak valid */
       }
     }
     return { code: trimmed };
   };
 
-  // Process code verification
+  // Verifikasi kode pass ke database via RPC; gunakan metadata QR lokal sebagai fallback jika offline
   const processCode = useCallback(
     async (rawString: string) => {
       if (isProcessingScan) return;
@@ -139,7 +154,7 @@ export function QrCodeScanner({
         try {
           navigator.vibrate(80);
         } catch {
-          /* ignore */
+          /* abaikan bila perangkat tidak mendukung getar */
         }
       }
 
@@ -148,14 +163,14 @@ export function QrCodeScanner({
       setLoadingSearch(true);
 
       try {
-        // Cek data via secure RPC
+        // Cek data via RPC aman (hanya membaca baris pass yang cocok)
         const res = await checkGuestStatus(code);
         if (res.found) {
           setScanResult(res);
           onSuccess?.(res);
           toast.success(`Pass terverifikasi: ${res.name}`);
         } else {
-          // Fallback parsing jika DB offline atau offline simulation
+          // Fallback parsing jika DB sedang offline atau mode simulasi lokal
           if (parsedName) {
             const fallbackRes: GuestStatusResult = {
               found: true,
@@ -194,7 +209,7 @@ export function QrCodeScanner({
     [isProcessingScan, onSuccess, stopCamera],
   );
 
-  // Scanning loop on video element — throttled to ~8-10 scans/sec to prevent CPU/battery strain
+  // Loop pemindaian frame video — di-throttle ke ~9 FPS agar CPU & baterai perangkat tetap hemat
   const scanFrame = useCallback(() => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -204,13 +219,13 @@ export function QrCodeScanner({
     }
 
     const now = performance.now();
-    // Process jsQR at ~110ms intervals (~9 scans per second) instead of 60fps to save >80% CPU
+    // Jalankan jsQR setiap >=110ms (~9 pemindaian/detik), bukan 60fps, menghemat >80% beban CPU
     if (now - lastScanTimeRef.current >= 110) {
       lastScanTimeRef.current = now;
 
       const ctx = canvas.getContext("2d", { willReadFrequently: true });
       if (ctx) {
-        // Optimal scaling for barcode/QR: limit max dimension to 720px for 4x faster pixel extraction
+        // Batasi dimensi maksimum canvas ke 720px untuk mempercepat ekstraksi piksel ~4x
         const scale = Math.min(1, 720 / Math.max(video.videoWidth, video.videoHeight));
         const w = Math.round(video.videoWidth * scale);
         const h = Math.round(video.videoHeight * scale);

@@ -1,5 +1,17 @@
+/**
+ * Klien Supabase & Definisi Tipe Domain (`src/lib/supabase.ts`).
+ *
+ * Arsitektur & Best Practice Keamanan:
+ * - Seluruh akses data berjalan langsung dari browser menggunakan `anon / publishable key` (tanpa server functions
+ *   maupun `service_role` key di frontend).
+ * - Autentikasi memakai PKCE flow (`flowType: "pkce"`) dengan `storageKey: "nobu-auth"` agar aman untuk reset password
+ *   dan penyegaran token otomatis.
+ * - Penulisan data oleh tamu anonim (registrasi, feedback, cek status pass) wajib melalui fungsi RPC `SECURITY DEFINER`
+ *   di Supabase sehingga tabel `guests` tetap tertutup dari pembacaan publik.
+ */
 import { createClient } from "@supabase/supabase-js";
 
+/** URL proyek Supabase aktif (diambil dari env `VITE_SUPABASE_URL` saat build/runtime). */
 export const supabaseUrl =
   import.meta.env["VITE_SUPABASE_URL"] || "https://uugqkbwpjlprtxnjdpcm.supabase.co";
 const key =
@@ -8,28 +20,36 @@ const key =
 
 const isBrowser = typeof window !== "undefined";
 
+/** Instance klien Supabase tunggal untuk seluruh komponen dan rute aplikasi. */
 export const supabase = createClient(supabaseUrl, key, {
   auth: {
+    // Nonaktifkan persistensi/deteksi URL di lingkungan SSR agar tidak menyentuh `window.localStorage`
     persistSession: isBrowser,
-    autoRefreshToken: isBrowser, // perbarui token sebelum kedaluwarsa
-    detectSessionInUrl: isBrowser, // tautan reset password
+    autoRefreshToken: isBrowser, // Perbarui token JWT otomatis sebelum kedaluwarsa
+    detectSessionInUrl: isBrowser, // Tangkap token PKCE dari tautan email reset password
     flowType: "pkce",
     storageKey: "nobu-auth",
     storage: isBrowser ? window.localStorage : undefined,
   },
 });
 
-/** Keluar dari perangkat ini dan bersihkan data sementara. */
+/** Keluar dari sesi di perangkat/browser ini dan bersihkan cache `sessionStorage` sementara. */
 export async function signOutLocal() {
   await supabase.auth.signOut({ scope: "local" });
   try {
     sessionStorage.clear();
   } catch {
-    /* abaikan */
+    /* abaikan jika browser membatasi akses sessionStorage */
   }
 }
 
-/** Keluar otomatis setelah tidak ada aktivitas. Mengembalikan fungsi pembersih. */
+/**
+ * Mengaktifkan timer keluar otomatis (*idle logout*) setelah tidak ada aktivitas pengguna.
+ *
+ * @param onTimeout Callback yang dijalankan saat batas waktu tidak aktif tercapai.
+ * @param minutes Batas durasi tidak aktif dalam menit (default 30 menit).
+ * @returns Fungsi pembersih untuk melepas event listener dan timer saat komponen unmount.
+ */
 export function startIdleLogout(onTimeout: () => void, minutes = 30) {
   let t: ReturnType<typeof setTimeout>;
   const reset = () => {
@@ -45,10 +65,16 @@ export function startIdleLogout(onTimeout: () => void, minutes = 30) {
   };
 }
 
+/** Peran akses resmi pada sistem RBAC Menara Nobu (disimpan di tabel terpisah `user_roles`). */
 export type AppRole = "admin" | "security" | "staff";
 
+/** Data master karyawan / host penerima tamu. */
 export type Employee = { id: string; name: string; department: string | null; is_active: boolean };
+
+/** Data master kategori tujuan / keperluan kunjungan. */
 export type Purpose = { id: string; name: string; is_active: boolean };
+
+/** Entitas catatan kunjungan tamu beserta relasi opsional karyawan dan tujuan kunjungan. */
 export type Guest = {
   id: string;
   name: string;
@@ -64,6 +90,7 @@ export type Guest = {
   visit_purposes?: { name: string } | null;
 };
 
+/** Entitas ulasan kepuasan tamu (CSAT) setelah menyelesaikan registrasi. */
 export type GuestFeedback = {
   id: string;
   guest_name: string | null;
@@ -75,6 +102,11 @@ export type GuestFeedback = {
   created_at: string;
 };
 
+/**
+ * Mengirim feedback kepuasan tamu secara anonim lewat RPC `submit_guest_feedback`.
+ * Jika RPC belum tersedia (misalnya skema belum dimigrasi), fungsi mengembalikan `{ success: false }`
+ * agar UI tetap bisa menyimpan salinan lokal di `localStorage`.
+ */
 export async function submitGuestFeedback(payload: {
   guest_name?: string;
   institution?: string;
@@ -98,6 +130,7 @@ export async function submitGuestFeedback(payload: {
   }
 }
 
+/** Entitas log audit sistem dan aktivitas lobi real-time (`activity_logs`). */
 export type ActivityLog = {
   id: string;
   category: "registration" | "master_data" | "security" | "feedback" | "system";
@@ -110,6 +143,7 @@ export type ActivityLog = {
   created_at: string;
 };
 
+/** Hasil verifikasi atau pelacakan status tiket / pass tamu berdasarkan kode badge atau UUID. */
 export type GuestStatusResult = {
   found: boolean;
   id?: string | undefined;
@@ -127,6 +161,10 @@ export type GuestStatusResult = {
   error?: string | undefined;
 };
 
+/**
+ * Memeriksa status tiket/kunjungan tamu menggunakan kode badge (mis. `VTR-001`) atau ID tiket
+ * melalui RPC publik aman `check_guest_status` tanpa mengekspos daftar tamu lain.
+ */
 export async function checkGuestStatus(code: string): Promise<GuestStatusResult> {
   try {
     const { data, error } = await supabase.rpc("check_guest_status", { _code: code });
@@ -140,6 +178,10 @@ export async function checkGuestStatus(code: string): Promise<GuestStatusResult>
   }
 }
 
+/**
+ * Memproses check-in atau check-out cepat di Pos Keamanan / Resepsionis dari hasil pindai QR/Barcode
+ * menggunakan fungsi RPC `quick_checkin_by_code`.
+ */
 export async function quickCheckInByCode(code: string): Promise<GuestStatusResult> {
   try {
     const { data, error } = await supabase.rpc("quick_checkin_by_code", { _code: code });

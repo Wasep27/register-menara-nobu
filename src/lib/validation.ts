@@ -1,7 +1,20 @@
+/**
+ * Skema Validasi Formulir Terpusat Berbasis Zod (`src/lib/validation.ts`).
+ *
+ * Digunakan bersama oleh formulir registrasi tamu, manajemen master karyawan/tujuan,
+ * serta diuji di `src/test/validation.test.ts` agar aturan bisnis frontend selalu konsisten
+ * dengan validasi RPC di sisi database Supabase.
+ */
 import { z } from "zod";
 
+/** Pola Unicode huruf latin/internasional serta tanda baca nama wajar (tanpa angka/simbol berbahaya). */
 const NAME_RE = /^[\p{L}][\p{L} .,'-]*$/u;
 
+/**
+ * Skema validasi formulir registrasi kunjungan tamu:
+ * - Memvalidasi format nama, instansi, nomor HP Indonesia (`+62`/`62`/`08...`), tujuan wajib,
+ *   serta jadwal kunjungan opsional (toleransi 5 menit ke belakang hingga maks 180 hari ke depan).
+ */
 export const guestSchema = z.object({
   name: z
     .string()
@@ -39,6 +52,7 @@ export const guestSchema = z.object({
   is_important: z.string().optional(),
 });
 
+/** Skema validasi data master karyawan / host penerima tamu. */
 export const employeeSchema = z.object({
   name: z
     .string()
@@ -58,6 +72,7 @@ export const employeeSchema = z.object({
     ),
 });
 
+/** Skema validasi data master kategori tujuan / keperluan kunjungan. */
 export const purposeSchema = z.object({
   name: z
     .string()
@@ -67,6 +82,10 @@ export const purposeSchema = z.object({
     .max(100, "Nama tujuan maksimal 100 karakter"),
 });
 
+/**
+ * Mengonversi array `ZodIssue` menjadi kamus `{ [namaField]: pesanErrorPertama }`
+ * agar UI formulir langsung menampilkan pesan error paling relevan di bawah masing-masing input.
+ */
 export function fieldErrors(issues: z.ZodIssue[]) {
   const out: Record<string, string> = {};
   for (const i of issues) {

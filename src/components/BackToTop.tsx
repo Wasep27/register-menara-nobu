@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { ArrowUp } from "lucide-react";
 
+/**
+ * Tombol mengambang "Kembali ke Atas" dengan indikator lingkaran progres baca (`strokeDashoffset`).
+ * Muncul setelah pengguna menggulir > 400px, menghormati `prefers-reduced-motion`, dan
+ * mengembalikan fokus aksesibilitas ke elemen `#konten` setelah scroll ke atas.
+ */
 export function BackToTop() {
   const [show, setShow] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -16,6 +21,7 @@ export function BackToTop() {
     return () => window.removeEventListener("scroll", on);
   }, []);
 
+  // Keliling lingkaran SVG (r = 22) untuk menghitung panjang garis progres baca
   const c = 2 * Math.PI * 22;
   return (
     <button

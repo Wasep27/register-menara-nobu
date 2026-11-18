@@ -1,3 +1,9 @@
+/**
+ * @module routes/index
+ * @description Halaman beranda publik (`/`) Buku Tamu Digital Menara Nobu.
+ * Menampilkan hero banner dengan `HeroCarousel`, banner instalasi PWA, keunggulan fitur,
+ * alur 3 langkah, ajakan registrasi (CTA), serta daftar pertanyaan umum (FAQ).
+ */
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   BookOpen,
@@ -123,6 +129,9 @@ const faqs = [
   },
 ];
 
+/**
+ * Komponen halaman beranda utama Menara Nobu dengan bagian fitur, cara kerja, CTA registrasi, dan FAQ.
+ */
 function Landing() {
   return (
     <div className="min-h-screen overflow-x-clip bg-background">

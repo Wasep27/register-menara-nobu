@@ -1,3 +1,12 @@
+/**
+ * Modul Ekspor Laporan & Dokumen Cetak Korporat (`src/lib/export-utils.ts`).
+ *
+ * Menyediakan fungsi ekspor siap-produksi untuk:
+ * 1. `exportToExcel`: Spreadsheet `.xlsx` multi-sheet dengan kop logo, kartu KPI, dan grafik in-cell.
+ * 2. `exportToPdf`: Dokumen PDF korporat A4 berheader/footer nomor halaman otomatis.
+ * 3. `exportBadgePassPdf`: Kartu Visitor Pass Lanyard (95x135mm) atau Compact (60x90mm).
+ * 4. `exportDailyVisitLogPdf`: Log keamanan harian A4 Landscape lengkap dengan kolom paraf tiga pihak.
+ */
 import ExcelJS from "exceljs";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";

@@ -2,11 +2,17 @@ import React, { useState } from "react";
 import { Download, Smartphone, X, CheckCircle2, Share } from "lucide-react";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
 
+/** Properti komponen tombol/banner instalasi PWA. */
 interface PWAInstallButtonProps {
+  /** Tampilan tombol: badge ringkas di header atau banner penuh di halaman. */
   variant?: "badge" | "button" | "menu" | "banner";
   className?: string;
 }
 
+/**
+ * Tombol atau banner instalasi Progressive Web App (PWA) lintas perangkat.
+ * Otomatis bersembunyi jika sudah berjalan dalam mode Standalone atau browser belum siap install.
+ */
 export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
   variant = "badge",
   className = "",

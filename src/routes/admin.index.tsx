@@ -1,3 +1,9 @@
+/**
+ * @module routes/admin.index
+ * @description Halaman utama Dashboard Admin Menara Nobu (`/admin`) yang menyesuaikan tampilan
+ * berdasarkan peran RBAC pengguna (`admin`, `staff`, atau `security`), lengkap dengan jam WIB real-time,
+ * metrik KPI, grafik tren Recharts, dan rekomendasi manajemen gedung.
+ */
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { memo, useEffect, useMemo, useState } from "react";
 import {
@@ -56,6 +62,10 @@ const periods = [
 const PRIMARY = "var(--primary)";
 const BRAND = "var(--brand)";
 
+/**
+ * Komponen jam real-time WIB yang dibungkus `React.memo` dan menjeda pembaruan saat tab tersembunyi
+ * (`document.hidden`) agar tick setiap detik tidak memicu re-render ulang grafik berat di Dashboard.
+ */
 const LiveWibClock = memo(function LiveWibClock() {
   const [clock, setClock] = useState<Date>(new Date());
 
@@ -93,6 +103,9 @@ const LiveWibClock = memo(function LiveWibClock() {
   );
 });
 
+/**
+ * Komponen utama Dashboard Analitik & Pos Operasional yang beradaptasi terhadap peran RBAC.
+ */
 function Dashboard() {
   const { isAdmin, isSecurity, isStaff } = useAdminRole();
   const [days, setDays] = useState(7);
@@ -115,6 +128,7 @@ function Dashboard() {
   const [rows, setRows] = useState<Guest[]>([]);
   const [prevCount, setPrevCount] = useState(0);
 
+  // Tarik data tamu periode berjalan dan hitungan periode pembanding sebelumnya secara paralel
   useEffect(() => {
     setLoading(true);
     const start = new Date();
@@ -964,6 +978,7 @@ function Dashboard() {
   );
 }
 
+/** Skeleton shimmer placeholder selama data dashboard dimuat dari Supabase. */
 function DashboardLoadingSkeleton() {
   return (
     <div className="space-y-6" aria-busy="true" aria-label="Memuat data dashboard">
@@ -1027,6 +1042,7 @@ function DashboardLoadingSkeleton() {
   );
 }
 
+/** Grafik batang horizontal generik untuk peringkat tujuan kunjungan atau host penerima. */
 function HBar({
   data,
   color,
@@ -1073,6 +1089,7 @@ function HBar({
   );
 }
 
+/** Pembungkus panel kartu dengan judul, subjudul, dan badge opsional. */
 function Panel({
   title,
   subtitle,
@@ -1098,6 +1115,7 @@ function Panel({
   );
 }
 
+/** Grafik distribusi jam sibuk operasional gedung beserta sorotan jam puncak. */
 function PeakHoursChart({
   data,
   busiest,
@@ -1173,6 +1191,7 @@ function PeakHoursChart({
   );
 }
 
+/** Grafik batang horizontal distribusi kunjungan per departemen penerima tamu. */
 function DepartmentTrafficChart({
   departments,
   days,
@@ -1242,6 +1261,7 @@ function DepartmentTrafficChart({
   );
 }
 
+/** Panel kartu rekomendasi operasional manajemen gedung berdasarkan hasil analitik tamu. */
 function BuildingInsightsSection({
   insights,
 }: {
@@ -1347,6 +1367,7 @@ function BuildingInsightsSection({
   );
 }
 
+/** Kartu metrik KPI ringkas pada baris atas Dashboard. */
 function Card({
   t,
   v,

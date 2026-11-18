@@ -1,3 +1,10 @@
+/**
+ * Utilitas Pelaporan Error dari React Error Boundary (`src/lib/lovable-error-reporting.ts`).
+ *
+ * Meneruskan exception yang tertangkap oleh `ErrorBoundary` ke hook runtime preview
+ * (jika tersedia di `window`), karena React production tidak melempar ulang error boundary ke `window.onerror`.
+ */
+
 type LovableErrorOptions = {
   mechanism?: "manual" | "onerror" | "unhandledrejection" | "react_error_boundary";
   handled?: boolean;
@@ -24,6 +31,10 @@ declare global {
   }
 }
 
+/**
+ * Mengirim detail error yang tertangkap di ErrorBoundary beserta konteks rute aktif
+ * ke hook pelaporan runtime jika aplikasi dijalankan di lingkungan preview editor.
+ */
 export function reportLovableError(error: unknown, context: Record<string, unknown> = {}) {
   if (typeof window === "undefined") return;
   window.__lovableEvents?.captureException?.(
@@ -39,9 +50,8 @@ export function reportLovableError(error: unknown, context: Record<string, unkno
       severity: "error",
     },
   );
-  // Prod React does not rethrow boundary-caught errors to window.onerror, so the
-  // editor's telemetry never sees them. Forward to lovable.js's reporting hook,
-  // which is present only inside the editor preview.
+  // React mode produksi tidak melempar ulang error yang sudah ditangkap ErrorBoundary ke window.onerror;
+  // teruskan secara manual ke hook pelaporan preview agar tetap terpantau saat pengujian.
   const stack = error instanceof Error ? error.stack : undefined;
   window.__lovableReportRuntimeError?.({
     message: describeThrown(error),
@@ -52,8 +62,8 @@ export function reportLovableError(error: unknown, context: Record<string, unkno
 
 const MAX_SERIALIZED_LENGTH = 2000;
 
-// Loaders and server fns throw raw Responses and plain objects (a Supabase
-// `{ message, code, details }`), which String() reduces to "[object ...]".
+// Loader dan server function sering melempar objek `Response` mentah atau objek error Supabase
+// (`{ message, code, details }`) yang jika langsung di-`String()` hanya menjadi `"[object Object]"`.
 function describeThrown(error: unknown): string {
   if (error instanceof Response) {
     return `Response ${error.status}${error.url ? ` at ${error.url}` : ""}`;

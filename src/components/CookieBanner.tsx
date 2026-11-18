@@ -6,6 +6,11 @@ import { EVENT, readConsent, saveConsent } from "@/lib/consent";
 const btn =
   "min-h-11 rounded-full px-5 text-sm font-semibold transition-all active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2";
 
+/**
+ * Banner persetujuan cookie yang muncul di bagian bawah layar hingga pengunjung
+ * memilih preferensi (`readConsent()?.decided`), serta disembunyikan di halaman `/cookies`
+ * karena panel pengaturan penuh sudah tersedia di halaman tersebut.
+ */
 export function CookieBanner() {
   const [show, setShow] = useState(false);
   const path = useLocation().pathname;

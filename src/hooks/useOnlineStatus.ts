@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react";
 
+/**
+ * Hook pemantau status koneksi jaringan browser secara real-time (`online` / `offline`).
+ *
+ * Best practice SSR: state awal diset `true` agar proses rendering di server tidak memicu
+ * flash banner offline palsu sebelum hidrasi klien selesai memeriksa `navigator.onLine`.
+ *
+ * @returns `true` jika browser terhubung ke jaringan, `false` saat offline.
+ */
 export function useOnlineStatus() {
   const [isOnline, setIsOnline] = useState<boolean>(true);
 

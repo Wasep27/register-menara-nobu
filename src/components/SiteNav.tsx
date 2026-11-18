@@ -1,3 +1,12 @@
+/**
+ * Bilah Navigasi Responsif Utama (`src/components/SiteNav.tsx`).
+ *
+ * Menyatukan:
+ * 1. Top floating header capsule untuk desktop & mobile.
+ * 2. Scroll-spy berbasis `requestAnimationFrame` untuk menyorot section anchor (`#faq`, dll.).
+ * 3. `MobileBottomDock` (bilah bawah bergaya aplikasi native dengan tombol aksi tengah menonjol).
+ * 4. `NavDrawerModal` (laci menu/profil penuh yang dapat dipicu lewat event global `toggle-sitenav-drawer`).
+ */
 import { Link, useLocation } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronRight } from "lucide-react";
@@ -21,6 +30,7 @@ import { PWAInstallButton } from "@/components/PWAInstallButton";
 
 export type { NavItem, SiteNavProps };
 
+/** Komponen navigasi terpadu untuk area publik tamu maupun portal dashboard petugas. */
 export function SiteNav({
   items,
   right,
@@ -42,14 +52,14 @@ export function SiteNav({
       ? isDashboard
       : pathname.startsWith("/admin") && pathname !== "/admin/login";
 
-  // Global trigger listener (e.g. from desktop header avatar)
+  // Listener event global agar tombol avatar di header luar tetap bisa membuka laci menu
   useEffect(() => {
     const handler = () => setOpen((prev) => !prev);
     window.addEventListener("toggle-sitenav-drawer", handler);
     return () => window.removeEventListener("toggle-sitenav-drawer", handler);
   }, []);
 
-  // Optimized high-performance scroll listener with requestAnimationFrame to prevent layout thrashing
+  // Gunakan throttle `requestAnimationFrame` pada event scroll untuk mencegah layout thrashing saat menghitung posisi anchor
   const anchors = useMemo(() => items.filter((l) => l.to.startsWith("#")), [items]);
   useEffect(() => {
     let ticking = false;

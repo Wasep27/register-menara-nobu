@@ -1,3 +1,10 @@
+/**
+ * @module routes/karyawan
+ * @description Portal internal karyawan (`/karyawan`, client-only SPA `ssr: false`).
+ * Menyediakan halaman masuk dengan perlindungan brute-force, penautan otomatis akun auth ke
+ * profil `employees` (via `user_id` atau kecocokan email), penyediaan mandiri bagi Admin,
+ * jadwal kunjungan mendatang, pengingat tamu VIP, serta langganan notifikasi real-time Supabase.
+ */
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
@@ -68,6 +75,7 @@ type UnlinkedEmployee = {
   department: string | null;
 };
 
+/** Gerbang autentikasi Portal Karyawan: memeriksa sesi via `getUser()` lalu merender Login atau Inbox. */
 function StaffPortal() {
   const [user, setUser] = useState<User | null | undefined>(undefined);
 
@@ -94,6 +102,7 @@ function StaffPortal() {
   return user ? <Inbox user={user} /> : <StaffLogin />;
 }
 
+/** Formulir login Portal Karyawan dengan pengecekan lockout 5 kali gagal melalui RPC. */
 function StaffLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -189,6 +198,10 @@ function StaffLogin() {
   );
 }
 
+/**
+ * Tampilan kotak masuk notifikasi & jadwal kunjungan karyawan setelah berhasil login;
+ * mendukung penautan otomatis profil ke `employees` dan notifikasi real-time.
+ */
 function Inbox({ user }: { user: User }) {
   const [emp, setEmp] = useState<{ id: string; name: string } | null | undefined>(undefined);
   const [notifs, setNotifs] = useState<Notif[]>([]);
@@ -408,6 +421,7 @@ function Inbox({ user }: { user: User }) {
     }
   };
 
+  // Langganan realtime WebSocket untuk notifikasi baru + polling 30 detik pemicu pengingat kunjungan
   useEffect(() => {
     if (!emp) return;
     const ch = supabase
@@ -428,6 +442,7 @@ function Inbox({ user }: { user: User }) {
         },
       )
       .subscribe();
+    // Lewati polling saat tab browser tidak aktif agar hemat kuota & baterai
     const tick = async () => {
       if (document.hidden) return;
       await supabase.rpc("generate_visit_reminders");

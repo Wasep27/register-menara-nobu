@@ -53,13 +53,16 @@ const CODE39_ENCODINGS: Record<string, string> = {
   "*": "010010100", // Start / Stop character
 };
 
+/** Representasi satu segmen bar (hitam) atau space (putih) beserta lebar unitnya pada Code 39. */
 export interface BarcodeElement {
   isBar: boolean;
   width: number;
 }
 
 /**
- * Konversi teks alfanumerik menjadi deretan bar/space Code 39
+ * Mengonversi teks alfanumerik menjadi deretan segmen bar/space standar **Code 39**.
+ * Secara otomatis membungkus teks dengan karakter delimiter `*...*` dan mengganti
+ * karakter di luar alfabet Code 39 menjadi `-` agar selalu dapat dipindai scanner laser.
  */
 export function encodeCode39(
   text: string,

@@ -1,6 +1,13 @@
+/**
+ * Engine Analitik Dashboard Manajemen Gedung (`src/lib/dashboard-analytics.ts`).
+ *
+ * Mengubah daftar kunjungan mentah (`Guest[]`) menjadi seri waktu Recharts, peta kepadatan
+ * per jam, sebaran unit kerja/departemen, dan rekomendasi operasional otomatis (*insights*).
+ */
 import type { Guest } from "@/lib/supabase";
 import { formatWibDate } from "@/lib/date-utils";
 
+/** Titik data volume tamu per jam operasional lobi (07:00–18:00 WIB). */
 export interface HourlyTraffic {
   hour: string;
   hourNum: number;
@@ -8,12 +15,14 @@ export interface HourlyTraffic {
   isPeak: boolean;
 }
 
+/** Agregasi jumlah serta persentase kunjungan berdasarkan departemen/divisi tujuan. */
 export interface DepartmentTraffic {
   name: string;
   count: number;
   percentage: number;
 }
 
+/** Rekomendasi operasional otomatis untuk manajer gedung dan tim keamanan. */
 export interface BuildingInsight {
   id: string;
   type: "peak" | "department" | "efficiency" | "flow";
@@ -23,6 +32,7 @@ export interface BuildingInsight {
   recommendation: string;
 }
 
+/** Hasil lengkap kalkulasi statistik dashboard untuk periode terpilih. */
 export interface DashboardStats {
   todayCount: number;
   busiest?: [string, number] | undefined;
@@ -106,11 +116,14 @@ export function calculateDashboardStats(rows: Guest[], days: number): DashboardS
     }
   });
 
+  // Abaikan outlier ekstrim (<10 dtk autofill bot/instan atau >360 dtk tab ditinggal idle)
+  // agar rata-rata durasi mencerminkan waktu interaksi nyata tamu di meja registrasi.
   const validDurs = rawDurs.filter((d) => d >= 10 && d <= 360);
   let calculatedAvg: number | null = null;
   if (validDurs.length > 0) {
     calculatedAvg = Math.round(validDurs.reduce((a, b) => a + b, 0) / validDurs.length);
   } else if (rawDurs.length > 0) {
+    // Fallback clamp ke rentang wajar 15-120 dtk bila seluruh sampel berada di luar rentang normal
     const normalizedDurs = rawDurs.map((d) => Math.min(Math.max(d, 15), 120));
     calculatedAvg = Math.round(normalizedDurs.reduce((a, b) => a + b, 0) / normalizedDurs.length);
   }

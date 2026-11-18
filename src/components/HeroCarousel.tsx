@@ -2,6 +2,10 @@ import { useEffect, useState } from "react";
 
 type Slide = { src: string; alt: string };
 
+/**
+ * Carousel foto gedung/lobi Menara Nobu dengan auto-rotate yang otomatis jeda
+ * saat hover, fokus keyboard, atau ketika pengguna mengaktifkan `prefers-reduced-motion`.
+ */
 export function HeroCarousel({ slides, interval = 5000 }: { slides: Slide[]; interval?: number }) {
   const [i, setI] = useState(0);
   const [paused, setPaused] = useState(false);

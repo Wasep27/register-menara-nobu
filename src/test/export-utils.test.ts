@@ -1,3 +1,8 @@
+/**
+ * @module test/export-utils.test
+ * @description Pengujian unit untuk modul ekspor (`exportToExcel`, `exportToPdf`, `exportBadgePassPdf`,
+ * `exportDailyVisitLogPdf`, `exportToCsv`, serta sanitasi `escapeCsvCell`) dengan mocking anchor klik DOM.
+ */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   escapeCsvCell,

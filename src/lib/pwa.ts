@@ -1,7 +1,14 @@
 /**
- * Utilitas registrasi Service Worker untuk Progressive Web App (PWA)
+ * Utilitas Registrasi Service Worker untuk Progressive Web App (PWA) (`src/lib/pwa.ts`).
+ *
+ * Best practice: pendaftaran ditunda hingga event `window.load` agar tidak memperlambat
+ * proses hidrasi awal maupun memblokir rendering halaman pertama.
  */
 
+/**
+ * Mendaftarkan `/sw.js` di browser pengguna jika dukungan Service Worker tersedia
+ * dan memantau siklus pembaruan versi worker baru (`updatefound`).
+ */
 export function registerPwaServiceWorker() {
   if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
     return;
@@ -11,13 +18,13 @@ export function registerPwaServiceWorker() {
     navigator.serviceWorker
       .register("/sw.js", { scope: "/" })
       .then((registration) => {
-        // Cek update sw secara berkala jika ada versi baru
+        // Cek pembaruan Service Worker secara berkala jika versi aplikasi baru dideploy
         registration.addEventListener("updatefound", () => {
           const installingWorker = registration.installing;
           if (!installingWorker) return;
           installingWorker.addEventListener("statechange", () => {
             if (installingWorker.state === "installed" && navigator.serviceWorker.controller) {
-              // Service worker baru siap
+              // Service worker baru sudah terpasang dan siap menggantikan cache lama
               console.log("[PWA] Versi baru tersedia.");
             }
           });

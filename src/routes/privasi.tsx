@@ -1,3 +1,8 @@
+/**
+ * @module routes/privasi
+ * @description Halaman Kebijakan Privasi (`/privasi`) sesuai kepatuhan UU No. 27 Tahun 2022 (UU PDP),
+ * menggunakan templat komponen `PolicyPage`.
+ */
 import { createFileRoute } from "@tanstack/react-router";
 import { PolicyPage } from "@/components/PolicyPage";
 

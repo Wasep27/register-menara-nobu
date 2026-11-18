@@ -1,3 +1,9 @@
+/**
+ * @module MasterCrud
+ * @description Komponen CRUD generik untuk data master `employees` (karyawan/host) dan
+ * `visit_purposes` (keperluan kunjungan), dengan kontrol akses berbasis peran (RBAC) dan
+ * integrasi pembuatan/reset akun login Portal Karyawan (`/karyawan`).
+ */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -36,13 +42,20 @@ type Row = {
   is_active: boolean;
 };
 
+/**
+ * Mengelola tabel master `employees` atau `visit_purposes` dalam tampilan kartu seluler dan tabel desktop.
+ * Matriks izin otomatis: Admin (penuh), Staff (tambah/ubah/toggle tanpa hapus permanen), Security (baca-saja).
+ */
 export function MasterCrud({
   table,
   title,
   withDept,
 }: {
+  /** Nama tabel target di Supabase. */
   table: "employees" | "visit_purposes";
+  /** Judul halaman utama. */
   title: string;
+  /** Aktifkan kolom departemen, email, serta manajemen akun portal (khusus tabel `employees`). */
   withDept?: boolean;
 }) {
   const { isAdmin, isSecurity, isStaff } = useAdminRole();
@@ -124,6 +137,7 @@ export function MasterCrud({
       }
     }
 
+    // Validasi duplikasi nama (case-insensitive) sebelum mengirim query ke Supabase
     setErrs({});
     const dup = rows.find(
       (x) => x.id !== editId && x.name.trim().toLowerCase() === name.trim().toLowerCase(),

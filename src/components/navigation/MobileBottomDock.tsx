@@ -1,3 +1,8 @@
+/**
+ * @module MobileBottomDock
+ * @description Bilah navigasi mengambang khusus layar ponsel (`< md`) dengan desain lekukan SVG
+ * konsentris untuk tombol aksi utama (FAB) di tengah.
+ */
 import { Link } from "@tanstack/react-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Compass, LayoutGrid, Menu, Plus, X } from "lucide-react";
@@ -15,6 +20,10 @@ interface MobileBottomDockProps {
   focusRing: string;
 }
 
+/**
+ * Komponen dock navigasi bawah untuk perangkat mobile.
+ * Menggunakan `React.memo` karena parent (`SiteNav`) sering merender ulang saat state scroll/menu berubah.
+ */
 export const MobileBottomDock = React.memo(function MobileBottomDock({
   leftDockItems,
   centerDockItem,
@@ -26,7 +35,7 @@ export const MobileBottomDock = React.memo(function MobileBottomDock({
   isSecondaryMenuActive,
   focusRing,
 }: MobileBottomDockProps) {
-  // Resize observer to ensure the curved notch SVG is always pixel-perfect on any mobile screen width
+  // ResizeObserver menjaga lebar SVG tetap presisi mengikuti lebar layar ponsel apa pun
   const [barWidth, setBarWidth] = useState(380);
   const barRef = useRef<HTMLDivElement>(null);
 
@@ -48,16 +57,15 @@ export const MobileBottomDock = React.memo(function MobileBottomDock({
     };
   }, []);
 
-  // SVG curved notch path calculation:
-  // Concentric scoop cradle tailored precisely around the 48px circular button with harmonious clearance
+  // Kalkulasi path SVG lekukan (notch) di bagian tengah atas:
+  // Membuat cekungan konsentris mengelilingi tombol lingkaran 48px dengan jarak ruang seimbang.
   const notchPath = useMemo(() => {
     const w = barWidth;
     const h = 68;
-    const r = 28; // original pill radius
+    const r = 28; // Radius sudut kapsul dock
     const cx = w / 2;
 
-    // Harmonious, concentric curve around center button:
-    // Mouth width = 80px (cx - 40 to cx + 40), depth = 40px, giving smooth, uniform 6px gap around 48px button
+    // Lebar mulut lekukan 80px (cx - 40 s.d. cx + 40), kedalaman 40px -> celah seragam ~6px di sekitar tombol 48px
     return `M ${r} 0 H ${cx - 40} C ${cx - 28} 0, ${cx - 28} 24, ${cx - 18} 34 C ${cx - 10} 40, ${cx + 10} 40, ${cx + 18} 34 C ${cx + 28} 24, ${cx + 28} 0, ${cx + 40} 0 H ${w - r} A ${r} ${r} 0 0 1 ${w} ${r} V ${h - r} A ${r} ${r} 0 0 1 ${w - r} ${h} H ${r} A ${r} ${r} 0 0 1 0 ${h - r} V ${r} A ${r} ${r} 0 0 1 ${r} 0 Z`;
   }, [barWidth]);
 

@@ -1,3 +1,9 @@
+/**
+ * @module routes/__root
+ * @description Rute induk aplikasi TanStack Router. Menyediakan kerangka HTML SSR (`RootShell`),
+ * metadata SEO & PWA global, penyedia `QueryClientProvider`, batas error global (`ErrorComponent`),
+ * halaman 404 (`NotFoundComponent`), serta widget global (Toaster, CookieBanner, OfflineIndicator).
+ */
 import { Toaster } from "@/components/ui/sonner";
 import logo from "@/assets/logo.png";
 import gedungUrl from "@/assets/gedung-nobu.jpg";
@@ -19,6 +25,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
+/** Halaman fallback 404 ketika pengguna mengakses URL rute yang tidak terdaftar. */
 function NotFoundComponent() {
   return (
     <main className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-foreground px-4 py-12">
@@ -58,6 +65,10 @@ function NotFoundComponent() {
   );
 }
 
+/**
+ * Error boundary tingkat rute akar: menangkap galat render anak, melaporkannya
+ * untuk diagnostik, dan memberi opsi muat ulang atau kembali ke beranda.
+ */
 function ErrorComponent({ error, reset }: ErrorComponentProps) {
   console.error(error);
   const router = useRouter();
@@ -148,6 +159,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
+/** Data terstruktur Schema.org JSON-LD untuk optimasi mesin pencari (SEO). */
 const schemaOrgJsonLd = JSON.stringify({
   "@context": "https://schema.org",
   "@type": "WebApplication",
@@ -162,6 +174,7 @@ const schemaOrgJsonLd = JSON.stringify({
   },
 });
 
+/** Kerangka dokumen HTML (`<html>`, `<head>`, `<body>`) yang dipakai saat SSR maupun hidrasi klien. */
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="id">
@@ -177,12 +190,13 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+/** Pembungkus root klien: menyuntikkan `QueryClient` terisolasi per request beserta komponen UI global. */
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+      {/* Wajib: rute turunan dirender di sini. Menghapus <Outlet /> akan memutus seluruh halaman. */}
       <Outlet />
       <OfflineIndicator />
       <CookieBanner />

@@ -1,13 +1,26 @@
+/**
+ * Utilitas Murni Log Aktivitas & Audit Sistem (`src/lib/activity-log-utils.ts`).
+ *
+ * Seluruh fungsi di modul ini bersifat murni (*pure functions*) tanpa side-effect jaringan
+ * agar mudah diuji secara unit test (`src/test/activity-and-feedback.test.ts`).
+ */
 import type { ActivityLog } from "@/lib/supabase";
 
+/** Parameter filter multi-dimensi pada halaman Log Aktivitas Admin. */
 export interface LogFilterParams {
+  /** Kategori log (`"all"` atau salah satu kategori log resmi). */
   selectedCategory: string;
+  /** Preset rentang waktu cepat (`today`, `7d`, `30d`, `all`). */
   timeFilter: "today" | "7d" | "30d" | "all";
+  /** Tanggal awal filter kustom format `YYYY-MM-DD` (menimpa preset `timeFilter`). */
   startDate: string;
+  /** Tanggal akhir filter kustom format `YYYY-MM-DD`. */
   endDate: string;
+  /** Kata kunci pencarian bebas (nama tamu, instansi, nomor HP, aksi, atau pelaku). */
   searchQuery: string;
 }
 
+/** Ringkasan metrik agregasi log aktivitas untuk kartu ringkasan atas. */
 export interface ActivityStats {
   total: number;
   todayCount: number;
@@ -19,7 +32,8 @@ export interface ActivityStats {
 
 /**
  * Membangun synthetic activity logs dari data tamu, feedback, dan karyawan
- * sebagai fallback transparan jika tabel activity_logs belum memiliki rekaman.
+ * sebagai fallback transparan jika tabel `activity_logs` belum memiliki rekaman
+ * atau migrasi trigger log belum dijalankan di database.
  */
 export function buildSyntheticLogs(
   guestsData: unknown[] | null,

@@ -1,3 +1,7 @@
+/**
+ * @module routeMetadata
+ * @description Kamus metadata rute untuk drawer seluler dan daftar tautan navigasi publik inti.
+ */
 import {
   Activity,
   BarChart3,
@@ -17,6 +21,10 @@ import {
 } from "lucide-react";
 import type { NavItem, RouteMetaItem } from "./navTypes";
 
+/**
+ * Pemetaan ikon, deskripsi singkat, dan kategori setiap rute aplikasi
+ * agar tampilan drawer seluler lebih informatif dan terstruktur.
+ */
 export const ROUTE_METADATA: Record<string, RouteMetaItem> = {
   "/admin": {
     icon: LayoutDashboard,
@@ -110,6 +118,7 @@ export const ROUTE_METADATA: Record<string, RouteMetaItem> = {
   },
 };
 
+/** Tautan navigasi publik inti yang tampil di dock bawah & navbar halaman depan. */
 export const CORE_PUBLIC_LINKS: NavItem[] = [
   { to: "/", label: "Beranda", icon: Home },
   { to: "/registrasi", label: "Registrasi", icon: Users },

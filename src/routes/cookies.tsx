@@ -1,3 +1,8 @@
+/**
+ * @module routes/cookies
+ * @description Halaman Kebijakan Cookie & Penyimpanan Lokal (`/cookies`), disertai panel pengaturan
+ * preferensi penyimpanan `CookieSettings`.
+ */
 import { createFileRoute } from "@tanstack/react-router";
 import { CookieSettings } from "@/components/CookieSettings";
 import { PolicyPage } from "@/components/PolicyPage";

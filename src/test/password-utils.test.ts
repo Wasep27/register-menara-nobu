@@ -1,3 +1,8 @@
+/**
+ * @module test/password-utils.test
+ * @description Pengujian unit untuk utilitas kekuatan kata sandi (`evaluatePassword` dan
+ * `generateStrongPassword`) guna memastikan seluruh kriteria kompleksitas 4 kelas karakter terpenuhi.
+ */
 import { describe, it, expect } from "vitest";
 import { evaluatePassword, generateStrongPassword } from "@/lib/password-utils";
 

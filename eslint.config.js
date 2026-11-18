@@ -1,3 +1,8 @@
+/**
+ * @module eslint.config
+ * @description Konfigurasi flat ESLint v9 untuk TypeScript, React Hooks, React Refresh, dan Prettier.
+ * Menolak impor `server-only` (konvensi Next.js) agar selalu memakai pola `*.server.ts` TanStack Start.
+ */
 import js from "@eslint/js";
 import eslintPluginPrettier from "eslint-plugin-prettier/recommended";
 import globals from "globals";
@@ -6,6 +11,7 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
+  // Abaikan direktori hasil build agar pemeriksaan lint hanya menyasar kode sumber
   { ignores: ["dist", ".output", ".vinxi"] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],

@@ -1,12 +1,23 @@
+/**
+ * @module PasswordStrengthIndicator
+ * @description Komponen visual indikator kekuatan kata sandi (4 segmen warna, pesan umpan balik,
+ * dan daftar periksa kompleksitas karakter) berbasis hasil `evaluatePassword()`.
+ */
 import { Check, X, ShieldAlert, ShieldCheck, Shield } from "lucide-react";
 import type { PasswordStrength } from "@/lib/password-utils";
 
 interface PasswordStrengthIndicatorProps {
+  /** Hasil evaluasi skor dan kriteria kata sandi dari `evaluatePassword`. */
   strength: PasswordStrength;
+  /** Nilai kata sandi saat ini (indikator disembunyikan bila kosong). */
   password?: string;
+  /** Tampilkan daftar checklist detail kriteria kompleksitas. Default: `true`. */
   showCriteria?: boolean;
 }
 
+/**
+ * Menampilkan meter kekuatan kata sandi secara real-time saat pengguna mengetik.
+ */
 export function PasswordStrengthIndicator({
   strength,
   password = "",

@@ -1,3 +1,7 @@
+/**
+ * @module PolicyPage
+ * @description Templat tata letak bersama untuk halaman kebijakan hukum (Kebijakan Privasi & Kebijakan Cookie).
+ */
 import { Link } from "@tanstack/react-router";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -9,15 +13,22 @@ const nav = [
   { to: "/cookies", label: "Cookie" },
 ];
 
+/**
+ * Merender halaman dokumen kebijakan dengan navbar, tanggal pembaruan, bagian paragraf terstruktur, dan footer.
+ */
 export function PolicyPage({
   title,
   updated,
   sections,
   children,
 }: {
+  /** Konten tambahan opsional di bawah daftar pasal kebijakan (mis. pengaturan preferensi cookie). */
   children?: React.ReactNode;
+  /** Judul utama dokumen kebijakan. */
   title: string;
+  /** Tanggal pembaruan terakhir dalam format teks. */
   updated: string;
+  /** Daftar bagian berisi judul sub-bab (`h`) dan kumpulan paragraf (`p`). */
   sections: { h: string; p: string[] }[];
 }) {
   return (

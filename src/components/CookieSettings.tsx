@@ -3,6 +3,10 @@ import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { readConsent, saveConsent } from "@/lib/consent";
 
+/**
+ * Panel interaktif pengaturan granular cookie (Diperlukan, Preferensi, Analitik)
+ * yang tersinkron langsung dengan `localStorage` dan `CookieBanner` via `saveConsent`.
+ */
 export function CookieSettings() {
   const [pref, setPref] = useState(false);
   const [ana, setAna] = useState(false);
